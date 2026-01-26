@@ -36,6 +36,8 @@ OpenAPI 3.1 brings full alignment with JSON Schema 2020-12, enabling:
 
 This library complements AshJsonApi by reading its route configurations and generating modern OpenAPI specifications while maintaining backwards compatibility with 3.0 for teams that need it.
 
+AshOaskit is built on top of [Oaskit](https://hexdocs.pm/oaskit), a toolkit for building and manipulating OpenAPI specifications in Elixir.
+
 ## Features
 
 AshOaskit provides:
@@ -234,6 +236,7 @@ mix coveralls.html  # Check test coverage
 - [OpenAPI Specification](https://spec.openapis.org/oas/latest.html)
 - [Ash Framework](https://ash-hq.org/)
 - [AshJsonApi](https://hexdocs.pm/ash_json_api)
+- [Oaskit](https://hexdocs.pm/oaskit) - OpenAPI toolkit used internally for spec building
 - [JSON Schema](https://json-schema.org/)
 
 ## Contributing
