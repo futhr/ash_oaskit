@@ -1,0 +1,17 @@
+/_build/
+/cover/
+/deps/
+/doc/
+/.fetch
+erl_crash.dump
+*.ez
+*.tar
+*.beam
+/tmp/
+/priv/plts/
+.elixir_ls/
+.lexical/
+*.swp
+*.swo
+*~
+.DS_Store
