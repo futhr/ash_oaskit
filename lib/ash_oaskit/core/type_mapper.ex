@@ -1,9 +1,4 @@
 defmodule AshOaskit.TypeMapper do
-  # Suppress dialyzer warning for make_nullable_31/1 - the is_list guard is valid
-  # at runtime even though dialyzer thinks the type is narrowed to binary/map.
-  # OpenAPI 3.1 schemas can have "type" as either a string or list of strings.
-  @dialyzer {:nowarn_function, make_nullable_31: 1}
-
   @moduledoc """
   Maps Ash types to JSON Schema types for OpenAPI 3.0 and 3.1.
 
@@ -65,6 +60,13 @@ defmodule AshOaskit.TypeMapper do
   - `description` - Copied from attribute description
   - `default` - Copied from attribute default (non-function values only)
   """
+
+  # Suppress dialyzer warning for make_nullable_31/1 - the is_list guard is valid
+  # at runtime even though dialyzer thinks the type is narrowed to binary/map.
+  # OpenAPI 3.1 schemas can have "type" as either a string or list of strings.
+  @dialyzer {:nowarn_function, make_nullable_31: 1}
+
+  require Logger
 
   @doc """
   Convert an Ash attribute to a JSON Schema for OpenAPI 3.1.
@@ -227,7 +229,12 @@ defmodule AshOaskit.TypeMapper do
           "description" => "Struct of type #{inspect(module)}"
         }
       rescue
-        _ -> %{"type" => "object"}
+        e ->
+          Logger.debug(
+            "Failed to build struct schema for #{inspect(module)}: #{Exception.message(e)}"
+          )
+
+          %{"type" => "object"}
       end
     else
       %{"type" => "object"}
@@ -317,7 +324,9 @@ defmodule AshOaskit.TypeMapper do
   defp get_custom_json_schema(type) do
     type.json_schema([])
   rescue
-    _ -> %{"type" => "string"}
+    e ->
+      Logger.debug("Failed to get json_schema for #{inspect(type)}: #{Exception.message(e)}")
+      %{"type" => "string"}
   end
 
   # Check if a type is a union type and return {:union, types} or false
@@ -333,7 +342,9 @@ defmodule AshOaskit.TypeMapper do
           false
         end
       rescue
-        _ -> false
+        e ->
+          Logger.debug("Failed to get union types for #{inspect(type)}: #{Exception.message(e)}")
+          false
       end
     else
       false
