@@ -236,7 +236,7 @@ mix coveralls.html  # Check test coverage
 - [OpenAPI Specification](https://spec.openapis.org/oas/latest.html)
 - [Ash Framework](https://ash-hq.org/)
 - [AshJsonApi](https://hexdocs.pm/ash_json_api)
-- [Oaskit](https://hexdocs.pm/oaskit) - OpenAPI toolkit used internally for spec building
+- [Oaskit](https://hexdocs.pm/oaskit)
 - [JSON Schema](https://json-schema.org/)
 
 ## Contributing
