@@ -34,7 +34,7 @@ defmodule AshOaskit.OpenApiTest do
     end
 
     test "raises on unsupported version" do
-      assert_raise ArgumentError, ~r/unsupported OpenAPI version/, fn ->
+      assert_raise ArgumentError, ~r/Unsupported OpenAPI version/i, fn ->
         OpenApi.spec(domains: [@test_domain], version: "2.0")
       end
     end

@@ -112,9 +112,16 @@ defmodule AshOaskit.OpenApi do
         V30.generate(domains, opts)
 
       other ->
-        raise ArgumentError,
-              "unsupported OpenAPI version: #{inspect(other)}. " <>
-                "Supported versions are \"3.0\" and \"3.1\""
+        raise ArgumentError, """
+        Unsupported OpenAPI version: #{inspect(other)}
+
+        Supported versions:
+          - "3.0" or "3.0.0" for OpenAPI 3.0
+          - "3.1" or "3.1.0" for OpenAPI 3.1 (default)
+
+        Example:
+          AshOaskit.spec(domains: [MyDomain], version: "3.1")
+        """
     end
   end
 
