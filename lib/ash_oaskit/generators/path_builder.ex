@@ -38,28 +38,42 @@ defmodule AshOaskit.Generators.PathBuilder do
   - **page** - Pagination (offset, limit, cursor-based)
   - **include** - Relationship inclusion paths
 
+  ## Phoenix Controller Routes
+
+  When a `:router` option is provided, this module also includes routes from
+  Phoenix controllers that implement `AshOaskit.OpenApiController` behaviour.
+
   ## Usage
 
+      # Ash routes only
       paths = PathBuilder.build_paths([MyApp.Domain], version: "3.1")
+
+      # Ash routes + Phoenix controller routes
+      paths = PathBuilder.build_paths([MyApp.Domain], version: "3.1", router: MyAppWeb.Router)
   """
 
   alias AshOaskit.FilterBuilder
   alias AshOaskit.Generators.InfoBuilder
+  alias AshOaskit.PhoenixIntrospection
   alias AshOaskit.RelationshipRoutes
   alias AshOaskit.SortBuilder
 
   @type opts :: keyword()
 
   @doc """
-  Builds paths from domains.
+  Builds paths from domains and optionally from Phoenix router.
 
   Extracts all routes from the given domains and converts them
-  to OpenAPI path items grouped by path.
+  to OpenAPI path items grouped by path. If a `:router` option
+  is provided, also includes routes from Phoenix controllers
+  implementing `AshOaskit.OpenApiController`.
 
   ## Parameters
 
   - `domains` - List of Ash domain modules
-  - `opts` - Options including `:version`
+  - `opts` - Options including:
+    - `:version` - OpenAPI version ("3.0" or "3.1")
+    - `:router` - Optional Phoenix router module for controller introspection
 
   ## Returns
 
@@ -79,23 +93,22 @@ defmodule AshOaskit.Generators.PathBuilder do
           "delete" => %{...}
         }
       }
+
+      iex> PathBuilder.build_paths([MyApp.Blog], version: "3.1", router: MyAppWeb.Router)
+      %{
+        "/posts" => %{...},
+        "/api/health" => %{
+          # From HealthController
+          "get" => %{...}
+        }
+      }
   """
   @spec build_paths(list(module()), opts()) :: map()
   def build_paths(domains, opts) do
-    domains
-    |> Enum.flat_map(&get_domain_routes/1)
-    |> Enum.group_by(fn {path, _route} -> path end)
-    |> Enum.map(fn {path, routes} ->
-      operations =
-        routes
-        |> Enum.map(fn {_path, route} ->
-          {route_to_method(route), build_operation(route, opts)}
-        end)
-        |> Map.new()
+    ash_paths = build_ash_paths(domains, opts)
+    controller_paths = build_controller_paths(opts)
 
-      {path, operations}
-    end)
-    |> Map.new()
+    deep_merge_paths(ash_paths, controller_paths)
   end
 
   @doc """
@@ -152,6 +165,44 @@ defmodule AshOaskit.Generators.PathBuilder do
     |> Enum.map_join(" ", &String.capitalize/1)
   end
 
+  # Builds paths from Ash domain routes
+  defp build_ash_paths(domains, opts) do
+    domains
+    |> Enum.flat_map(&get_domain_routes/1)
+    |> Enum.group_by(fn {path, _route} -> convert_path_params(path) end)
+    |> Enum.map(fn {path, routes} ->
+      operations =
+        routes
+        |> Enum.map(fn {_path, route} ->
+          {route_to_method(route), build_operation(route, opts)}
+        end)
+        |> Map.new()
+
+      {path, operations}
+    end)
+    |> Map.new()
+  end
+
+  # Builds paths from Phoenix controller routes (if router is provided)
+  defp build_controller_paths(opts) do
+    case Keyword.get(opts, :router) do
+      nil ->
+        %{}
+
+      router ->
+        router
+        |> PhoenixIntrospection.extract_routes()
+        |> PhoenixIntrospection.routes_to_paths()
+    end
+  end
+
+  # Deep merges two path maps, combining operations for the same path
+  defp deep_merge_paths(map1, map2) do
+    Map.merge(map1, map2, fn _path, ops1, ops2 ->
+      Map.merge(ops1, ops2)
+    end)
+  end
+
   # Gets routes from a domain with their paths
   defp get_domain_routes(domain) do
     domain
@@ -164,14 +215,23 @@ defmodule AshOaskit.Generators.PathBuilder do
     if RelationshipRoutes.relationship_route?(route) do
       RelationshipRoutes.route_method(route)
     else
-      route.type
-      |> to_string()
-      |> String.downcase()
+      route_type_to_method(route.type)
     end
   end
 
-  # Builds operation ID from resource and action names
+  # Maps Ash route types to HTTP methods
+  defp route_type_to_method(:index), do: "get"
+  defp route_type_to_method(:get), do: "get"
+  defp route_type_to_method(:post), do: "post"
+  defp route_type_to_method(:patch), do: "patch"
+  defp route_type_to_method(:delete), do: "delete"
+  defp route_type_to_method(type), do: type |> to_string() |> String.downcase()
+
+  # Builds operation ID from resource, action, route type, and path
+  # The path prefix is included for nested routes to ensure uniqueness
   defp build_operation_id(route) do
+    method = route_type_to_method(route.type)
+
     resource_name =
       route.resource
       |> Module.split()
@@ -179,7 +239,56 @@ defmodule AshOaskit.Generators.PathBuilder do
       |> Macro.underscore()
 
     action_name = to_string(route.action)
-    "#{resource_name}_#{action_name}"
+
+    # Add route type suffix for index routes to distinguish from get routes
+    type_suffix = if route.type == :index, do: "_list", else: ""
+
+    # For nested routes, include parent path segment to ensure uniqueness
+    # e.g., /devices/{device_id}/commands -> "devices_device_command_send"
+    # vs /commands -> "device_command_send"
+    path_prefix = extract_path_prefix(route.route, resource_name)
+
+    if path_prefix do
+      "#{method}_#{path_prefix}_#{resource_name}_#{action_name}#{type_suffix}"
+    else
+      "#{method}_#{resource_name}_#{action_name}#{type_suffix}"
+    end
+  end
+
+  # Extracts a path prefix for nested routes
+  # Returns nil for top-level routes, or the parent segment for nested routes
+  defp extract_path_prefix(route_path, resource_name) do
+    # Get first segment that isn't the resource itself
+    segments =
+      route_path
+      |> String.trim_leading("/")
+      |> String.split("/")
+      |> Enum.reject(&(String.starts_with?(&1, ":") or String.starts_with?(&1, "{")))
+
+    resource_plural = pluralize(resource_name)
+
+    case segments do
+      # Top-level route
+      [^resource_plural | _] -> nil
+      # Top-level route (singular)
+      [^resource_name | _] -> nil
+      [parent | _rest] -> String.replace(parent, "-", "_")
+      _ -> nil
+    end
+  end
+
+  # Simple pluralization for common cases
+  defp pluralize(name) do
+    cond do
+      String.ends_with?(name, "y") ->
+        String.slice(name, 0..-2//1) <> "ies"
+
+      String.ends_with?(name, "s") || String.ends_with?(name, "x") ->
+        name <> "es"
+
+      true ->
+        name <> "s"
+    end
   end
 
   # Builds operation tags from resource name
@@ -224,6 +333,11 @@ defmodule AshOaskit.Generators.PathBuilder do
     ~r/:([a-zA-Z_]+)/
     |> Regex.scan(path)
     |> Enum.map(fn [_, name] -> name end)
+  end
+
+  # Converts Phoenix-style path params (:id) to OpenAPI format ({id})
+  defp convert_path_params(path) do
+    Regex.replace(~r/:([a-zA-Z_]+)/, path, "{\\1}")
   end
 
   # Builds query parameters for GET operations

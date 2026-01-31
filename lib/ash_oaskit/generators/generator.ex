@@ -23,6 +23,7 @@ defmodule AshOaskit.Generators.Generator do
 
   - `InfoBuilder` - Info object, servers, and tags
   - `PathBuilder` - Paths and operations
+  - `PhoenixIntrospection` - Controller route extraction (optional)
   - `ComponentsBuilder` - Schemas (internal to this module)
 
   ## Usage
@@ -42,10 +43,13 @@ defmodule AshOaskit.Generators.Generator do
   | `:license` | map | License info |
   | `:servers` | list | Server URLs |
   | `:security` | list | Security requirements |
+  | `:router` | module | Phoenix router for controller introspection |
+  | `:modify_open_api` | function or MFA | Post-processing hook for spec customization |
   """
 
   alias AshOaskit.Generators.InfoBuilder
   alias AshOaskit.Generators.PathBuilder
+  alias AshOaskit.PhoenixIntrospection
   alias AshOaskit.TypeMapper
 
   @type opts :: keyword()
@@ -73,11 +77,22 @@ defmodule AshOaskit.Generators.Generator do
         "components" => %{"schemas" => %{...}},
         "tags" => [%{"name" => "Post"}, ...]
       }
+
+      # With Phoenix router for controller routes
+      iex> Generator.generate([MyApp.Blog], version: "3.1", router: MyAppWeb.Router)
+
+      # With post-processing hook
+      iex> Generator.generate([MyApp.Blog],
+      ...>   version: "3.1",
+      ...>   modify_open_api: fn spec -> Map.put(spec, "x-custom", true) end
+      ...> )
   """
   @spec generate(list(module()), opts()) :: map()
   def generate(domains, opts) do
     version = Keyword.fetch!(opts, :version)
     openapi_version = if version == "3.0", do: "3.0.0", else: "3.1.0"
+
+    tags = build_all_tags(domains, opts)
 
     %{
       "openapi" => openapi_version,
@@ -86,8 +101,9 @@ defmodule AshOaskit.Generators.Generator do
       "paths" => PathBuilder.build_paths(domains, opts),
       "components" => build_components(domains, opts)
     }
-    |> InfoBuilder.maybe_add("tags", InfoBuilder.build_tags(domains))
+    |> InfoBuilder.maybe_add("tags", tags)
     |> InfoBuilder.maybe_add("security", Keyword.get(opts, :security))
+    |> apply_modify_hook(opts)
   end
 
   @doc """
@@ -116,6 +132,41 @@ defmodule AshOaskit.Generators.Generator do
       |> Map.new()
 
     %{"schemas" => schemas}
+  end
+
+  # Builds all tags from domains and optionally from router
+  defp build_all_tags(domains, opts) do
+    domain_tags = InfoBuilder.build_tags(domains)
+
+    controller_tags =
+      case Keyword.get(opts, :router) do
+        nil -> []
+        router -> PhoenixIntrospection.extract_tags(router)
+      end
+
+    merged_tags = domain_tags ++ controller_tags
+
+    case merged_tags do
+      [] -> nil
+      tags -> Enum.uniq_by(tags, & &1["name"])
+    end
+  end
+
+  # Applies the modify_open_api hook if provided
+  defp apply_modify_hook(spec, opts) do
+    case Keyword.get(opts, :modify_open_api) do
+      nil ->
+        spec
+
+      {mod, fun, args} when is_atom(mod) and is_atom(fun) and is_list(args) ->
+        apply(mod, fun, [spec | args])
+
+      fun when is_function(fun, 1) ->
+        fun.(spec)
+
+      _ ->
+        spec
+    end
   end
 
   # Gets all resources from a domain
