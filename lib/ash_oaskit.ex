@@ -5,6 +5,97 @@ defmodule AshOaskit do
   AshOaskit automatically generates OpenAPI 3.0 and 3.1 specifications from your
   Ash domains by introspecting resources, attributes, actions, and AshJsonApi routes.
 
+  ## Three Levels of Customization
+
+  AshOaskit provides three levels of customization for serving OpenAPI specs:
+
+  ### 1. Router Macro (Simple)
+
+  For quick setup with standard endpoints:
+
+      # In your Phoenix router
+      scope "/api" do
+        pipe_through :api
+
+        use AshOaskit.Router,
+          domains: [MyApp.Blog, MyApp.Accounts],
+          open_api: "/docs/openapi",
+          title: "My API",
+          version: "1.0.0"
+      end
+
+  This automatically generates routes for both OpenAPI 3.0 and 3.1:
+
+      GET /api/docs/openapi.json      -> Default (3.1) spec
+      GET /api/docs/openapi/3.0.json  -> OpenAPI 3.0 spec
+      GET /api/docs/openapi/3.1.json  -> OpenAPI 3.1 spec
+
+  ### 2. Router Macro + Custom SpecBuilder
+
+  For customization (security schemes, feature flags, domain filtering):
+
+      use AshOaskit.Router,
+        spec_builder: MyApp.OpenApi.SpecBuilder,
+        domains: [MyApp.Blog],
+        open_api: "/openapi",
+        title: "My API"
+
+  Where `MyApp.OpenApi.SpecBuilder` implements `AshOaskit.SpecBuilder`:
+
+      defmodule MyApp.OpenApi.SpecBuilder do
+        @behaviour AshOaskit.SpecBuilder
+
+        @impl true
+        def spec(openapi_version, opts) do
+          AshOaskit.spec(
+            domains: opts[:domains],
+            version: openapi_version,
+            title: opts[:title]
+          )
+          |> add_security_schemes()
+          |> add_feature_flags()
+        end
+
+        defp add_security_schemes(spec) do
+          put_in(spec, ["components", "securitySchemes"], %{
+            "bearerAuth" => %{
+              "type" => "http",
+              "scheme" => "bearer",
+              "bearerFormat" => "JWT"
+            }
+          })
+        end
+
+        defp add_feature_flags(spec) do
+          Map.put(spec, "x-features", %{"beta" => true})
+        end
+      end
+
+  ### 3. Programmatic API (Advanced)
+
+  For complete control over routing and serving:
+
+      # Generate spec programmatically in your own controller
+      spec = AshOaskit.spec(
+        domains: [MyApp.Blog],
+        version: "3.1",
+        title: "My API"
+      )
+      |> add_custom_processing()
+
+  This is an escape hatch for edge cases not covered by the Router macro.
+
+  ## When to Use Which
+
+  | Use Case | Approach |
+  |----------|----------|
+  | Standard API documentation | Router Macro |
+  | Custom security schemes | Router + SpecBuilder |
+  | Feature flags / extensions | Router + SpecBuilder |
+  | Version-specific domains | Router + SpecBuilder |
+  | Non-standard routing | Programmatic API |
+  | Complete custom control | Programmatic API |
+
   ## Architecture Overview
 
   ```
@@ -16,7 +107,7 @@ defmodule AshOaskit do
           ▼
   ┌───────────────┐      ┌─────────────────┐
   │    Config     │─────▶│   TypeMapper    │
-  │ (metadata)    │      │ (Ash→JSON type) │
+  │ (metadata)    │      │ (Ash -> JSON)   │
   └───────┬───────┘      └────────┬────────┘
           │                       │
           ▼                       ▼
@@ -49,7 +140,9 @@ defmodule AshOaskit do
   - **Sort Support** - Generates sort parameter schemas from resource sorts
   - **Pagination** - Handles offset, keyset, and cursor pagination styles
   - **Relationships** - Proper handling of belongs_to, has_many, has_one
-  - **Plug Controller** - Serve specs directly from your Phoenix app
+  - **Router Macro** - Quick setup for serving specs in Phoenix
+  - **SpecBuilder Behaviour** - Customizable spec generation via behaviour
+  - **Plug Controller** - Flexible controller for custom configurations
   - **Mix Task** - Generate spec files from the command line
 
   ## Quick Start
@@ -68,28 +161,6 @@ defmodule AshOaskit do
         description: "Blog and Accounts API",
         servers: ["https://api.example.com"]
       )
-
-  ## Generated Spec Structure
-
-  ```
-  openapi: "3.1.0"
-  info:
-    title: "API"
-    version: "1.0.0"
-  paths:
-    /posts:
-      get: ...        # index action
-      post: ...       # create action
-    /posts/{id}:
-      get: ...        # read action
-      patch: ...      # update action
-      delete: ...     # destroy action
-  components:
-    schemas:
-      Post: ...       # Resource schema
-      PostInput: ...  # Input schema for create/update
-      Error: ...      # JSON:API error object
-  ```
 
   ## Options
 
@@ -117,15 +188,6 @@ defmodule AshOaskit do
         api_version: "1.0.0",
         domains: [MyApp.Blog, MyApp.Accounts]
 
-  ## Phoenix Integration
-
-  Add to your router to serve specs:
-
-      scope "/api" do
-        get "/openapi.json", AshOaskit.Controller, :spec
-        get "/openapi.yaml", AshOaskit.Controller, :spec_yaml
-      end
-
   ## Mix Task
 
   Generate spec files from the command line:
@@ -144,14 +206,13 @@ defmodule AshOaskit do
 
   | Module | Purpose |
   |--------|---------|
+  | `AshOaskit.Router` | Router macro for quick Phoenix integration |
+  | `AshOaskit.SpecBuilder` | Behaviour for custom spec generation |
+  | `AshOaskit.SpecBuilder.Default` | Default SpecBuilder implementation |
+  | `AshOaskit.Controller` | Plug controller for serving specs |
   | `AshOaskit.OpenApi` | Main entry point for spec generation |
   | `AshOaskit.Config` | Configuration and domain introspection |
   | `AshOaskit.TypeMapper` | Ash type to JSON Schema mapping |
-  | `AshOaskit.SchemaBuilder` | Component schema construction |
-  | `AshOaskit.FilterBuilder` | Filter parameter generation |
-  | `AshOaskit.SortBuilder` | Sort parameter generation |
-  | `AshOaskit.QueryParameters` | Query parameter schemas |
-  | `AshOaskit.Controller` | Phoenix controller for serving specs |
 
   See individual module documentation for detailed information.
   """
