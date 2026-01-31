@@ -692,4 +692,23 @@ defmodule AshOaskit.SpecModifierTest do
       assert hd(staging_result["servers"])["url"] == "https://staging.example.com"
     end
   end
+
+  describe "apply_modifier/2 with invalid input" do
+    test "returns spec unchanged for invalid modifier types" do
+      spec = %{"info" => %{"title" => "API"}}
+
+      assert SpecModifier.apply_modifier(spec, :invalid_atom) == spec
+      assert SpecModifier.apply_modifier(spec, 42) == spec
+      assert SpecModifier.apply_modifier(spec, "string") == spec
+    end
+  end
+
+  describe "deprecation_modifier with defaults" do
+    test "deprecation_modifier with no options does not modify operations" do
+      modifier = SpecModifier.deprecation_modifier()
+      spec = %{"paths" => %{"/a" => %{"get" => %{"operationId" => "any"}}}}
+      result = SpecModifier.apply_modifier(spec, modifier)
+      assert result == spec
+    end
+  end
 end

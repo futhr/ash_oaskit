@@ -566,5 +566,26 @@ defmodule AshOaskit.TagBuilderTest do
 
       assert is_binary(tag)
     end
+
+    test "resource_tag_name returns nil for nil" do
+      assert TagBuilder.resource_tag_name(nil) == nil
+    end
+  end
+
+  describe "resource grouping with Blog domain" do
+    test "resource grouping creates one tag per resource" do
+      tags = TagBuilder.build_tags([AshOaskit.Test.Blog], group_by: :resource)
+      names = Enum.map(tags, & &1["name"])
+      assert "Post" in names
+      assert "Comment" in names
+    end
+  end
+
+  describe "domain grouping tag for Author resource" do
+    test "operation_tag with :domain grouping returns domain name for Author" do
+      route = %{resource: AshOaskit.Test.Author}
+      tag = TagBuilder.operation_tag(route, group_by: :domain)
+      assert tag == "Publishing"
+    end
   end
 end

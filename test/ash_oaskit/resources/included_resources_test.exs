@@ -435,6 +435,34 @@ defmodule AshOaskit.IncludedResourcesTest do
     end
   end
 
+  describe "self-referential and depth-based traversal" do
+    test "handles self-referential Category without infinite recursion" do
+      resources = IncludedResources.get_includable_resources(AshOaskit.Test.Category)
+      assert "Category" in resources
+    end
+
+    test "respects max_depth limit with comparable results" do
+      shallow =
+        IncludedResources.get_includable_resources(
+          AshOaskit.Test.Article,
+          max_depth: 1
+        )
+
+      deep =
+        IncludedResources.get_includable_resources(
+          AshOaskit.Test.Article,
+          max_depth: 3
+        )
+
+      assert length(deep) >= length(shallow)
+    end
+
+    test "configured_includes returns nil or list" do
+      result = IncludedResources.configured_includes(AshOaskit.Test.Post)
+      assert is_nil(result) or is_list(result)
+    end
+  end
+
   describe "integration scenarios" do
     test "building a complete response with included" do
       response = %{

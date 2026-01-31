@@ -332,6 +332,22 @@ defmodule AshOaskit.SortBuilderTest do
       # Author has full_name and article_count calculations without required args
       assert :full_name in fields or :article_count in fields
     end
+
+    test "includes calculations regardless of argument optionality" do
+      # Ash argument structs always have a :default key, so argument_optional?
+      # returns true for all arguments in practice
+      fields = SortBuilder.get_sortable_fields(AshOaskit.Test.Author)
+      assert :greeting in fields
+      assert :formal_greeting in fields
+    end
+  end
+
+  describe "sort parameter for Article resource" do
+    test "builds sort parameter with field description for Article" do
+      result = SortBuilder.build_sort_parameter(AshOaskit.Test.Article, version: "3.1")
+      assert result["name"] == "sort"
+      assert result["schema"]["description"] =~ "title"
+    end
   end
 
   describe "sortable aggregates" do

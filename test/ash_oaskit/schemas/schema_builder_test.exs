@@ -1024,4 +1024,84 @@ defmodule AshOaskit.SchemaBuilderTest do
       refute Map.has_key?(schema["properties"]["title"], "description")
     end
   end
+
+  describe "PropertyBuilders edge cases" do
+    alias AshOaskit.SchemaBuilder.PropertyBuilders
+
+    test "aggregate_kind_to_schema handles :list kind" do
+      agg = %{kind: :list, type: :string}
+      schema = PropertyBuilders.aggregate_kind_to_schema(:list, agg)
+      assert schema["type"] == "array"
+      assert schema["items"] == %{"type" => "string"}
+    end
+
+    test "aggregate_kind_to_schema handles :first kind" do
+      agg = %{kind: :first, type: :string}
+      schema = PropertyBuilders.aggregate_kind_to_schema(:first, agg)
+      assert schema["type"] == "string"
+    end
+
+    test "aggregate_kind_to_schema handles :min kind" do
+      agg = %{kind: :min, type: :integer}
+      schema = PropertyBuilders.aggregate_kind_to_schema(:min, agg)
+      assert schema["type"] == "integer"
+    end
+
+    test "aggregate_kind_to_schema handles :max kind with default type" do
+      agg = %{kind: :max}
+      schema = PropertyBuilders.aggregate_kind_to_schema(:max, agg)
+      assert schema["type"] == "number"
+    end
+
+    test "aggregate_kind_to_schema handles :custom kind" do
+      agg = %{kind: :custom, type: :boolean}
+      schema = PropertyBuilders.aggregate_kind_to_schema(:custom, agg)
+      assert schema["type"] == "boolean"
+    end
+
+    test "aggregate_kind_to_schema handles unknown kind" do
+      agg = %{kind: :unknown}
+      schema = PropertyBuilders.aggregate_kind_to_schema(:unknown, agg)
+      assert schema == %{}
+    end
+
+    test "make_nullable for 3.1 with schema without type key" do
+      schema = %{"$ref" => "#/components/schemas/Foo"}
+      result = PropertyBuilders.make_nullable(schema, "3.1")
+      assert result == schema
+    end
+
+    test "type_to_schema handles non-atom non-tuple type" do
+      assert PropertyBuilders.type_to_schema("string") == %{"type" => "string"}
+    end
+  end
+
+  describe "RelationshipSchemas edge cases" do
+    alias AshOaskit.SchemaBuilder.RelationshipSchemas
+
+    test "relationship_cardinality with nil cardinality and :has_many type" do
+      rel = %{type: :has_many}
+      assert RelationshipSchemas.relationship_cardinality(rel) == :many
+    end
+
+    test "relationship_cardinality with nil cardinality and :many_to_many type" do
+      rel = %{type: :many_to_many}
+      assert RelationshipSchemas.relationship_cardinality(rel) == :many
+    end
+
+    test "relationship_cardinality with nil cardinality and :belongs_to type" do
+      rel = %{type: :belongs_to}
+      assert RelationshipSchemas.relationship_cardinality(rel) == :one
+    end
+
+    test "relationship_cardinality with explicit :one" do
+      rel = %{cardinality: :one}
+      assert RelationshipSchemas.relationship_cardinality(rel) == :one
+    end
+
+    test "relationship_cardinality with explicit :many" do
+      rel = %{cardinality: :many}
+      assert RelationshipSchemas.relationship_cardinality(rel) == :many
+    end
+  end
 end

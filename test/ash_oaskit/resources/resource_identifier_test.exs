@@ -365,6 +365,19 @@ defmodule AshOaskit.ResourceIdentifierTest do
     end
   end
 
+  describe "relationship object version-specific behavior" do
+    test "relationship object with 3.0 version has URI format links" do
+      schema =
+        ResourceIdentifier.build_relationship_object_schema("author",
+          version: "3.0",
+          cardinality: :to_one
+        )
+
+      links = schema["properties"]["links"]
+      assert links["properties"]["self"]["format"] == "uri"
+    end
+  end
+
   describe "schema structure validation" do
     test "all schemas are valid JSON Schema objects" do
       schemas = [

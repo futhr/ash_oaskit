@@ -490,6 +490,32 @@ defmodule AshOaskit.QueryParametersTest do
     end
   end
 
+  describe "all_parameters for Article resource" do
+    test "returns filter, sort, page, include, and fields params for Article" do
+      params = QueryParameters.all_parameters(AshOaskit.Test.Article, version: "3.1")
+      names = Enum.map(params, & &1["name"])
+
+      assert "filter" in names
+      assert "sort" in names
+      assert "page" in names
+      assert "include" in names
+      assert "fields" in names
+    end
+
+    test "include parameter lists relationship names for Article" do
+      params = QueryParameters.all_parameters(AshOaskit.Test.Article, version: "3.1")
+      include_param = Enum.find(params, &(&1["name"] == "include"))
+      assert include_param["description"] =~ "author"
+    end
+
+    test "fields parameter includes related resource types for Article" do
+      params = QueryParameters.all_parameters(AshOaskit.Test.Article, version: "3.1")
+      fields_param = Enum.find(params, &(&1["name"] == "fields"))
+      props = fields_param["schema"]["properties"]
+      assert Map.has_key?(props, "article")
+    end
+  end
+
   describe "coverage edge cases" do
     # Tests to cover remaining branches
 
