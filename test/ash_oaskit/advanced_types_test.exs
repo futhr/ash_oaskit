@@ -13,15 +13,11 @@ defmodule AshOaskit.AdvancedTypesTest do
 
   ## Test Categories
 
-  1. **Union Type Mapping** - Tests for anyOf schema generation
-
-  2. **Struct Type Mapping** - Tests for object schema with properties
-
-  3. **File Type Mapping** - Tests for binary file representation
-
-  4. **Duration Type Mapping** - Tests for duration enum values
-
-  5. **Custom Type Callback** - Tests for json_schema/1 support
+  - **Union Type Mapping** - Tests for anyOf schema generation
+  - **Struct Type Mapping** - Tests for object schema with properties
+  - **File Type Mapping** - Tests for binary file representation
+  - **Duration Type Mapping** - Tests for duration enum values
+  . **Custom Type Callback** - Tests for json_schema/1 support
   """
 
   use ExUnit.Case, async: true

@@ -13,15 +13,11 @@ defmodule AshOaskit.MultipartSupportTest do
 
   ## Test Categories
 
-  1. **File Detection** - Tests for identifying file type arguments
-
-  2. **Schema Generation** - Tests for multipart schema structure
-
-  3. **Request Body** - Tests for complete request body with multipart
-
-  4. **Encoding** - Tests for encoding specifications
-
-  5. **Edge Cases** - Tests for unusual scenarios
+  - **File Detection** - Tests for identifying file type arguments
+  - **Schema Generation** - Tests for multipart schema structure
+  - **Request Body** - Tests for complete request body with multipart
+  - **Encoding** - Tests for encoding specifications
+  - **Edge Cases** - Tests for unusual scenarios
   """
 
   use ExUnit.Case, async: true

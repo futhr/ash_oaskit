@@ -7,18 +7,14 @@ defmodule AshOaskit.ConfigTest do
 
   ## Test Categories
 
-  1. **Resource Configuration** - Tests for resource-level settings like
+  - **Resource Configuration** - Tests for resource-level settings like
      type, derive_filter?, derive_sort?, default_fields, includes
-
-  2. **Domain Configuration** - Tests for domain-level settings like
+  - **Domain Configuration** - Tests for domain-level settings like
      tag, prefix, group_by
-
-  3. **Action Configuration** - Tests for retrieving resource actions
-
-  4. **Attribute Configuration** - Tests for retrieving attributes and
+  - **Action Configuration** - Tests for retrieving resource actions
+  - **Attribute Configuration** - Tests for retrieving attributes and
      relationships
-
-  5. **Type Consistency** - Tests that return types are consistent
+  - **Type Consistency** - Tests that return types are consistent
   """
 
   use ExUnit.Case, async: true
@@ -399,7 +395,7 @@ defmodule AshOaskit.ConfigTest do
     end
   end
 
-  describe "nil type fallback path (line 89)" do
+  describe "nil type fallback path" do
     # Tests to cover the nil -> default_type(resource) branch
 
     test "resource_type returns default when json_api type is nil" do

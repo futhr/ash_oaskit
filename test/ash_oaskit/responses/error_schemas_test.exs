@@ -13,15 +13,11 @@ defmodule AshOaskit.ErrorSchemasTest do
 
   ## Test Categories
 
-  1. **Error Object Schema** - Tests for single error object structure
-
-  2. **Error Response Schema** - Tests for errors array envelope
-
-  3. **Status Code Responses** - Tests for specific HTTP status codes
-
-  4. **Operation Responses** - Tests for CRUD operation error sets
-
-  5. **Component Integration** - Tests for adding to components
+  - **Error Object Schema** - Tests for single error object structure
+  - **Error Response Schema** - Tests for errors array envelope
+  - **Status Code Responses** - Tests for specific HTTP status codes
+  - **Operation Responses** - Tests for CRUD operation error sets
+  - **Component Integration** - Tests for adding to components
   """
 
   use ExUnit.Case, async: true
