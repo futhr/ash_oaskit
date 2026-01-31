@@ -23,7 +23,7 @@ defmodule AshOaskit.TypeMapperTest do
        │
        ▼
   ┌─────────────┐
-  │normalize_type│ ← Handles atoms, modules, tuples
+  │normalize_type ← Handles atoms, modules, tuples
   └──────┬──────┘
          │
          ▼
@@ -875,6 +875,115 @@ defmodule AshOaskit.TypeMapperTest do
       attr = %{type: {:foo, :bar, :baz}, allow_nil?: false}
       result = TypeMapper.to_json_schema_31(attr)
       assert result["type"] == "string"
+    end
+  end
+
+  describe "number constraint parsing" do
+    test "handles string integer minimum constraint" do
+      attr = %{type: :integer, allow_nil?: false, constraints: [min: "10"]}
+      result = TypeMapper.to_json_schema_31(attr)
+      assert result["minimum"] == 10
+    end
+
+    test "handles string float minimum constraint" do
+      attr = %{type: :float, allow_nil?: false, constraints: [min: "3.14"]}
+      result = TypeMapper.to_json_schema_31(attr)
+      assert result["minimum"] == 3.14
+    end
+
+    test "handles unparseable string constraint" do
+      attr = %{type: :integer, allow_nil?: false, constraints: [min: "not_a_number"]}
+      result = TypeMapper.to_json_schema_31(attr)
+      assert result["minimum"] == "not_a_number"
+    end
+
+    test "handles Decimal constraint" do
+      attr = %{type: :decimal, allow_nil?: false, constraints: [min: Decimal.new("1.5")]}
+      result = TypeMapper.to_json_schema_31(attr)
+      assert result["minimum"] == 1.5
+    end
+
+    test "handles non-numeric constraint value" do
+      attr = %{type: :integer, allow_nil?: false, constraints: [min: :infinity]}
+      result = TypeMapper.to_json_schema_31(attr)
+      assert result["minimum"] == :infinity
+    end
+  end
+
+  describe "normalize_type fallback" do
+    test "non-atom non-tuple type falls back to string" do
+      attr = %{type: 42, allow_nil?: false}
+      result = TypeMapper.to_json_schema_31(attr)
+      assert result["type"] == "string"
+    end
+  end
+
+  describe "struct type handling" do
+    test "handles loaded struct module" do
+      attr = %{type: {:struct, URI}, allow_nil?: false}
+      result = TypeMapper.to_json_schema_31(attr)
+      assert result["type"] == "object"
+      assert is_map(result["properties"])
+    end
+
+    test "handles non-loaded struct module" do
+      attr = %{type: {:struct, NonExistent.Module}, allow_nil?: false}
+      result = TypeMapper.to_json_schema_31(attr)
+      assert result["type"] == "object"
+    end
+
+    test "handles non-atom struct argument" do
+      attr = %{type: {:struct, "not_a_module"}, allow_nil?: false}
+      result = TypeMapper.to_json_schema_31(attr)
+      assert result["type"] == "object"
+    end
+  end
+
+  describe "default value handling" do
+    test "skips function defaults" do
+      attr = %{type: :string, allow_nil?: false, default: &String.upcase/1}
+      result = TypeMapper.to_json_schema_31(attr)
+      refute Map.has_key?(result, "default")
+    end
+
+    test "skips nil defaults" do
+      attr = %{type: :string, allow_nil?: false, default: nil}
+      result = TypeMapper.to_json_schema_31(attr)
+      refute Map.has_key?(result, "default")
+    end
+
+    test "includes static defaults" do
+      attr = %{type: :string, allow_nil?: false, default: "hello"}
+      result = TypeMapper.to_json_schema_31(attr)
+      assert result["default"] == "hello"
+    end
+  end
+
+  describe "custom type json_schema/1 in 3.0 mode" do
+    defmodule EmailType do
+      @moduledoc false
+      @spec json_schema(keyword()) :: map()
+      def json_schema(_opts), do: %{"type" => "string", "format" => "email"}
+    end
+
+    test "resolves custom type via json_schema/1 in 3.0 mode with nullable" do
+      attr = %{type: EmailType, allow_nil?: true}
+      result = TypeMapper.to_json_schema_30(attr)
+      assert result["format"] == "email"
+      assert result["nullable"] == true
+    end
+  end
+
+  describe "struct type introspection failure" do
+    defmodule BrokenStruct do
+      @moduledoc false
+      @spec __struct__() :: no_return()
+      def __struct__, do: raise("boom")
+    end
+
+    test "falls back to generic object schema when struct introspection fails" do
+      attr = %{type: {:struct, BrokenStruct}, allow_nil?: false}
+      assert TypeMapper.to_json_schema_31(attr) == %{"type" => "object"}
     end
   end
 end

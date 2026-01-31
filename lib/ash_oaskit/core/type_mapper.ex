@@ -392,10 +392,10 @@ defmodule AshOaskit.TypeMapper do
         Map.put(acc, "maxLength", max)
 
       {:min, min}, acc ->
-        Map.put(acc, "minimum", min)
+        Map.put(acc, "minimum", to_number(min))
 
       {:max, max}, acc ->
-        Map.put(acc, "maximum", max)
+        Map.put(acc, "maximum", to_number(max))
 
       {:match, pattern}, acc when is_struct(pattern, Regex) ->
         Map.put(acc, "pattern", Regex.source(pattern))
@@ -430,4 +430,23 @@ defmodule AshOaskit.TypeMapper do
   end
 
   defp maybe_add_default(schema, _), do: schema
+
+  # Ensures a value is a number (for minimum/maximum constraints)
+  defp to_number(value) when is_number(value), do: value
+  defp to_number(%Decimal{} = value), do: Decimal.to_float(value)
+
+  defp to_number(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {int, ""} ->
+        int
+
+      _ ->
+        case Float.parse(value) do
+          {float, ""} -> float
+          _ -> value
+        end
+    end
+  end
+
+  defp to_number(value), do: value
 end
