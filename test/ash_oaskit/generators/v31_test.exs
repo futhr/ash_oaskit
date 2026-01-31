@@ -1,4 +1,20 @@
 defmodule AshOaskit.Generators.V31Test do
+  @moduledoc """
+  Tests for the AshOaskit.Generators.V31 module.
+
+  This module tests the OpenAPI 3.1 specification generator, which produces
+  specs compliant with the 3.1.x standard featuring full JSON Schema 2020-12
+  alignment. Key differences from 3.0 include type arrays for nullable fields
+  (`"type": ["string", "null"]`) and webhooks support.
+
+  ## Test Categories
+
+  - **Basic structure** - OpenAPI version, info, servers, paths, components
+  - **Option forwarding** - Title, API version, server configuration
+  - **Nullable handling** - 3.1-style type arrays for nullable fields
+  - **Domain integration** - Generating from Ash domain configurations
+  """
+
   use ExUnit.Case, async: true
 
   alias AshOaskit.Generators.V31

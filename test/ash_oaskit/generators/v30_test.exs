@@ -1,4 +1,20 @@
 defmodule AshOaskit.Generators.V30Test do
+  @moduledoc """
+  Tests for the AshOaskit.Generators.V30 module.
+
+  This module tests the OpenAPI 3.0 specification generator, which produces
+  specs compliant with the 3.0.x standard. Key differences from 3.1 include
+  the use of `nullable: true` instead of type arrays for nullable fields,
+  and lack of JSON Schema 2020-12 features.
+
+  ## Test Categories
+
+  - **Basic structure** - OpenAPI version, info, servers, paths, components
+  - **Option forwarding** - Title, API version, server configuration
+  - **Nullable handling** - 3.0-style `nullable: true` flag
+  - **Domain integration** - Generating from Ash domain configurations
+  """
+
   use ExUnit.Case, async: true
 
   alias AshOaskit.Generators.V30
