@@ -36,7 +36,7 @@ OpenAPI 3.1 brings full alignment with JSON Schema 2020-12, enabling:
 
 This library complements AshJsonApi by reading its route configurations and generating modern OpenAPI specifications while maintaining backwards compatibility with 3.0 for teams that need it.
 
-AshOaskit is built on top of [Oaskit](https://hexdocs.pm/oaskit), a toolkit for building and manipulating OpenAPI specifications in Elixir.
+AshOaskit is built on top of [Oaskit](https://hexdocs.pm/oaskit), a toolkit for building and manipulating OpenAPI specifications in Elixir. All generated specs are normalized and validated through Oaskit's pipeline, and JSON output uses Oaskit's `SpecDumper` for proper key ordering.
 
 ## Features
 
@@ -45,6 +45,7 @@ AshOaskit provides:
 - **Automatic Schema Extraction** - Derives JSON Schema from Ash resource attributes
 - **AshJsonApi Integration** - Builds paths from configured routes
 - **Dual Version Support** - Generate 3.0 or 3.1 specs from the same codebase
+- **Spec Validation** - Validate generated specs against the OpenAPI schema via Oaskit
 - **Phoenix Controller** - Serve specs directly from your application
 - **CLI Generation** - Generate static spec files for documentation
 
@@ -134,6 +135,20 @@ AshOaskit.spec(domains: [Domain], title: "API", api_version: "1.0")
 # Version-specific shortcuts
 AshOaskit.spec_30(domains: [Domain])  # Force 3.0
 AshOaskit.spec_31(domains: [Domain])  # Force 3.1
+```
+
+### Spec Validation
+
+Generated specs can be validated against the OpenAPI schema:
+
+```elixir
+spec = AshOaskit.spec(domains: [MyApp.Blog])
+
+# Returns {:ok, %Oaskit.Spec.OpenAPI{}} or {:error, reason}
+{:ok, validated} = AshOaskit.validate(spec)
+
+# Raises on invalid specs
+validated = AshOaskit.validate!(spec)
 ```
 
 ### Type Mapping
