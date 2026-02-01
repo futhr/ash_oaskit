@@ -398,12 +398,10 @@ defmodule AshOaskit.ConfigTest do
   describe "nil type fallback path" do
     # Tests to cover the nil -> default_type(resource) branch
 
-    test "resource_type returns default when json_api type is nil" do
-      # NoTypeResource has AshJsonApi extension but no type configured
+    test "resource_type returns configured json_api type" do
       type = Config.resource_type(AshOaskit.Test.NoTypeResource)
 
-      # Should return underscored module name
-      assert type == "no_type_resource"
+      assert type == "no-type-resource"
     end
   end
 

@@ -58,7 +58,7 @@ defmodule AshOaskit.Test.Address do
     end
 
     attribute :city, :string do
-      allow_nil?(false)
+      allow_nil? false
       description("City name")
     end
 
@@ -141,17 +141,17 @@ defmodule AshOaskit.Test.Author do
     uuid_primary_key(:id)
 
     attribute :first_name, :string do
-      allow_nil?(false)
+      allow_nil? false
       description("Author's first name")
     end
 
     attribute :last_name, :string do
-      allow_nil?(false)
+      allow_nil? false
       description("Author's last name")
     end
 
     attribute :email, :string do
-      allow_nil?(false)
+      allow_nil? false
       constraints(match: ~r/^[^\s]+@[^\s]+$/)
       description("Author's email address")
     end
@@ -189,7 +189,7 @@ defmodule AshOaskit.Test.Author do
       description("Personalized greeting")
 
       argument :name, :string do
-        allow_nil?(false)
+        allow_nil? false
       end
     end
 
@@ -200,7 +200,7 @@ defmodule AshOaskit.Test.Author do
       description("Formal greeting with optional title")
 
       argument :title, :string do
-        allow_nil?(true)
+        allow_nil? true
         default(nil)
       end
     end
@@ -249,7 +249,7 @@ defmodule AshOaskit.Test.Article do
     uuid_primary_key(:id)
 
     attribute :title, :string do
-      allow_nil?(false)
+      allow_nil? false
       constraints(min_length: 1, max_length: 255)
       description("Article title")
     end
@@ -279,11 +279,13 @@ defmodule AshOaskit.Test.Article do
 
   relationships do
     belongs_to :author, AshOaskit.Test.Author do
-      allow_nil?(false)
+      public? true
+      allow_nil? false
       description("The author who wrote this article")
     end
 
     has_many :reviews, AshOaskit.Test.Review do
+      public? true
       description("Reviews of this article")
     end
 
@@ -350,6 +352,7 @@ defmodule AshOaskit.Test.Article do
     end
 
     update :update do
+      primary? true
       accept([:title, :content, :status, :word_count])
     end
 
@@ -383,7 +386,7 @@ defmodule AshOaskit.Test.Review do
     uuid_primary_key(:id)
 
     attribute :rating, :integer do
-      allow_nil?(false)
+      allow_nil? false
       constraints(min: 1, max: 5)
       description("Rating from 1 to 5 stars")
     end
@@ -394,7 +397,7 @@ defmodule AshOaskit.Test.Review do
     end
 
     attribute :reviewer_name, :string do
-      allow_nil?(false)
+      allow_nil? false
       description("Name of the reviewer")
     end
 
@@ -404,7 +407,7 @@ defmodule AshOaskit.Test.Review do
 
   relationships do
     belongs_to :article, AshOaskit.Test.Article do
-      allow_nil?(false)
+      allow_nil? false
       description("The article being reviewed")
     end
   end
@@ -439,13 +442,13 @@ defmodule AshOaskit.Test.Tag do
     uuid_primary_key(:id)
 
     attribute :name, :string do
-      allow_nil?(false)
+      allow_nil? false
       constraints(min_length: 1, max_length: 50)
       description("Tag name")
     end
 
     attribute :slug, :ci_string do
-      allow_nil?(false)
+      allow_nil? false
       description("URL-friendly tag identifier")
     end
 
@@ -496,13 +499,13 @@ defmodule AshOaskit.Test.ArticleTag do
 
   relationships do
     belongs_to :article, AshOaskit.Test.Article do
-      primary_key?(true)
-      allow_nil?(false)
+      primary_key? true
+      allow_nil? false
     end
 
     belongs_to :tag, AshOaskit.Test.Tag do
-      primary_key?(true)
-      allow_nil?(false)
+      primary_key? true
+      allow_nil? false
     end
   end
 
@@ -538,7 +541,7 @@ defmodule AshOaskit.Test.Category do
     uuid_primary_key(:id)
 
     attribute :name, :string do
-      allow_nil?(false)
+      allow_nil? false
       constraints(min_length: 1, max_length: 100)
       description("Category name")
     end
@@ -548,7 +551,7 @@ defmodule AshOaskit.Test.Category do
     end
 
     attribute :slug, :ci_string do
-      allow_nil?(false)
+      allow_nil? false
       description("URL-friendly identifier")
     end
 

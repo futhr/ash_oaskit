@@ -47,7 +47,7 @@ defmodule AshOaskit.Test.Post do
     uuid_primary_key(:id)
 
     attribute :title, :string do
-      allow_nil?(false)
+      allow_nil? false
       constraints(min_length: 1, max_length: 255)
     end
 
@@ -109,7 +109,9 @@ defmodule AshOaskit.Test.NoTypeResource do
     domain: AshOaskit.Test.EdgeCaseDomain,
     extensions: [AshJsonApi.Resource]
 
-  # Intentionally no json_api block - type will be nil, triggering default_type path
+  json_api do
+    type "no-type-resource"
+  end
 
   attributes do
     uuid_primary_key(:id)
