@@ -171,6 +171,58 @@ defmodule AshOaskit.IntegrationTest do
     end
   end
 
+  describe "Oaskit integration" do
+    test "spec passes Oaskit validation for 3.1" do
+      spec = AshOaskit.spec(domains: [AshOaskit.Test.Blog])
+      assert {:ok, %Oaskit.Spec.OpenAPI{}} = AshOaskit.validate(spec)
+    end
+
+    test "spec passes Oaskit validation for 3.0" do
+      spec = AshOaskit.spec_30(domains: [AshOaskit.Test.Blog])
+      assert {:ok, %Oaskit.Spec.OpenAPI{}} = AshOaskit.validate(spec)
+    end
+
+    test "SpecDumper produces valid JSON with proper key ordering" do
+      spec = AshOaskit.spec(domains: [AshOaskit.Test.Blog])
+      json = spec |> Oaskit.SpecDumper.to_json!(pretty: true) |> IO.iodata_to_binary()
+
+      assert is_binary(json)
+      decoded = Jason.decode!(json)
+      assert decoded["openapi"] == "3.1.0"
+      assert is_map(decoded["info"])
+      assert is_map(decoded["paths"])
+    end
+
+    test "spec roundtrips through normalize -> validate -> dump" do
+      spec = AshOaskit.spec(domains: [AshOaskit.Test.Blog])
+
+      # Validate
+      {:ok, validated} = AshOaskit.validate(spec)
+
+      # Convert back to map
+      map = AshOaskit.OpenApi.to_map(validated)
+
+      # Dump to JSON
+      json = map |> Oaskit.SpecDumper.to_json!(pretty: true) |> IO.iodata_to_binary()
+      decoded = Jason.decode!(json)
+
+      assert decoded["openapi"] == "3.1.0"
+      assert is_map(decoded["info"])
+      assert is_map(decoded["paths"])
+    end
+
+    test "multi-domain spec validates cleanly" do
+      spec =
+        AshOaskit.spec(
+          domains: [AshOaskit.Test.SimpleDomain, AshOaskit.Test.Blog],
+          title: "Multi-Domain API",
+          api_version: "1.0.0"
+        )
+
+      assert {:ok, %Oaskit.Spec.OpenAPI{}} = AshOaskit.validate(spec)
+    end
+  end
+
   # Helper to recursively find all $ref values in a map/list
   defp find_all_refs(data) when is_map(data) do
     ref = Map.get(data, "$ref")
