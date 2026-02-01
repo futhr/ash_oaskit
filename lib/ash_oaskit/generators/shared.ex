@@ -92,14 +92,6 @@ defmodule AshOaskit.Generators.Shared do
   defdelegate build_tags(domains), to: InfoBuilder
 
   @doc """
-  Adds a key-value pair to a map if the value is not nil or empty list.
-
-  Delegates to `AshOaskit.Generators.InfoBuilder.maybe_add/3`.
-  """
-  @spec maybe_add(map(), String.t(), any()) :: map()
-  defdelegate maybe_add(map, key, value), to: InfoBuilder
-
-  @doc """
   Humanizes an underscore-separated string.
 
   Delegates to `AshOaskit.Generators.PathBuilder.humanize/1`.

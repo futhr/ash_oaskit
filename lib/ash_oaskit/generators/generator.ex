@@ -92,17 +92,16 @@ defmodule AshOaskit.Generators.Generator do
     version = Keyword.fetch!(opts, :version)
     openapi_version = if version == "3.0", do: "3.0.0", else: "3.1.0"
 
-    tags = build_all_tags(domains, opts)
-
     %{
-      "openapi" => openapi_version,
-      "info" => InfoBuilder.build_info(opts),
-      "servers" => InfoBuilder.build_servers(opts),
-      "paths" => PathBuilder.build_paths(domains, opts),
-      "components" => build_components(domains, opts)
+      openapi: openapi_version,
+      info: InfoBuilder.build_info(opts),
+      servers: InfoBuilder.build_servers(opts),
+      paths: PathBuilder.build_paths(domains, opts),
+      components: build_components(domains, opts),
+      tags: build_all_tags(domains, opts),
+      security: Keyword.get(opts, :security)
     }
-    |> InfoBuilder.maybe_add("tags", tags)
-    |> InfoBuilder.maybe_add("security", Keyword.get(opts, :security))
+    |> reject_nil_values()
     |> apply_modify_hook(opts)
   end
 
@@ -131,7 +130,7 @@ defmodule AshOaskit.Generators.Generator do
       |> Enum.flat_map(&build_resource_schemas(&1, version))
       |> Map.new()
 
-    %{"schemas" => schemas}
+    %{schemas: schemas}
   end
 
   # Builds all tags from domains and optionally from router
@@ -148,7 +147,7 @@ defmodule AshOaskit.Generators.Generator do
 
     case merged_tags do
       [] -> nil
-      tags -> Enum.uniq_by(tags, & &1["name"])
+      tags -> Enum.uniq_by(tags, &(&1[:name] || &1["name"]))
     end
   end
 
@@ -184,19 +183,19 @@ defmodule AshOaskit.Generators.Generator do
     attributes = get_resource_attributes(resource)
 
     attributes_schema = %{
-      "type" => "object",
-      "properties" => build_attribute_properties(attributes, version)
+      type: :object,
+      properties: build_attribute_properties(attributes, version)
     }
 
     response_schema = %{
-      "type" => "object",
-      "properties" => %{
-        "data" => %{
-          "type" => "object",
-          "properties" => %{
-            "id" => %{"type" => "string"},
-            "type" => %{"type" => "string"},
-            "attributes" => %{"$ref" => "#/components/schemas/#{schema_name}Attributes"}
+      type: :object,
+      properties: %{
+        data: %{
+          type: :object,
+          properties: %{
+            id: %{type: :string},
+            type: %{type: :string},
+            attributes: %{"$ref" => "#/components/schemas/#{schema_name}Attributes"}
           }
         }
       }
@@ -228,6 +227,13 @@ defmodule AshOaskit.Generators.Generator do
     |> Enum.map(fn attr ->
       {to_string(attr.name), type_mapper_fn.(attr)}
     end)
+    |> Map.new()
+  end
+
+  # Removes nil values from a map
+  defp reject_nil_values(map) do
+    map
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
     |> Map.new()
   end
 end

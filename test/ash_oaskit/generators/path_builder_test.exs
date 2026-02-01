@@ -168,9 +168,9 @@ defmodule AshOaskit.Generators.PathBuilderTest do
       index_route = Enum.find(routes, &(&1.type == :index))
       operation = PathBuilder.build_operation(index_route, version: "3.1")
 
-      assert String.ends_with?(operation["operationId"], "_list")
-      assert is_list(operation["tags"])
-      assert is_list(operation["parameters"])
+      assert String.ends_with?(operation[:operationId], "_list")
+      assert is_list(operation[:tags])
+      assert is_list(operation[:parameters])
     end
 
     test "get route does not have _list suffix" do
@@ -178,7 +178,7 @@ defmodule AshOaskit.Generators.PathBuilderTest do
       get_route = Enum.find(routes, &(&1.type == :get))
       operation = PathBuilder.build_operation(get_route, version: "3.1")
 
-      refute String.ends_with?(operation["operationId"], "_list")
+      refute String.ends_with?(operation[:operationId], "_list")
     end
 
     test "post route has request body and no parameters" do
@@ -186,9 +186,9 @@ defmodule AshOaskit.Generators.PathBuilderTest do
       post_route = Enum.find(routes, &(&1.type == :post))
       operation = PathBuilder.build_operation(post_route, version: "3.1")
 
-      assert operation["requestBody"]["required"] == true
-      assert operation["requestBody"]["content"]["application/vnd.api+json"]
-      refute Map.has_key?(operation, "parameters")
+      assert operation[:requestBody][:required] == true
+      assert operation[:requestBody][:content]["application/vnd.api+json"]
+      refute Map.has_key?(operation, :parameters)
     end
 
     test "patch route has request body" do
@@ -196,7 +196,7 @@ defmodule AshOaskit.Generators.PathBuilderTest do
       patch_route = Enum.find(routes, &(&1.type == :patch))
       operation = PathBuilder.build_operation(patch_route, version: "3.1")
 
-      assert operation["requestBody"]["required"] == true
+      assert operation[:requestBody][:required] == true
     end
 
     test "delete route has 204 response" do
@@ -204,7 +204,7 @@ defmodule AshOaskit.Generators.PathBuilderTest do
       delete_route = Enum.find(routes, &(&1.type == :delete))
       operation = PathBuilder.build_operation(delete_route, version: "3.1")
 
-      assert operation["responses"]["204"]["description"] == "Deleted successfully"
+      assert operation[:responses]["204"][:description] == "Deleted successfully"
     end
 
     test "get route includes path parameters" do
@@ -212,9 +212,9 @@ defmodule AshOaskit.Generators.PathBuilderTest do
       get_route = Enum.find(routes, &(&1.type == :get))
       operation = PathBuilder.build_operation(get_route, version: "3.1")
 
-      path_params = Enum.filter(operation["parameters"], &(&1["in"] == "path"))
+      path_params = Enum.filter(operation[:parameters], &(&1[:in] == :path))
       assert path_params != []
-      assert Enum.all?(path_params, &(&1["required"] == true))
+      assert Enum.all?(path_params, &(&1[:required] == true))
     end
 
     test "index route includes query parameters (filter, sort, page)" do
@@ -222,7 +222,7 @@ defmodule AshOaskit.Generators.PathBuilderTest do
       index_route = Enum.find(routes, &(&1.type == :index))
       operation = PathBuilder.build_operation(index_route, version: "3.1")
 
-      param_names = Enum.map(operation["parameters"], & &1["name"])
+      param_names = Enum.map(operation[:parameters], &(&1[:name] || &1["name"]))
       assert "filter" in param_names
       assert "sort" in param_names
       assert "page" in param_names
@@ -233,8 +233,10 @@ defmodule AshOaskit.Generators.PathBuilderTest do
 
       for route <- routes do
         operation = PathBuilder.build_operation(route, version: "3.1")
-        assert is_binary(operation["operationId"])
-        assert is_map(operation["responses"])
+        operation_id = operation[:operationId] || operation["operationId"]
+        responses = operation[:responses] || operation["responses"]
+        assert is_binary(operation_id)
+        assert is_map(responses)
       end
     end
 
@@ -250,7 +252,8 @@ defmodule AshOaskit.Generators.PathBuilderTest do
 
       for route <- rel_routes do
         operation = PathBuilder.build_operation(route, version: "3.1")
-        assert is_binary(operation["operationId"])
+        operation_id = operation[:operationId] || operation["operationId"]
+        assert is_binary(operation_id)
       end
     end
   end
@@ -300,10 +303,10 @@ defmodule AshOaskit.Generators.PathBuilderTest do
       get_route = Enum.find(routes, &(&1.type == :get))
       operation = PathBuilder.build_operation(get_route, version: "3.1")
 
-      assert Map.has_key?(operation["responses"], "400")
-      assert Map.has_key?(operation["responses"], "401")
-      assert Map.has_key?(operation["responses"], "404")
-      assert Map.has_key?(operation["responses"], "422")
+      assert Map.has_key?(operation[:responses], "400")
+      assert Map.has_key?(operation[:responses], "401")
+      assert Map.has_key?(operation[:responses], "404")
+      assert Map.has_key?(operation[:responses], "422")
     end
   end
 end

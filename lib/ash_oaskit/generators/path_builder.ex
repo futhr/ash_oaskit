@@ -53,7 +53,6 @@ defmodule AshOaskit.Generators.PathBuilder do
   """
 
   alias AshOaskit.FilterBuilder
-  alias AshOaskit.Generators.InfoBuilder
   alias AshOaskit.PhoenixIntrospection
   alias AshOaskit.RelationshipRoutes
   alias AshOaskit.SortBuilder
@@ -130,14 +129,14 @@ defmodule AshOaskit.Generators.PathBuilder do
     if RelationshipRoutes.relationship_route?(route) do
       RelationshipRoutes.build_operation(route, opts)
     else
-      %{
-        "operationId" => build_operation_id(route),
-        "summary" => route.name |> to_string() |> humanize(),
-        "responses" => build_responses(route)
-      }
-      |> InfoBuilder.maybe_add("tags", build_operation_tags(route))
-      |> InfoBuilder.maybe_add("parameters", build_parameters(route, version))
-      |> InfoBuilder.maybe_add("requestBody", build_request_body(route))
+      reject_nil_values(%{
+        operationId: build_operation_id(route),
+        summary: route.name |> to_string() |> humanize(),
+        responses: build_responses(route),
+        tags: build_operation_tags(route),
+        parameters: build_parameters(route, version),
+        requestBody: build_request_body(route)
+      })
     end
   end
 
@@ -308,10 +307,10 @@ defmodule AshOaskit.Generators.PathBuilder do
       |> extract_path_params()
       |> Enum.map(fn param ->
         %{
-          "name" => param,
-          "in" => "path",
-          "required" => true,
-          "schema" => %{"type" => "string"}
+          name: param,
+          in: :path,
+          required: true,
+          schema: %{type: :string}
         }
       end)
 
@@ -349,28 +348,28 @@ defmodule AshOaskit.Generators.PathBuilder do
 
     base_params = [
       %{
-        "name" => "page",
-        "in" => "query",
-        "required" => false,
-        "schema" => %{
-          "type" => "object",
-          "properties" => %{
-            "offset" => %{"type" => "integer", "minimum" => 0},
-            "limit" => %{"type" => "integer", "minimum" => 1},
-            "after" => %{"type" => "string"},
-            "before" => %{"type" => "string"},
-            "count" => %{"type" => "boolean"}
+        name: "page",
+        in: :query,
+        required: false,
+        schema: %{
+          type: :object,
+          properties: %{
+            offset: %{type: :integer, minimum: 0},
+            limit: %{type: :integer, minimum: 1},
+            after: %{type: :string},
+            before: %{type: :string},
+            count: %{type: :boolean}
           }
         },
-        "style" => "deepObject",
-        "description" => "Pagination parameters"
+        style: :deepObject,
+        description: "Pagination parameters"
       },
       %{
-        "name" => "include",
-        "in" => "query",
-        "required" => false,
-        "schema" => %{"type" => "string"},
-        "description" => "Comma-separated list of relationship paths to include"
+        name: "include",
+        in: :query,
+        required: false,
+        schema: %{type: :string},
+        description: "Comma-separated list of relationship paths to include"
       }
     ]
 
@@ -387,17 +386,17 @@ defmodule AshOaskit.Generators.PathBuilder do
         |> List.last()
 
       %{
-        "required" => true,
-        "content" => %{
+        required: true,
+        content: %{
           "application/vnd.api+json" => %{
-            "schema" => %{
-              "type" => "object",
-              "properties" => %{
-                "data" => %{
-                  "type" => "object",
-                  "properties" => %{
-                    "type" => %{"type" => "string"},
-                    "attributes" => %{
+            schema: %{
+              type: :object,
+              properties: %{
+                data: %{
+                  type: :object,
+                  properties: %{
+                    type: %{type: :string},
+                    attributes: %{
                       "$ref" => "#/components/schemas/#{schema_name}Attributes"
                     }
                   }
@@ -428,13 +427,13 @@ defmodule AshOaskit.Generators.PathBuilder do
 
     success_response =
       if route.type == :delete do
-        %{"description" => "Deleted successfully"}
+        %{description: "Deleted successfully"}
       else
         %{
-          "description" => "Successful response",
-          "content" => %{
+          description: "Successful response",
+          content: %{
             "application/vnd.api+json" => %{
-              "schema" => %{
+              schema: %{
                 "$ref" => "#/components/schemas/#{schema_name}Response"
               }
             }
@@ -444,10 +443,17 @@ defmodule AshOaskit.Generators.PathBuilder do
 
     %{
       success_code => success_response,
-      "400" => %{"description" => "Bad request"},
-      "401" => %{"description" => "Unauthorized"},
-      "404" => %{"description" => "Not found"},
-      "422" => %{"description" => "Unprocessable entity"}
+      "400" => %{description: "Bad request"},
+      "401" => %{description: "Unauthorized"},
+      "404" => %{description: "Not found"},
+      "422" => %{description: "Unprocessable entity"}
     }
+  end
+
+  # Removes nil values from a map
+  defp reject_nil_values(map) do
+    map
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Map.new()
   end
 end

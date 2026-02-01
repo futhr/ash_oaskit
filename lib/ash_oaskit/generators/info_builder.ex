@@ -69,14 +69,14 @@ defmodule AshOaskit.Generators.InfoBuilder do
   """
   @spec build_info(opts()) :: map()
   def build_info(opts) do
-    %{
-      "title" => Keyword.get(opts, :title, default_title()),
-      "version" => Keyword.get(opts, :api_version, default_api_version())
-    }
-    |> maybe_add("description", Keyword.get(opts, :description))
-    |> maybe_add("termsOfService", Keyword.get(opts, :terms_of_service))
-    |> maybe_add("contact", Keyword.get(opts, :contact))
-    |> maybe_add("license", Keyword.get(opts, :license))
+    reject_nil_values(%{
+      title: Keyword.get(opts, :title, default_title()),
+      version: Keyword.get(opts, :api_version, default_api_version()),
+      description: Keyword.get(opts, :description),
+      termsOfService: Keyword.get(opts, :terms_of_service),
+      contact: Keyword.get(opts, :contact),
+      license: Keyword.get(opts, :license)
+    })
   end
 
   @doc """
@@ -104,7 +104,7 @@ defmodule AshOaskit.Generators.InfoBuilder do
   @spec build_servers(opts()) :: list(map())
   def build_servers(opts) do
     case Keyword.get(opts, :servers) do
-      nil -> [%{"url" => "/"}]
+      nil -> [%{url: "/"}]
       servers when is_list(servers) -> Enum.map(servers, &normalize_server/1)
     end
   end
@@ -138,31 +138,20 @@ defmodule AshOaskit.Generators.InfoBuilder do
         |> Module.split()
         |> List.last()
 
-      %{"name" => name}
+      %{name: name}
     end)
-    |> Enum.uniq_by(& &1["name"])
+    |> Enum.uniq_by(& &1[:name])
   end
 
-  @doc """
-  Adds a key-value pair to a map if the value is not nil or empty list.
-
-  ## Parameters
-
-  - `map` - The map to potentially add to
-  - `key` - The key to add
-  - `value` - The value to add (ignored if nil or empty list)
-
-  ## Returns
-
-  The map, possibly with the new key-value pair added.
-  """
-  @spec maybe_add(map(), String.t(), any()) :: map()
-  def maybe_add(map, _key, nil), do: map
-  def maybe_add(map, _key, []), do: map
-  def maybe_add(map, key, value), do: Map.put(map, key, value)
+  # Removes nil values from a map
+  defp reject_nil_values(map) do
+    map
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Map.new()
+  end
 
   # Normalizes a server specification to a server object
-  defp normalize_server(url) when is_binary(url), do: %{"url" => url}
+  defp normalize_server(url) when is_binary(url), do: %{url: url}
   defp normalize_server(server) when is_map(server), do: server
 
   # Gets resources from a domain

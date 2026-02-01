@@ -54,7 +54,7 @@ defmodule AshOaskit.Generators.GeneratorTest do
           modify_open_api: :invalid
         )
 
-      assert spec["openapi"] =~ "3.1"
+      assert spec[:openapi] =~ "3.1"
     end
 
     test "generates without hook" do
@@ -64,7 +64,7 @@ defmodule AshOaskit.Generators.GeneratorTest do
           title: "Test"
         )
 
-      assert spec["openapi"] =~ "3.1"
+      assert spec[:openapi] =~ "3.1"
     end
   end
 
@@ -101,7 +101,7 @@ defmodule AshOaskit.Generators.GeneratorTest do
           router: FakeRouter
         )
 
-      tag_names = Enum.map(spec["tags"] || [], & &1["name"])
+      tag_names = Enum.map(spec[:tags] || [], &(&1[:name] || &1["name"]))
       assert "FakeTag" in tag_names
     end
   end
@@ -109,14 +109,14 @@ defmodule AshOaskit.Generators.GeneratorTest do
   describe "build_components/2" do
     test "builds schemas for 3.0 version" do
       components = Generator.build_components([AshOaskit.Test.Blog], version: "3.0")
-      schemas = components["schemas"]
+      schemas = components[:schemas]
       assert is_map(schemas)
       assert map_size(schemas) > 0
     end
 
     test "builds schemas for 3.1 version" do
       components = Generator.build_components([AshOaskit.Test.Blog], version: "3.1")
-      schemas = components["schemas"]
+      schemas = components[:schemas]
       assert is_map(schemas)
       assert map_size(schemas) > 0
     end
