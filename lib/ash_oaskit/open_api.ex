@@ -71,6 +71,9 @@ defmodule AshOaskit.OpenApi do
   @doc """
   Generate an OpenAPI specification for the given domains.
 
+  The generated spec is normalized through `Oaskit.normalize_spec!/1` to ensure
+  canonical form with proper key ordering and structure.
+
   ## Options
 
     * `:domains` - List of Ash domains to include (required)
@@ -104,25 +107,28 @@ defmodule AshOaskit.OpenApi do
       raise ArgumentError, "at least one domain must be specified via :domains option"
     end
 
-    case version do
-      v when v in ["3.1", "3.1.0"] ->
-        V31.generate(domains, opts)
+    raw_spec =
+      case version do
+        v when v in ["3.1", "3.1.0"] ->
+          V31.generate(domains, opts)
 
-      v when v in ["3.0", "3.0.0"] ->
-        V30.generate(domains, opts)
+        v when v in ["3.0", "3.0.0"] ->
+          V30.generate(domains, opts)
 
-      other ->
-        raise ArgumentError, """
-        Unsupported OpenAPI version: #{inspect(other)}
+        other ->
+          raise ArgumentError, """
+          Unsupported OpenAPI version: #{inspect(other)}
 
-        Supported versions:
-          - "3.0" or "3.0.0" for OpenAPI 3.0
-          - "3.1" or "3.1.0" for OpenAPI 3.1 (default)
+          Supported versions:
+            - "3.0" or "3.0.0" for OpenAPI 3.0
+            - "3.1" or "3.1.0" for OpenAPI 3.1 (default)
 
-        Example:
-          AshOaskit.spec(domains: [MyDomain], version: "3.1")
-        """
-    end
+          Example:
+            AshOaskit.spec(domains: [MyDomain], version: "3.1")
+          """
+      end
+
+    Oaskit.normalize_spec!(raw_spec)
   end
 
   @doc """
@@ -150,16 +156,52 @@ defmodule AshOaskit.OpenApi do
   end
 
   @doc """
+  Validate an OpenAPI specification through Oaskit.
+
+  Returns `{:ok, %Oaskit.Spec.OpenAPI{}}` on success or `{:error, error}` on failure.
+  The spec should already be normalized (as returned by `spec/1`).
+
+  ## Examples
+
+      iex> spec = AshOaskit.OpenApi.spec(domains: [AshOaskit.Test.Blog])
+      ...> {:ok, validated} = AshOaskit.OpenApi.validate(spec)
+      ...> validated.__struct__
+      Oaskit.Spec.OpenAPI
+
+  """
+  @spec validate(map()) :: {:ok, struct()} | {:error, term()}
+  def validate(spec) when is_map(spec) do
+    Oaskit.SpecValidator.validate(spec)
+  end
+
+  @doc """
+  Validate an OpenAPI specification through Oaskit.
+
+  Returns `%Oaskit.Spec.OpenAPI{}` on success or raises on failure.
+  The spec should already be normalized (as returned by `spec/1`).
+
+  ## Examples
+
+      iex> spec = AshOaskit.OpenApi.spec(domains: [AshOaskit.Test.Blog])
+      ...> validated = AshOaskit.OpenApi.validate!(spec)
+      ...> validated.__struct__
+      Oaskit.Spec.OpenAPI
+
+  """
+  @spec validate!(map()) :: struct()
+  def validate!(spec) when is_map(spec) do
+    Oaskit.SpecValidator.validate!(spec)
+  end
+
+  @doc """
   Convert a spec to a JSON-encodable map.
 
-  This handles the differences between OpenApiSpex structs and oaskit structs.
+  Handles Oaskit structs by normalizing through Oaskit and encoding via
+  `Oaskit.SpecDumper` to produce a plain map.
   """
   @spec to_map(map()) :: map()
   def to_map(spec) when is_struct(spec) do
-    # Both OpenApiSpex and oaskit implement Jason.Encoder
-    spec
-    |> Jason.encode!()
-    |> Jason.decode!()
+    Oaskit.normalize_spec!(spec)
   end
 
   def to_map(spec) when is_map(spec), do: spec

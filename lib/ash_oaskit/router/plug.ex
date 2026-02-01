@@ -94,7 +94,7 @@ defmodule AshOaskit.Router.Plug do
   defp send_spec(conn, spec, :json) do
     conn
     |> put_resp_content_type("application/json")
-    |> send_resp(200, Jason.encode!(spec, pretty: true))
+    |> send_resp(200, Oaskit.SpecDumper.to_json!(spec, pretty: true))
   end
 
   defp send_spec(conn, spec, :yaml) do

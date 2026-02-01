@@ -64,11 +64,8 @@ defmodule AshOaskit.MixProject do
       {:ash, "~> 3.0"},
       {:spark, "~> 2.0"},
 
-      # OpenAPI 3.1 generation
+      # OpenAPI spec normalization, validation, and rendering
       {:oaskit, "~> 0.11"},
-
-      # OpenAPI 3.0 generation (backwards compatibility)
-      {:open_api_spex, "~> 3.16"},
 
       # AshJsonApi integration (optional)
       {:ash_json_api, "~> 1.0", optional: true},

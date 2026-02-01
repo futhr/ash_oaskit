@@ -290,4 +290,30 @@ defmodule AshOaskit do
   See `spec/1` for full options documentation.
   """
   defdelegate spec_31(opts), to: OpenApi
+
+  @doc """
+  Validate an OpenAPI specification through Oaskit.
+
+  Returns `{:ok, %Oaskit.Spec.OpenAPI{}}` on success or `{:error, error}` on failure.
+
+  ## Examples
+
+      spec = AshOaskit.spec(domains: [MyApp.Blog])
+      {:ok, validated} = AshOaskit.validate(spec)
+
+  """
+  defdelegate validate(spec), to: OpenApi
+
+  @doc """
+  Validate an OpenAPI specification through Oaskit.
+
+  Returns `%Oaskit.Spec.OpenAPI{}` on success or raises on failure.
+
+  ## Examples
+
+      spec = AshOaskit.spec(domains: [MyApp.Blog])
+      validated = AshOaskit.validate!(spec)
+
+  """
+  defdelegate validate!(spec), to: OpenApi
 end

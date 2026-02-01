@@ -99,10 +99,8 @@ defmodule AshOaskit.Controller do
   end
 
   defp json_response(conn, spec) do
-    json = Jason.encode!(spec, pretty: true)
-
     conn
     |> put_resp_content_type("application/json")
-    |> send_resp(200, json)
+    |> send_resp(200, Oaskit.SpecDumper.to_json!(spec, pretty: true))
   end
 end

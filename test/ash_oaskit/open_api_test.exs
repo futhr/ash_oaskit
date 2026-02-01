@@ -112,19 +112,40 @@ defmodule AshOaskit.OpenApiTest do
     end
 
     test "converts struct to map via JSON roundtrip" do
-      # Use OpenApiSpex.OpenApi struct which already implements Jason.Encoder
-      input = %OpenApiSpex.OpenApi{
-        openapi: "3.1.0",
-        info: %OpenApiSpex.Info{title: "Test API", version: "1.0.0"},
-        paths: %{}
-      }
+      # Generate a spec and validate it to get an Oaskit struct
+      spec = OpenApi.spec(domains: [@test_domain])
+      {:ok, validated} = Oaskit.SpecValidator.validate(spec)
 
-      result = OpenApi.to_map(input)
+      result = OpenApi.to_map(validated)
 
       assert is_map(result)
       refute is_struct(result)
       assert result["openapi"] == "3.1.0"
-      assert result["info"]["title"] == "Test API"
+      assert is_binary(result["info"]["title"])
+    end
+  end
+
+  describe "validate/1" do
+    test "returns ok tuple for valid spec" do
+      spec = OpenApi.spec(domains: [@test_domain])
+      assert {:ok, %Oaskit.Spec.OpenAPI{}} = OpenApi.validate(spec)
+    end
+
+    test "returns error tuple for invalid spec" do
+      assert {:error, _} = OpenApi.validate(%{"invalid" => true})
+    end
+  end
+
+  describe "validate!/1" do
+    test "returns struct for valid spec" do
+      spec = OpenApi.spec(domains: [@test_domain])
+      assert %Oaskit.Spec.OpenAPI{} = OpenApi.validate!(spec)
+    end
+
+    test "raises for invalid spec" do
+      assert_raise Oaskit.SpecValidator.Error, fn ->
+        OpenApi.validate!(%{"openapi" => "3.1.0", "info" => %{}, "paths" => %{}})
+      end
     end
   end
 end

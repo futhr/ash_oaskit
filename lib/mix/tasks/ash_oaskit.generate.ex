@@ -106,8 +106,7 @@ defmodule Mix.Tasks.AshOaskit.Generate do
     "openapi-#{version}.#{ext}"
   end
 
-  defp encode_json(spec, true), do: Jason.encode!(spec, pretty: true)
-  defp encode_json(spec, false), do: Jason.encode!(spec)
+  defp encode_json(spec, pretty), do: Oaskit.SpecDumper.to_json!(spec, pretty: pretty)
 
   defp encode_yaml(spec) do
     if Code.ensure_loaded?(YamlElixir.Sigil) do
