@@ -18,13 +18,13 @@ defmodule AshOaskit.MultipartSupport do
   `application/vnd.api+json` and `multipart/form-data` content types:
 
       %{
-        "requestBody" => %{
-          "content" => %{
+        requestBody: %{
+          content: %{
             "application/vnd.api+json" => %{
-              "schema" => json_schema
+              schema: json_schema
             },
             "multipart/form-data" => %{
-              "schema" => multipart_schema
+              schema: multipart_schema
             }
           }
         }
@@ -35,16 +35,16 @@ defmodule AshOaskit.MultipartSupport do
   The multipart schema uses standard OpenAPI binary format:
 
       %{
-        "type" => "object",
-        "properties" => %{
-          "file" => %{
-            "type" => "string",
-            "format" => "binary",
-            "description" => "The file to upload"
+        type: :object,
+        properties: %{
+          file: %{
+            type: :string,
+            format: :binary,
+            description: "The file to upload"
           },
-          "data" => %{
-            "type" => "object",
-            "description" => "JSON:API resource data"
+          data: %{
+            type: :object,
+            description: "JSON:API resource data"
           }
         }
       }
@@ -142,8 +142,8 @@ defmodule AshOaskit.MultipartSupport do
 
       iex> MultipartSupport.build_request_body(upload_action, MyApp.User, [])
       %{
-        "required" => true,
-        "content" => %{
+        required: true,
+        content: %{
           "application/vnd.api+json" => %{...},
           "multipart/form-data" => %{...}
         }
@@ -155,13 +155,13 @@ defmodule AshOaskit.MultipartSupport do
     schema_name = resource |> Module.split() |> List.last()
 
     json_schema = %{
-      "type" => "object",
-      "properties" => %{
-        "data" => %{
-          "type" => "object",
-          "properties" => %{
-            "type" => %{"type" => "string"},
-            "attributes" => %{
+      type: :object,
+      properties: %{
+        data: %{
+          type: :object,
+          properties: %{
+            type: %{type: :string},
+            attributes: %{
               "$ref" => "#/components/schemas/#{schema_name}Attributes"
             }
           }
@@ -171,22 +171,22 @@ defmodule AshOaskit.MultipartSupport do
 
     content = %{
       "application/vnd.api+json" => %{
-        "schema" => json_schema
+        schema: json_schema
       }
     }
 
     content =
       if has_file_upload?(action) do
         Map.put(content, "multipart/form-data", %{
-          "schema" => build_multipart_schema(action, opts)
+          schema: build_multipart_schema(action, opts)
         })
       else
         content
       end
 
     %{
-      "required" => true,
-      "content" => content
+      required: true,
+      content: content
     }
   end
 
@@ -209,10 +209,10 @@ defmodule AshOaskit.MultipartSupport do
 
       iex> MultipartSupport.build_multipart_schema(upload_action, [])
       %{
-        "type" => "object",
-        "properties" => %{
-          "file" => %{"type" => "string", "format" => "binary"},
-          "data" => %{"type" => "object"}
+        type: :object,
+        properties: %{
+          file: %{type: :string, format: :binary},
+          data: %{type: :object}
         }
       }
 
@@ -226,7 +226,7 @@ defmodule AshOaskit.MultipartSupport do
     file_properties =
       file_args
       |> Enum.map(fn arg ->
-        {to_string(arg.name), build_file_property(arg)}
+        {arg.name, build_file_property(arg)}
       end)
       |> Enum.into(%{})
 
@@ -234,7 +234,7 @@ defmodule AshOaskit.MultipartSupport do
     data_properties =
       non_file_args
       |> Enum.map(fn arg ->
-        {to_string(arg.name), %{"type" => "string"}}
+        {arg.name, %{type: :string}}
       end)
       |> Enum.into(%{})
 
@@ -242,9 +242,9 @@ defmodule AshOaskit.MultipartSupport do
     properties =
       file_properties
       |> Map.merge(%{
-        "data" => %{
-          "type" => "string",
-          "description" => "JSON:API resource data (as JSON string in multipart)"
+        data: %{
+          type: :string,
+          description: "JSON:API resource data (as JSON string in multipart)"
         }
       })
       |> Map.merge(data_properties)
@@ -256,12 +256,12 @@ defmodule AshOaskit.MultipartSupport do
       |> Enum.map(fn arg -> to_string(arg.name) end)
 
     schema = %{
-      "type" => "object",
-      "properties" => properties
+      type: :object,
+      properties: properties
     }
 
     if required != [] do
-      Map.put(schema, "required", required)
+      Map.put(schema, :required, required)
     else
       schema
     end
@@ -285,8 +285,8 @@ defmodule AshOaskit.MultipartSupport do
 
       iex> MultipartSupport.build_encoding(upload_action)
       %{
-        "avatar" => %{"contentType" => "application/octet-stream"},
-        "data" => %{"contentType" => "application/json"}
+        "avatar" => %{contentType: "application/octet-stream"},
+        "data" => %{contentType: "application/json"}
       }
 
   """
@@ -297,12 +297,12 @@ defmodule AshOaskit.MultipartSupport do
     file_encodings =
       file_args
       |> Enum.map(fn arg ->
-        {to_string(arg.name), %{"contentType" => "application/octet-stream"}}
+        {to_string(arg.name), %{contentType: "application/octet-stream"}}
       end)
       |> Enum.into(%{})
 
     # Add encoding for JSON data
-    Map.put(file_encodings, "data", %{"contentType" => "application/json"})
+    Map.put(file_encodings, "data", %{contentType: "application/json"})
   end
 
   @doc """
@@ -324,16 +324,16 @@ defmodule AshOaskit.MultipartSupport do
 
       iex> MultipartSupport.build_multipart_content(upload_action, [])
       %{
-        "schema" => %{...},
-        "encoding" => %{...}
+        schema: %{...},
+        encoding: %{...}
       }
 
   """
   @spec build_multipart_content(map() | struct(), keyword()) :: map()
   def build_multipart_content(action, opts) do
     %{
-      "schema" => build_multipart_schema(action, opts),
-      "encoding" => build_encoding(action)
+      schema: build_multipart_schema(action, opts),
+      encoding: build_encoding(action)
     }
   end
 
@@ -356,23 +356,23 @@ defmodule AshOaskit.MultipartSupport do
 
   defp build_file_property(arg) do
     base_schema = %{
-      "type" => "string",
-      "format" => "binary"
+      type: :string,
+      format: :binary
     }
 
     base_schema =
       if description = Map.get(arg, :description) do
-        Map.put(base_schema, "description", description)
+        Map.put(base_schema, :description, description)
       else
-        Map.put(base_schema, "description", "File upload for #{arg.name}")
+        Map.put(base_schema, :description, "File upload for #{arg.name}")
       end
 
     # Handle array of files
     case arg.type do
       {:array, _} ->
         %{
-          "type" => "array",
-          "items" => base_schema
+          type: :array,
+          items: base_schema
         }
 
       _ ->

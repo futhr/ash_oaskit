@@ -171,28 +171,28 @@ defmodule AshOaskit.MultipartSupportTest do
     test "generates object type schema" do
       schema = MultipartSupport.build_multipart_schema(mock_action_with_file(), [])
 
-      assert schema["type"] == "object"
+      assert schema[:type] == :object
     end
 
     test "includes file properties with binary format" do
       schema = MultipartSupport.build_multipart_schema(mock_action_with_file(), [])
 
-      assert Map.has_key?(schema["properties"], "avatar")
-      assert schema["properties"]["avatar"]["type"] == "string"
-      assert schema["properties"]["avatar"]["format"] == "binary"
+      assert Map.has_key?(schema[:properties], :avatar)
+      assert schema[:properties][:avatar][:type] == :string
+      assert schema[:properties][:avatar][:format] == :binary
     end
 
     test "includes data property for JSON payload" do
       schema = MultipartSupport.build_multipart_schema(mock_action_with_file(), [])
 
-      assert Map.has_key?(schema["properties"], "data")
+      assert Map.has_key?(schema[:properties], :data)
     end
 
     test "includes required fields for non-nullable file arguments" do
       schema = MultipartSupport.build_multipart_schema(mock_action_with_file(), [])
 
-      assert Map.has_key?(schema, "required")
-      assert "avatar" in schema["required"]
+      assert Map.has_key?(schema, :required)
+      assert "avatar" in schema[:required]
     end
 
     test "omits required when all file arguments are nullable" do
@@ -204,13 +204,13 @@ defmodule AshOaskit.MultipartSupportTest do
 
       schema = MultipartSupport.build_multipart_schema(action, [])
 
-      refute Map.has_key?(schema, "required")
+      refute Map.has_key?(schema, :required)
     end
 
     test "includes description for file properties" do
       schema = MultipartSupport.build_multipart_schema(mock_action_with_file(), [])
 
-      assert schema["properties"]["avatar"]["description"] == "User avatar image"
+      assert schema[:properties][:avatar][:description] == "User avatar image"
     end
 
     test "generates default description when not provided" do
@@ -222,7 +222,7 @@ defmodule AshOaskit.MultipartSupportTest do
 
       schema = MultipartSupport.build_multipart_schema(action, [])
 
-      assert schema["properties"]["document"]["description"] =~ "document"
+      assert schema[:properties][:document][:description] =~ "document"
     end
   end
 
@@ -232,18 +232,18 @@ defmodule AshOaskit.MultipartSupportTest do
     test "generates array type for array of files" do
       schema = MultipartSupport.build_multipart_schema(mock_action_with_multiple_files(), [])
 
-      supporting = schema["properties"]["supporting_documents"]
-      assert supporting["type"] == "array"
-      assert supporting["items"]["type"] == "string"
-      assert supporting["items"]["format"] == "binary"
+      supporting = schema[:properties][:supporting_documents]
+      assert supporting[:type] == :array
+      assert supporting[:items][:type] == :string
+      assert supporting[:items][:format] == :binary
     end
 
     test "single file remains as string type" do
       schema = MultipartSupport.build_multipart_schema(mock_action_with_multiple_files(), [])
 
-      primary = schema["properties"]["primary_document"]
-      assert primary["type"] == "string"
-      assert primary["format"] == "binary"
+      primary = schema[:properties][:primary_document]
+      assert primary[:type] == :string
+      assert primary[:format] == :binary
     end
   end
 
@@ -258,8 +258,8 @@ defmodule AshOaskit.MultipartSupportTest do
           []
         )
 
-      assert Map.has_key?(request_body["content"], "application/vnd.api+json")
-      assert Map.has_key?(request_body["content"], "multipart/form-data")
+      assert Map.has_key?(request_body[:content], "application/vnd.api+json")
+      assert Map.has_key?(request_body[:content], "multipart/form-data")
     end
 
     test "marks request body as required" do
@@ -270,7 +270,7 @@ defmodule AshOaskit.MultipartSupportTest do
           []
         )
 
-      assert request_body["required"] == true
+      assert request_body[:required] == true
     end
 
     test "JSON:API content references schema" do
@@ -281,8 +281,8 @@ defmodule AshOaskit.MultipartSupportTest do
           []
         )
 
-      json_content = request_body["content"]["application/vnd.api+json"]
-      assert Map.has_key?(json_content, "schema")
+      json_content = request_body[:content]["application/vnd.api+json"]
+      assert Map.has_key?(json_content, :schema)
     end
 
     test "multipart content has schema" do
@@ -293,8 +293,8 @@ defmodule AshOaskit.MultipartSupportTest do
           []
         )
 
-      multipart_content = request_body["content"]["multipart/form-data"]
-      assert Map.has_key?(multipart_content, "schema")
+      multipart_content = request_body[:content]["multipart/form-data"]
+      assert Map.has_key?(multipart_content, :schema)
     end
 
     test "omits multipart content type for non-file actions" do
@@ -305,8 +305,8 @@ defmodule AshOaskit.MultipartSupportTest do
           []
         )
 
-      assert Map.has_key?(request_body["content"], "application/vnd.api+json")
-      refute Map.has_key?(request_body["content"], "multipart/form-data")
+      assert Map.has_key?(request_body[:content], "application/vnd.api+json")
+      refute Map.has_key?(request_body[:content], "multipart/form-data")
     end
   end
 
@@ -317,14 +317,14 @@ defmodule AshOaskit.MultipartSupportTest do
       encoding = MultipartSupport.build_encoding(mock_action_with_file())
 
       assert Map.has_key?(encoding, "avatar")
-      assert encoding["avatar"]["contentType"] == "application/octet-stream"
+      assert encoding["avatar"][:contentType] == "application/octet-stream"
     end
 
     test "includes encoding for data field" do
       encoding = MultipartSupport.build_encoding(mock_action_with_file())
 
       assert Map.has_key?(encoding, "data")
-      assert encoding["data"]["contentType"] == "application/json"
+      assert encoding["data"][:contentType] == "application/json"
     end
 
     test "generates encoding for multiple file arguments" do
@@ -348,21 +348,21 @@ defmodule AshOaskit.MultipartSupportTest do
     test "includes both schema and encoding" do
       content = MultipartSupport.build_multipart_content(mock_action_with_file(), [])
 
-      assert Map.has_key?(content, "schema")
-      assert Map.has_key?(content, "encoding")
+      assert Map.has_key?(content, :schema)
+      assert Map.has_key?(content, :encoding)
     end
 
     test "schema is valid object type" do
       content = MultipartSupport.build_multipart_content(mock_action_with_file(), [])
 
-      assert content["schema"]["type"] == "object"
+      assert content[:schema][:type] == :object
     end
 
     test "encoding matches schema properties" do
       content = MultipartSupport.build_multipart_content(mock_action_with_file(), [])
 
-      schema_props = Map.keys(content["schema"]["properties"])
-      encoding_keys = Map.keys(content["encoding"])
+      schema_props = content[:schema][:properties] |> Map.keys() |> Enum.map(&to_string/1)
+      encoding_keys = Map.keys(content[:encoding])
 
       # All encoded fields should be in schema
       Enum.each(encoding_keys, fn key ->
@@ -384,10 +384,10 @@ defmodule AshOaskit.MultipartSupportTest do
 
       schema = MultipartSupport.build_multipart_schema(action, [])
 
-      assert Map.has_key?(schema["properties"], "file1")
-      assert Map.has_key?(schema["properties"], "file2")
-      assert "file1" in schema["required"]
-      assert "file2" in schema["required"]
+      assert Map.has_key?(schema[:properties], :file1)
+      assert Map.has_key?(schema[:properties], :file2)
+      assert "file1" in schema[:required]
+      assert "file2" in schema[:required]
     end
 
     test "handles empty arguments list" do
@@ -395,8 +395,8 @@ defmodule AshOaskit.MultipartSupportTest do
 
       schema = MultipartSupport.build_multipart_schema(action, [])
 
-      assert schema["type"] == "object"
-      assert Map.has_key?(schema["properties"], "data")
+      assert schema[:type] == :object
+      assert Map.has_key?(schema[:properties], :data)
     end
 
     test "handles nil arguments" do
@@ -406,11 +406,11 @@ defmodule AshOaskit.MultipartSupportTest do
       assert MultipartSupport.file_arguments(action) == []
     end
 
-    test "schema properties are valid strings" do
+    test "schema properties are valid atoms" do
       schema = MultipartSupport.build_multipart_schema(mock_action_with_file(), [])
 
-      Enum.each(Map.keys(schema["properties"]), fn key ->
-        assert is_binary(key), "Property key should be string: #{inspect(key)}"
+      Enum.each(Map.keys(schema[:properties]), fn key ->
+        assert is_atom(key), "Property key should be atom: #{inspect(key)}"
       end)
     end
   end

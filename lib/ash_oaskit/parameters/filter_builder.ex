@@ -20,13 +20,13 @@ defmodule AshOaskit.FilterBuilder do
   The generated filter schema is a `deepObject` style query parameter:
 
       %{
-        "name" => "filter",
-        "in" => "query",
-        "style" => "deepObject",
-        "explode" => true,
-        "schema" => %{
-          "type" => "object",
-          "properties" => %{
+        name: "filter",
+        in: :query,
+        style: :deepObject,
+        explode: true,
+        schema: %{
+          type: :object,
+          properties: %{
             "title" => %{...},
             "status" => %{...},
             "and" => %{...},
@@ -110,22 +110,22 @@ defmodule AshOaskit.FilterBuilder do
   ## Examples
 
       iex> param = AshOaskit.FilterBuilder.build_filter_parameter(MyApp.Post)
-      ...> param["name"]
+      ...> param.name
       "filter"
-      iex> param["in"]
-      "query"
+      iex> param.in
+      :query
   """
   @spec build_filter_parameter(module(), keyword()) :: map() | nil
   def build_filter_parameter(resource, opts \\ []) do
     if derive_filter?(resource) do
       %{
-        "name" => "filter",
-        "in" => "query",
-        "required" => false,
-        "style" => "deepObject",
-        "explode" => true,
-        "schema" => build_filter_schema(resource, opts),
-        "description" => "Filter criteria for #{resource_name(resource)} records"
+        name: "filter",
+        in: :query,
+        required: false,
+        style: :deepObject,
+        explode: true,
+        schema: build_filter_schema(resource, opts),
+        description: "Filter criteria for #{resource_name(resource)} records"
       }
     else
       nil
@@ -155,9 +155,9 @@ defmodule AshOaskit.FilterBuilder do
     properties = Map.merge(attribute_filters, boolean_filters)
 
     %{
-      "type" => "object",
-      "properties" => properties,
-      "additionalProperties" => false
+      type: :object,
+      properties: properties,
+      additionalProperties: false
     }
   end
 
@@ -207,11 +207,11 @@ defmodule AshOaskit.FilterBuilder do
 
     # Allow either direct value or operator object
     %{
-      "oneOf" => [
+      oneOf: [
         base_type_schema,
         %{
-          "type" => "object",
-          "properties" => operator_properties
+          type: :object,
+          properties: operator_properties
         }
       ]
     }
@@ -230,20 +230,20 @@ defmodule AshOaskit.FilterBuilder do
 
   # Map of types to their JSON Schema representation
   @type_to_schema %{
-    string: %{"type" => "string"},
-    ci_string: %{"type" => "string"},
-    integer: %{"type" => "integer"},
-    float: %{"type" => "number"},
-    decimal: %{"type" => "number"},
-    boolean: %{"type" => "boolean"},
-    date: %{"type" => "string", "format" => "date"},
-    time: %{"type" => "string", "format" => "time"},
-    datetime: %{"type" => "string", "format" => "date-time"},
-    utc_datetime: %{"type" => "string", "format" => "date-time"},
-    utc_datetime_usec: %{"type" => "string", "format" => "date-time"},
-    naive_datetime: %{"type" => "string", "format" => "date-time"},
-    uuid: %{"type" => "string", "format" => "uuid"},
-    atom: %{"type" => "string"}
+    string: %{type: :string},
+    ci_string: %{type: :string},
+    integer: %{type: :integer},
+    float: %{type: :number},
+    decimal: %{type: :number},
+    boolean: %{type: :boolean},
+    date: %{type: :string, format: "date"},
+    time: %{type: :string, format: "time"},
+    datetime: %{type: :string, format: "date-time"},
+    utc_datetime: %{type: :string, format: "date-time"},
+    utc_datetime_usec: %{type: :string, format: "date-time"},
+    naive_datetime: %{type: :string, format: "date-time"},
+    uuid: %{type: :string, format: "uuid"},
+    atom: %{type: :string}
   }
 
   # Map of Ash.Type modules to atom equivalents
@@ -267,12 +267,12 @@ defmodule AshOaskit.FilterBuilder do
   # Maps Ash type to base JSON Schema for filter values
   @spec attribute_type_schema(atom() | tuple()) :: map()
   defp attribute_type_schema({:array, inner}) do
-    %{"type" => "array", "items" => attribute_type_schema(inner)}
+    %{type: :array, items: attribute_type_schema(inner)}
   end
 
   defp attribute_type_schema(type) do
     normalized = normalize_type(type)
-    Map.get(@type_to_schema, normalized, %{"type" => "string"})
+    Map.get(@type_to_schema, normalized, %{type: :string})
   end
 
   # Normalizes type to a simple atom
@@ -328,17 +328,17 @@ defmodule AshOaskit.FilterBuilder do
   defp operator_schema(:gte, base_schema), do: base_schema
   defp operator_schema(:lt, base_schema), do: base_schema
   defp operator_schema(:lte, base_schema), do: base_schema
-  defp operator_schema(:contains, _base_schema), do: %{"type" => "string"}
-  defp operator_schema(:starts_with, _base_schema), do: %{"type" => "string"}
-  defp operator_schema(:ends_with, _base_schema), do: %{"type" => "string"}
-  defp operator_schema(:icontains, _base_schema), do: %{"type" => "string"}
-  defp operator_schema(:istarts_with, _base_schema), do: %{"type" => "string"}
-  defp operator_schema(:iends_with, _base_schema), do: %{"type" => "string"}
-  defp operator_schema(:is_nil, _base_schema), do: %{"type" => "boolean"}
-  defp operator_schema(:in, base_schema), do: %{"type" => "array", "items" => base_schema}
-  defp operator_schema(:not_in, base_schema), do: %{"type" => "array", "items" => base_schema}
-  defp operator_schema(:has_any, base_schema), do: %{"type" => "array", "items" => base_schema}
-  defp operator_schema(:has_all, base_schema), do: %{"type" => "array", "items" => base_schema}
+  defp operator_schema(:contains, _base_schema), do: %{type: :string}
+  defp operator_schema(:starts_with, _base_schema), do: %{type: :string}
+  defp operator_schema(:ends_with, _base_schema), do: %{type: :string}
+  defp operator_schema(:icontains, _base_schema), do: %{type: :string}
+  defp operator_schema(:istarts_with, _base_schema), do: %{type: :string}
+  defp operator_schema(:iends_with, _base_schema), do: %{type: :string}
+  defp operator_schema(:is_nil, _base_schema), do: %{type: :boolean}
+  defp operator_schema(:in, base_schema), do: %{type: :array, items: base_schema}
+  defp operator_schema(:not_in, base_schema), do: %{type: :array, items: base_schema}
+  defp operator_schema(:has_any, base_schema), do: %{type: :array, items: base_schema}
+  defp operator_schema(:has_all, base_schema), do: %{type: :array, items: base_schema}
   defp operator_schema(_, base_schema), do: base_schema
 
   # Builds boolean filter operators (and, or, not)
@@ -346,18 +346,18 @@ defmodule AshOaskit.FilterBuilder do
   defp build_boolean_filters do
     %{
       "and" => %{
-        "type" => "array",
-        "items" => %{"type" => "object"},
-        "description" => "All conditions must match"
+        type: :array,
+        items: %{type: :object},
+        description: "All conditions must match"
       },
       "or" => %{
-        "type" => "array",
-        "items" => %{"type" => "object"},
-        "description" => "Any condition must match"
+        type: :array,
+        items: %{type: :object},
+        description: "Any condition must match"
       },
       "not" => %{
-        "type" => "object",
-        "description" => "Condition must not match"
+        type: :object,
+        description: "Condition must not match"
       }
     }
   end

@@ -10,24 +10,24 @@ defmodule AshOaskit.Security do
 
   ### Bearer Token Authentication
   HTTP Bearer authentication using JWT or opaque tokens:
-  ```json
-  {
-    "bearerAuth": {
-      "type": "http",
-      "scheme": "bearer",
-      "bearerFormat": "JWT"
+  ```elixir
+  %{
+    "bearerAuth" => %{
+      type: :http,
+      scheme: :bearer,
+      bearerFormat: "JWT"
     }
   }
   ```
 
   ### API Key Authentication
   API key passed in header, query, or cookie:
-  ```json
-  {
-    "apiKeyAuth": {
-      "type": "apiKey",
-      "in": "header",
-      "name": "X-API-Key"
+  ```elixir
+  %{
+    "apiKeyAuth" => %{
+      type: :apiKey,
+      in: :header,
+      name: "X-API-Key"
     }
   }
   ```
@@ -75,20 +75,20 @@ defmodule AshOaskit.Security do
       iex> AshOaskit.Security.bearer_auth_scheme()
       %{
         "bearerAuth" => %{
-          "type" => "http",
-          "scheme" => "bearer",
-          "bearerFormat" => "JWT",
-          "description" => "Bearer token authentication"
+          type: :http,
+          scheme: :bearer,
+          bearerFormat: "JWT",
+          description: "Bearer token authentication"
         }
       }
 
       iex> AshOaskit.Security.bearer_auth_scheme(name: "jwtAuth", bearer_format: "JWT")
       %{
         "jwtAuth" => %{
-          "type" => "http",
-          "scheme" => "bearer",
-          "bearerFormat" => "JWT",
-          "description" => "Bearer token authentication"
+          type: :http,
+          scheme: :bearer,
+          bearerFormat: "JWT",
+          description: "Bearer token authentication"
         }
       }
   """
@@ -100,10 +100,10 @@ defmodule AshOaskit.Security do
 
     %{
       name => %{
-        "type" => "http",
-        "scheme" => "bearer",
-        "bearerFormat" => bearer_format,
-        "description" => description
+        type: :http,
+        scheme: :bearer,
+        bearerFormat: bearer_format,
+        description: description
       }
     }
   end
@@ -115,7 +115,7 @@ defmodule AshOaskit.Security do
 
   - `:name` - Name for the security scheme. Defaults to "apiKeyAuth".
   - `:key_name` - Name of the API key parameter. Defaults to "X-API-Key".
-  - `:location` - Where the key is passed: "header", "query", or "cookie". Defaults to "header".
+  - `:location` - Where the key is passed: `:header`, `:query`, or `:cookie`. Defaults to `:header`.
   - `:description` - Description of the scheme.
 
   ## Examples
@@ -123,20 +123,20 @@ defmodule AshOaskit.Security do
       iex> AshOaskit.Security.api_key_scheme()
       %{
         "apiKeyAuth" => %{
-          "type" => "apiKey",
-          "in" => "header",
-          "name" => "X-API-Key",
-          "description" => "API key authentication"
+          type: :apiKey,
+          in: :header,
+          name: "X-API-Key",
+          description: "API key authentication"
         }
       }
 
-      iex> AshOaskit.Security.api_key_scheme(key_name: "api_key", location: "query")
+      iex> AshOaskit.Security.api_key_scheme(key_name: "api_key", location: :query)
       %{
         "apiKeyAuth" => %{
-          "type" => "apiKey",
-          "in" => "query",
-          "name" => "api_key",
-          "description" => "API key authentication"
+          type: :apiKey,
+          in: :query,
+          name: "api_key",
+          description: "API key authentication"
         }
       }
   """
@@ -144,15 +144,15 @@ defmodule AshOaskit.Security do
   def api_key_scheme(opts \\ []) do
     name = Keyword.get(opts, :name, "apiKeyAuth")
     key_name = Keyword.get(opts, :key_name, "X-API-Key")
-    location = Keyword.get(opts, :location, "header")
+    location = Keyword.get(opts, :location, :header)
     description = Keyword.get(opts, :description, "API key authentication")
 
     %{
       name => %{
-        "type" => "apiKey",
-        "in" => location,
-        "name" => key_name,
-        "description" => description
+        type: :apiKey,
+        in: location,
+        name: key_name,
+        description: description
       }
     }
   end
@@ -170,9 +170,9 @@ defmodule AshOaskit.Security do
       iex> AshOaskit.Security.basic_auth_scheme()
       %{
         "basicAuth" => %{
-          "type" => "http",
-          "scheme" => "basic",
-          "description" => "Basic HTTP authentication"
+          type: :http,
+          scheme: :basic,
+          description: "Basic HTTP authentication"
         }
       }
   """
@@ -183,9 +183,9 @@ defmodule AshOaskit.Security do
 
     %{
       name => %{
-        "type" => "http",
-        "scheme" => "basic",
-        "description" => description
+        type: :http,
+        scheme: :basic,
+        description: description
       }
     }
   end
@@ -210,12 +210,12 @@ defmodule AshOaskit.Security do
 
       iex> AshOaskit.Security.oauth2_scheme(
       ...>   flows: %{
-      ...>     "authorizationCode" => %{
-      ...>       "authorizationUrl" => "https://auth.example.com/authorize",
-      ...>       "tokenUrl" => "https://auth.example.com/token",
-      ...>       "scopes" => %{
-      ...>         "read" => "Read access",
-      ...>         "write" => "Write access"
+      ...>     authorizationCode: %{
+      ...>       authorizationUrl: "https://auth.example.com/authorize",
+      ...>       tokenUrl: "https://auth.example.com/token",
+      ...>       scopes: %{
+      ...>         read: "Read access",
+      ...>         write: "Write access"
       ...>       }
       ...>     }
       ...>   }
@@ -229,9 +229,9 @@ defmodule AshOaskit.Security do
 
     %{
       name => %{
-        "type" => "oauth2",
-        "description" => description,
-        "flows" => flows
+        type: :oauth2,
+        description: description,
+        flows: flows
       }
     }
   end
@@ -252,9 +252,9 @@ defmodule AshOaskit.Security do
       ...> )
       %{
         "openIdConnect" => %{
-          "type" => "openIdConnect",
-          "openIdConnectUrl" => "https://auth.example.com/.well-known/openid-configuration",
-          "description" => "OpenID Connect authentication"
+          type: :openIdConnect,
+          openIdConnectUrl: "https://auth.example.com/.well-known/openid-configuration",
+          description: "OpenID Connect authentication"
         }
       }
   """
@@ -266,9 +266,9 @@ defmodule AshOaskit.Security do
 
     %{
       name => %{
-        "type" => "openIdConnect",
-        "openIdConnectUrl" => url,
-        "description" => description
+        type: :openIdConnect,
+        openIdConnectUrl: url,
+        description: description
       }
     }
   end
@@ -406,7 +406,7 @@ defmodule AshOaskit.Security do
 
       iex> AshOaskit.Security.build_security_schemes_component(schemes: [:bearer, :api_key])
       %{
-        "securitySchemes" => %{
+        securitySchemes: %{
           "bearerAuth" => %{...},
           "apiKeyAuth" => %{...}
         }
@@ -420,7 +420,7 @@ defmodule AshOaskit.Security do
     built_schemes = build_security_schemes(schemes)
     merged_schemes = Map.merge(built_schemes, custom_schemes)
 
-    %{"securitySchemes" => merged_schemes}
+    %{securitySchemes: merged_schemes}
   end
 
   @doc """
@@ -480,12 +480,12 @@ defmodule AshOaskit.Security do
 
   ## Examples
 
-      iex> operation = %{"operationId" => "getPost", "responses" => %{}}
+      iex> operation = %{operationId: "getPost", responses: %{}}
       ...> AshOaskit.Security.add_security_to_operation(operation)
       %{
-        "operationId" => "getPost",
-        "responses" => %{},
-        "security" => [%{"bearerAuth" => []}]
+        operationId: "getPost",
+        responses: %{},
+        security: [%{"bearerAuth" => []}]
       }
   """
   @spec add_security_to_operation(map(), keyword()) :: map()
@@ -501,7 +501,7 @@ defmodule AshOaskit.Security do
       end
 
     if security do
-      Map.put(operation, "security", security)
+      Map.put(operation, :security, security)
     else
       operation
     end

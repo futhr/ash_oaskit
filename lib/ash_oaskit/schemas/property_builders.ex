@@ -54,24 +54,24 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
 
   # Map of types to their JSON Schema representation
   @type_to_schema_map %{
-    string: %{"type" => "string"},
-    ci_string: %{"type" => "string"},
-    integer: %{"type" => "integer"},
-    float: %{"type" => "number", "format" => "float"},
-    decimal: %{"type" => "number", "format" => "double"},
-    boolean: %{"type" => "boolean"},
-    date: %{"type" => "string", "format" => "date"},
-    time: %{"type" => "string", "format" => "time"},
-    datetime: %{"type" => "string", "format" => "date-time"},
-    utc_datetime: %{"type" => "string", "format" => "date-time"},
-    utc_datetime_usec: %{"type" => "string", "format" => "date-time"},
-    naive_datetime: %{"type" => "string", "format" => "date-time"},
-    uuid: %{"type" => "string", "format" => "uuid"},
-    binary: %{"type" => "string", "format" => "binary"},
-    map: %{"type" => "object"},
-    atom: %{"type" => "string"},
+    string: %{type: :string},
+    ci_string: %{type: :string},
+    integer: %{type: :integer},
+    float: %{type: :number, format: :float},
+    decimal: %{type: :number, format: :double},
+    boolean: %{type: :boolean},
+    date: %{type: :string, format: :date},
+    time: %{type: :string, format: :time},
+    datetime: %{type: :string, format: :"date-time"},
+    utc_datetime: %{type: :string, format: :"date-time"},
+    utc_datetime_usec: %{type: :string, format: :"date-time"},
+    naive_datetime: %{type: :string, format: :"date-time"},
+    uuid: %{type: :string, format: :uuid},
+    binary: %{type: :string, format: :binary},
+    map: %{type: :object},
+    atom: %{type: :string},
     term: %{},
-    number: %{"type" => "number"}
+    number: %{type: :number}
   }
 
   # Map of Ash.Type.* modules to their atom equivalents
@@ -96,10 +96,10 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
 
   # Static aggregate kinds with fixed schemas
   @static_aggregate_schemas %{
-    count: %{"type" => "integer"},
-    exists: %{"type" => "boolean"},
-    sum: %{"type" => "number"},
-    avg: %{"type" => "number"}
+    count: %{type: :integer},
+    exists: %{type: :boolean},
+    sum: %{type: :number},
+    avg: %{type: :number}
   }
 
   @doc """
@@ -122,7 +122,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
 
       iex> attrs = [%{name: :title, type: :string}]
       ...> PropertyBuilders.build_attribute_properties(%{version: "3.1"}, attrs)
-      %{"title" => %{"type" => "string"}}
+      %{title: %{"type" => "string"}}
   """
   @spec build_attribute_properties(map(), [map()]) :: map()
   def build_attribute_properties(builder, attributes) do
@@ -135,7 +135,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
           TypeMapper.to_json_schema_30(attr)
         end
 
-      {to_string(attr.name), schema}
+      {attr.name, schema}
     end)
     |> Enum.into(%{})
   end
@@ -170,7 +170,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
           TypeMapper.to_json_schema_30(attr)
         end
 
-      {Map.put(props, to_string(attr.name), schema), bldr}
+      {Map.put(props, attr.name, schema), bldr}
     end)
   end
 
@@ -195,7 +195,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
     calculations
     |> Enum.map(fn calc ->
       schema = calculation_to_schema(builder, calc)
-      {to_string(calc.name), schema}
+      {calc.name, schema}
     end)
     |> Enum.into(%{})
   end
@@ -245,7 +245,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
     aggregates
     |> Enum.map(fn agg ->
       schema = aggregate_to_schema(builder, agg)
-      {to_string(agg.name), schema}
+      {agg.name, schema}
     end)
     |> Enum.into(%{})
   end
@@ -315,20 +315,20 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   ## Examples
 
       iex> PropertyBuilders.type_to_schema(:string)
-      %{"type" => "string"}
+      %{type: :string}
 
       iex> PropertyBuilders.type_to_schema({:array, :integer})
-      %{"type" => "array", "items" => %{"type" => "integer"}}
+      %{type: :array, items: %{type: :integer}}
   """
   @spec type_to_schema(atom() | tuple()) :: map()
-  def type_to_schema({:array, inner}), do: %{"type" => "array", "items" => type_to_schema(inner)}
+  def type_to_schema({:array, inner}), do: %{type: :array, items: type_to_schema(inner)}
 
   def type_to_schema(type) when is_atom(type) do
     normalized = normalize_type(type)
-    Map.get(@type_to_schema_map, normalized, %{"type" => "string"})
+    Map.get(@type_to_schema_map, normalized, %{type: :string})
   end
 
-  def type_to_schema(_), do: %{"type" => "string"}
+  def type_to_schema(_), do: %{type: :string}
 
   @doc """
   Normalizes Ash.Type.* modules to their atom equivalents.
@@ -372,11 +372,11 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   """
   @spec make_nullable(map(), String.t()) :: map()
   def make_nullable(schema, "3.1"), do: make_nullable_31(schema)
-  def make_nullable(schema, _version), do: Map.put(schema, "nullable", true)
+  def make_nullable(schema, _version), do: Map.put(schema, :nullable, true)
 
   # Makes a schema nullable for OpenAPI 3.1 (type array)
-  defp make_nullable_31(%{"type" => type} = schema) when is_binary(type) do
-    Map.put(schema, "type", [type, "null"])
+  defp make_nullable_31(%{type: type} = schema) when is_atom(type) do
+    Map.put(schema, :type, [type, :null])
   end
 
   defp make_nullable_31(schema), do: schema
@@ -396,7 +396,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   @spec maybe_add_description(map(), map()) :: map()
   def maybe_add_description(schema, source) do
     case Map.get(source, :description) do
-      desc when is_binary(desc) -> Map.put(schema, "description", desc)
+      desc when is_binary(desc) -> Map.put(schema, :description, desc)
       _ -> schema
     end
   end
@@ -404,7 +404,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   # Handle aggregate kinds that depend on the aggregate's type
   defp dynamic_aggregate_schema(:list, agg) do
     item_type = Map.get(agg, :type, :string)
-    %{"type" => "array", "items" => type_to_schema(item_type)}
+    %{type: :array, items: type_to_schema(item_type)}
   end
 
   defp dynamic_aggregate_schema(kind, agg) when kind in [:first, :min, :max, :custom] do

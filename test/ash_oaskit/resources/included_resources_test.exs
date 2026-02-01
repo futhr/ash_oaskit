@@ -21,25 +21,25 @@ defmodule AshOaskit.IncludedResourcesTest do
     test "generates array schema with oneOf for multiple types" do
       schema = IncludedResources.build_included_schema_for_types(["User", "Comment"])
 
-      assert schema["type"] == "array"
-      assert is_map(schema["items"])
-      assert is_list(schema["items"]["oneOf"])
-      assert length(schema["items"]["oneOf"]) == 2
+      assert schema[:type] == :array
+      assert is_map(schema[:items])
+      assert is_list(schema[:items][:oneOf])
+      assert length(schema[:items][:oneOf]) == 2
     end
 
     test "generates refs with default suffix" do
       schema = IncludedResources.build_included_schema_for_types(["User"])
 
       # When single type, items is the ref directly
-      assert schema["items"]["$ref"] == "#/components/schemas/UserResource"
+      assert schema[:items]["$ref"] == "#/components/schemas/UserResource"
     end
 
     test "uses direct ref for single type (no oneOf needed)" do
       schema = IncludedResources.build_included_schema_for_types(["User"])
 
       # Single type doesn't need oneOf wrapper
-      assert schema["items"]["$ref"] == "#/components/schemas/UserResource"
-      refute Map.has_key?(schema["items"], "oneOf")
+      assert schema[:items]["$ref"] == "#/components/schemas/UserResource"
+      refute Map.has_key?(schema[:items], :oneOf)
     end
 
     test "respects schema_prefix option" do
@@ -49,7 +49,7 @@ defmodule AshOaskit.IncludedResourcesTest do
           schema_prefix: "JsonApi"
         )
 
-      assert schema["items"]["$ref"] == "#/components/schemas/JsonApiUserResource"
+      assert schema[:items]["$ref"] == "#/components/schemas/JsonApiUserResource"
     end
 
     test "respects schema_suffix option" do
@@ -59,13 +59,13 @@ defmodule AshOaskit.IncludedResourcesTest do
           schema_suffix: ""
         )
 
-      assert schema["items"]["$ref"] == "#/components/schemas/User"
+      assert schema[:items]["$ref"] == "#/components/schemas/User"
     end
 
     test "sorts types alphabetically" do
       schema = IncludedResources.build_included_schema_for_types(["Zebra", "Alpha", "Middle"])
 
-      refs = schema["items"]["oneOf"]
+      refs = schema[:items][:oneOf]
 
       ref_names =
         Enum.map(refs, fn %{"$ref" => ref} ->
@@ -78,20 +78,20 @@ defmodule AshOaskit.IncludedResourcesTest do
     test "removes duplicate types" do
       schema = IncludedResources.build_included_schema_for_types(["User", "User", "Comment"])
 
-      refs = schema["items"]["oneOf"]
+      refs = schema[:items][:oneOf]
       assert length(refs) == 2
     end
 
     test "includes description" do
       schema = IncludedResources.build_included_schema_for_types(["User"])
 
-      assert schema["description"] == "Included related resources"
+      assert schema[:description] == "Included related resources"
     end
 
     test "returns empty schema for empty types list" do
       schema = IncludedResources.build_included_schema_for_types([])
 
-      assert schema["maxItems"] == 0
+      assert schema[:maxItems] == 0
     end
   end
 
@@ -99,20 +99,20 @@ defmodule AshOaskit.IncludedResourcesTest do
     test "generates empty array schema" do
       schema = IncludedResources.build_empty_included_schema()
 
-      assert schema["type"] == "array"
-      assert schema["maxItems"] == 0
+      assert schema[:type] == :array
+      assert schema[:maxItems] == 0
     end
 
     test "has empty items schema" do
       schema = IncludedResources.build_empty_included_schema()
 
-      assert schema["items"] == %{}
+      assert schema[:items] == %{}
     end
 
     test "includes description" do
       schema = IncludedResources.build_empty_included_schema()
 
-      assert String.contains?(schema["description"], "No related")
+      assert String.contains?(schema[:description], "No related")
     end
   end
 
@@ -121,15 +121,15 @@ defmodule AshOaskit.IncludedResourcesTest do
       types = [{"users", "User"}, {"comments", "Comment"}]
       schema = IncludedResources.build_included_schema_with_discriminator(types)
 
-      assert Map.has_key?(schema["items"], "discriminator")
-      assert schema["items"]["discriminator"]["propertyName"] == "type"
+      assert Map.has_key?(schema[:items], :discriminator)
+      assert schema[:items][:discriminator][:propertyName] == "type"
     end
 
     test "includes mapping for each type" do
       types = [{"users", "User"}, {"comments", "Comment"}]
       schema = IncludedResources.build_included_schema_with_discriminator(types)
 
-      mapping = schema["items"]["discriminator"]["mapping"]
+      mapping = schema[:items][:discriminator][:mapping]
       assert mapping["users"] == "#/components/schemas/UserResource"
       assert mapping["comments"] == "#/components/schemas/CommentResource"
     end
@@ -144,7 +144,7 @@ defmodule AshOaskit.IncludedResourcesTest do
           schema_suffix: ""
         )
 
-      mapping = schema["items"]["discriminator"]["mapping"]
+      mapping = schema[:items][:discriminator][:mapping]
       assert mapping["users"] == "#/components/schemas/ApiUser"
     end
 
@@ -152,69 +152,69 @@ defmodule AshOaskit.IncludedResourcesTest do
       types = [{"users", "User"}, {"comments", "Comment"}]
       schema = IncludedResources.build_included_schema_with_discriminator(types)
 
-      assert is_list(schema["items"]["oneOf"])
-      assert length(schema["items"]["oneOf"]) == 2
+      assert is_list(schema[:items][:oneOf])
+      assert length(schema[:items][:oneOf]) == 2
     end
   end
 
   describe "add_included_to_response/2" do
     test "adds included property to response schema" do
       response = %{
-        "type" => "object",
-        "properties" => %{
-          "data" => %{"type" => "object"}
+        type: :object,
+        properties: %{
+          data: %{type: :object}
         }
       }
 
       result = IncludedResources.add_included_to_response(response, types: ["User"])
 
-      assert Map.has_key?(result["properties"], "included")
-      assert Map.has_key?(result["properties"], "data")
+      assert Map.has_key?(result[:properties], :included)
+      assert Map.has_key?(result[:properties], :data)
     end
 
     test "uses types when provided" do
-      response = %{"type" => "object", "properties" => %{}}
+      response = %{type: :object, properties: %{}}
 
       result = IncludedResources.add_included_to_response(response, types: ["User", "Comment"])
 
-      included = result["properties"]["included"]
-      assert is_list(included["items"]["oneOf"])
+      included = result[:properties][:included]
+      assert is_list(included[:items][:oneOf])
     end
 
     test "returns empty included when no types or resource" do
-      response = %{"type" => "object", "properties" => %{}}
+      response = %{type: :object, properties: %{}}
 
       result = IncludedResources.add_included_to_response(response)
 
-      included = result["properties"]["included"]
-      assert included["maxItems"] == 0
+      included = result[:properties][:included]
+      assert included[:maxItems] == 0
     end
 
     test "preserves existing properties" do
       response = %{
-        "type" => "object",
-        "properties" => %{
-          "data" => %{},
-          "links" => %{},
-          "meta" => %{}
+        type: :object,
+        properties: %{
+          data: %{},
+          links: %{},
+          meta: %{}
         }
       }
 
       result = IncludedResources.add_included_to_response(response, types: ["User"])
 
-      assert Map.has_key?(result["properties"], "data")
-      assert Map.has_key?(result["properties"], "links")
-      assert Map.has_key?(result["properties"], "meta")
-      assert Map.has_key?(result["properties"], "included")
+      assert Map.has_key?(result[:properties], :data)
+      assert Map.has_key?(result[:properties], :links)
+      assert Map.has_key?(result[:properties], :meta)
+      assert Map.has_key?(result[:properties], :included)
     end
 
     test "creates properties map if not present" do
-      response = %{"type" => "object"}
+      response = %{type: :object}
 
       result = IncludedResources.add_included_to_response(response, types: ["User"])
 
-      assert is_map(result["properties"])
-      assert Map.has_key?(result["properties"], "included")
+      assert is_map(result[:properties])
+      assert Map.has_key?(result[:properties], :included)
     end
   end
 
@@ -239,7 +239,7 @@ defmodule AshOaskit.IncludedResourcesTest do
       schemas = IncludedResources.build_included_component_schemas(["User", "Comment"])
 
       included = schemas["IncludedResources"]
-      assert included["type"] == "array"
+      assert included[:type] == :array
     end
   end
 
@@ -262,7 +262,7 @@ defmodule AshOaskit.IncludedResourcesTest do
 
       for schema <- schemas do
         assert is_map(schema)
-        assert schema["type"] == "array"
+        assert schema[:type] == :array
       end
     end
 
@@ -275,7 +275,7 @@ defmodule AshOaskit.IncludedResourcesTest do
     test "refs are valid JSON Pointer format" do
       schema = IncludedResources.build_included_schema_for_types(["User"])
 
-      ref = schema["items"]["$ref"]
+      ref = schema[:items]["$ref"]
       assert String.starts_with?(ref, "#/components/schemas/")
     end
   end
@@ -284,22 +284,22 @@ defmodule AshOaskit.IncludedResourcesTest do
     test "builds included schema for resource with relationships" do
       schema = IncludedResources.build_included_schema(AshOaskit.Test.Article)
 
-      assert schema["type"] == "array"
+      assert schema[:type] == :array
       # Article has author, reviews, and tags relationships
-      assert is_map(schema["items"])
+      assert is_map(schema[:items])
     end
 
     test "returns empty schema for resource without relationships" do
       # NoTypeResource has no relationships configured
       schema = IncludedResources.build_included_schema(AshOaskit.Test.NoTypeResource)
 
-      assert schema["maxItems"] == 0
+      assert schema[:maxItems] == 0
     end
 
     test "respects max_depth option" do
       schema = IncludedResources.build_included_schema(AshOaskit.Test.Article, max_depth: 1)
 
-      assert schema["type"] == "array"
+      assert schema[:type] == :array
     end
 
     test "respects include_paths option" do
@@ -309,7 +309,7 @@ defmodule AshOaskit.IncludedResourcesTest do
           include_paths: ["author"]
         )
 
-      assert schema["type"] == "array"
+      assert schema[:type] == :array
     end
   end
 
@@ -422,7 +422,7 @@ defmodule AshOaskit.IncludedResourcesTest do
 
   describe "add_included_to_response/2 with resource option" do
     test "builds included from resource relationships" do
-      response = %{"type" => "object", "properties" => %{}}
+      response = %{type: :object, properties: %{}}
 
       result =
         IncludedResources.add_included_to_response(
@@ -430,8 +430,8 @@ defmodule AshOaskit.IncludedResourcesTest do
           resource: AshOaskit.Test.Article
         )
 
-      included = result["properties"]["included"]
-      assert included["type"] == "array"
+      included = result[:properties][:included]
+      assert included[:type] == :array
     end
   end
 
@@ -466,19 +466,19 @@ defmodule AshOaskit.IncludedResourcesTest do
   describe "integration scenarios" do
     test "building a complete response with included" do
       response = %{
-        "type" => "object",
-        "properties" => %{
-          "data" => %{
-            "type" => "object",
-            "properties" => %{
-              "id" => %{"type" => "string"},
-              "type" => %{"type" => "string"},
-              "attributes" => %{"type" => "object"},
-              "relationships" => %{"type" => "object"}
+        type: :object,
+        properties: %{
+          data: %{
+            type: :object,
+            properties: %{
+              id: %{type: :string},
+              type: %{type: :string},
+              attributes: %{type: :object},
+              relationships: %{type: :object}
             }
           },
-          "links" => %{"type" => "object"},
-          "meta" => %{"type" => "object"}
+          links: %{type: :object},
+          meta: %{type: :object}
         }
       }
 
@@ -489,12 +489,12 @@ defmodule AshOaskit.IncludedResourcesTest do
           types: ["User", "Comment", "Tag"]
         )
 
-      included = result["properties"]["included"]
-      assert included["type"] == "array"
-      assert length(included["items"]["oneOf"]) == 3
+      included = result[:properties][:included]
+      assert included[:type] == :array
+      assert length(included[:items][:oneOf]) == 3
 
       # Verify refs are sorted
-      refs = Enum.map(included["items"]["oneOf"], & &1["$ref"])
+      refs = Enum.map(included[:items][:oneOf], & &1["$ref"])
 
       assert refs == [
                "#/components/schemas/CommentResource",
@@ -513,23 +513,23 @@ defmodule AshOaskit.IncludedResourcesTest do
       schema = IncludedResources.build_included_schema_with_discriminator(type_mappings)
 
       # Should have discriminator
-      assert schema["items"]["discriminator"]["propertyName"] == "type"
+      assert schema[:items][:discriminator][:propertyName] == "type"
 
       # Mapping should have all types
-      mapping = schema["items"]["discriminator"]["mapping"]
+      mapping = schema[:items][:discriminator][:mapping]
       assert Map.has_key?(mapping, "users")
       assert Map.has_key?(mapping, "comments")
       assert Map.has_key?(mapping, "tags")
     end
 
     test "handling empty includes gracefully" do
-      response = %{"type" => "object", "properties" => %{"data" => %{}}}
+      response = %{type: :object, properties: %{data: %{}}}
 
       # No types specified
       result = IncludedResources.add_included_to_response(response)
 
-      included = result["properties"]["included"]
-      assert included["maxItems"] == 0
+      included = result[:properties][:included]
+      assert included[:maxItems] == 0
     end
   end
 end

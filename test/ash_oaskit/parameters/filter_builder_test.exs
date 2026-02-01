@@ -55,45 +55,45 @@ defmodule AshOaskit.FilterBuilderTest do
     test "returns parameter with correct name" do
       param = FilterBuilder.build_filter_parameter(AshOaskit.Test.Post)
 
-      assert param["name"] == "filter"
+      assert param.name == "filter"
     end
 
     test "returns parameter in query location" do
       param = FilterBuilder.build_filter_parameter(AshOaskit.Test.Post)
 
-      assert param["in"] == "query"
+      assert param.in == :query
     end
 
     test "returns optional parameter" do
       param = FilterBuilder.build_filter_parameter(AshOaskit.Test.Post)
 
-      assert param["required"] == false
+      assert param.required == false
     end
 
     test "uses deepObject style" do
       param = FilterBuilder.build_filter_parameter(AshOaskit.Test.Post)
 
-      assert param["style"] == "deepObject"
+      assert param.style == :deepObject
     end
 
     test "enables explode" do
       param = FilterBuilder.build_filter_parameter(AshOaskit.Test.Post)
 
-      assert param["explode"] == true
+      assert param.explode == true
     end
 
     test "includes schema" do
       param = FilterBuilder.build_filter_parameter(AshOaskit.Test.Post)
 
-      assert is_map(param["schema"])
-      assert param["schema"]["type"] == "object"
+      assert is_map(param.schema)
+      assert param.schema.type == :object
     end
 
     test "includes description" do
       param = FilterBuilder.build_filter_parameter(AshOaskit.Test.Post)
 
-      assert is_binary(param["description"])
-      assert String.contains?(param["description"], "Post")
+      assert is_binary(param.description)
+      assert String.contains?(param.description, "Post")
     end
   end
 
@@ -103,28 +103,28 @@ defmodule AshOaskit.FilterBuilderTest do
     test "returns object type" do
       schema = FilterBuilder.build_filter_schema(AshOaskit.Test.Post)
 
-      assert schema["type"] == "object"
+      assert schema.type == :object
     end
 
     test "has properties for attributes" do
       schema = FilterBuilder.build_filter_schema(AshOaskit.Test.Post)
 
-      assert Map.has_key?(schema["properties"], "title")
-      assert Map.has_key?(schema["properties"], "body")
+      assert Map.has_key?(schema.properties, "title")
+      assert Map.has_key?(schema.properties, "body")
     end
 
     test "has boolean operators" do
       schema = FilterBuilder.build_filter_schema(AshOaskit.Test.Post)
 
-      assert Map.has_key?(schema["properties"], "and")
-      assert Map.has_key?(schema["properties"], "or")
-      assert Map.has_key?(schema["properties"], "not")
+      assert Map.has_key?(schema.properties, "and")
+      assert Map.has_key?(schema.properties, "or")
+      assert Map.has_key?(schema.properties, "not")
     end
 
     test "disallows additional properties" do
       schema = FilterBuilder.build_filter_schema(AshOaskit.Test.Post)
 
-      assert schema["additionalProperties"] == false
+      assert schema.additionalProperties == false
     end
   end
 
@@ -160,9 +160,9 @@ defmodule AshOaskit.FilterBuilderTest do
       attr = %{name: :title, type: :string}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
-      assert Map.has_key?(schema, "oneOf")
+      assert Map.has_key?(schema, :oneOf)
       # First option is direct value
-      direct = Enum.find(schema["oneOf"], &(&1["type"] == "string"))
+      direct = Enum.find(schema.oneOf, &(&1.type == :string))
       assert direct != nil
     end
 
@@ -171,9 +171,9 @@ defmodule AshOaskit.FilterBuilderTest do
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
       # Second option is operator object
-      operator_obj = Enum.find(schema["oneOf"], &(&1["type"] == "object"))
+      operator_obj = Enum.find(schema.oneOf, &(&1.type == :object))
       assert operator_obj != nil
-      assert Map.has_key?(operator_obj["properties"], "eq")
+      assert Map.has_key?(operator_obj.properties, "eq")
     end
   end
 
@@ -183,13 +183,13 @@ defmodule AshOaskit.FilterBuilderTest do
     setup do
       attr = %{name: :title, type: :string}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
-      operator_obj = Enum.find(schema["oneOf"], &(&1["type"] == "object"))
-      {:ok, operators: operator_obj["properties"]}
+      operator_obj = Enum.find(schema.oneOf, &(&1.type == :object))
+      {:ok, operators: operator_obj.properties}
     end
 
     test "includes eq operator", %{operators: ops} do
       assert Map.has_key?(ops, "eq")
-      assert ops["eq"]["type"] == "string"
+      assert ops["eq"].type == :string
     end
 
     test "includes ne operator", %{operators: ops} do
@@ -198,7 +198,7 @@ defmodule AshOaskit.FilterBuilderTest do
 
     test "includes contains operator", %{operators: ops} do
       assert Map.has_key?(ops, "contains")
-      assert ops["contains"]["type"] == "string"
+      assert ops["contains"].type == :string
     end
 
     test "includes starts_with operator", %{operators: ops} do
@@ -217,12 +217,12 @@ defmodule AshOaskit.FilterBuilderTest do
 
     test "includes in operator", %{operators: ops} do
       assert Map.has_key?(ops, "in")
-      assert ops["in"]["type"] == "array"
+      assert ops["in"].type == :array
     end
 
     test "includes is_nil operator", %{operators: ops} do
       assert Map.has_key?(ops, "is_nil")
-      assert ops["is_nil"]["type"] == "boolean"
+      assert ops["is_nil"].type == :boolean
     end
   end
 
@@ -232,8 +232,8 @@ defmodule AshOaskit.FilterBuilderTest do
     setup do
       attr = %{name: :count, type: :integer}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
-      operator_obj = Enum.find(schema["oneOf"], &(&1["type"] == "object"))
-      {:ok, operators: operator_obj["properties"]}
+      operator_obj = Enum.find(schema.oneOf, &(&1.type == :object))
+      {:ok, operators: operator_obj.properties}
     end
 
     test "includes comparison operators", %{operators: ops} do
@@ -244,8 +244,8 @@ defmodule AshOaskit.FilterBuilderTest do
     end
 
     test "comparison operators use correct type", %{operators: ops} do
-      assert ops["gt"]["type"] == "integer"
-      assert ops["gte"]["type"] == "integer"
+      assert ops["gt"].type == :integer
+      assert ops["gte"].type == :integer
     end
 
     test "does not include string operators", %{operators: ops} do
@@ -260,8 +260,8 @@ defmodule AshOaskit.FilterBuilderTest do
     setup do
       attr = %{name: :active, type: :boolean}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
-      operator_obj = Enum.find(schema["oneOf"], &(&1["type"] == "object"))
-      {:ok, operators: operator_obj["properties"]}
+      operator_obj = Enum.find(schema.oneOf, &(&1.type == :object))
+      {:ok, operators: operator_obj.properties}
     end
 
     test "includes only eq, ne, is_nil", %{operators: ops} do
@@ -282,8 +282,8 @@ defmodule AshOaskit.FilterBuilderTest do
     setup do
       attr = %{name: :created_at, type: :utc_datetime}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
-      operator_obj = Enum.find(schema["oneOf"], &(&1["type"] == "object"))
-      {:ok, operators: operator_obj["properties"]}
+      operator_obj = Enum.find(schema.oneOf, &(&1.type == :object))
+      {:ok, operators: operator_obj.properties}
     end
 
     test "includes comparison operators", %{operators: ops} do
@@ -294,7 +294,7 @@ defmodule AshOaskit.FilterBuilderTest do
     end
 
     test "uses date-time format", %{operators: ops} do
-      assert ops["eq"]["format"] == "date-time"
+      assert ops["eq"].format == "date-time"
     end
   end
 
@@ -304,8 +304,8 @@ defmodule AshOaskit.FilterBuilderTest do
     setup do
       attr = %{name: :tags, type: {:array, :string}}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
-      operator_obj = Enum.find(schema["oneOf"], &(&1["type"] == "object"))
-      {:ok, operators: operator_obj["properties"]}
+      operator_obj = Enum.find(schema.oneOf, &(&1.type == :object))
+      {:ok, operators: operator_obj.properties}
     end
 
     test "includes contains operator", %{operators: ops} do
@@ -314,12 +314,12 @@ defmodule AshOaskit.FilterBuilderTest do
 
     test "includes has_any operator", %{operators: ops} do
       assert Map.has_key?(ops, "has_any")
-      assert ops["has_any"]["type"] == "array"
+      assert ops["has_any"].type == :array
     end
 
     test "includes has_all operator", %{operators: ops} do
       assert Map.has_key?(ops, "has_all")
-      assert ops["has_all"]["type"] == "array"
+      assert ops["has_all"].type == :array
     end
   end
 
@@ -329,31 +329,31 @@ defmodule AshOaskit.FilterBuilderTest do
     test "and operator is array of objects" do
       schema = FilterBuilder.build_filter_schema(AshOaskit.Test.Post)
 
-      and_schema = schema["properties"]["and"]
-      assert and_schema["type"] == "array"
-      assert and_schema["items"]["type"] == "object"
+      and_schema = schema.properties["and"]
+      assert and_schema.type == :array
+      assert and_schema.items.type == :object
     end
 
     test "or operator is array of objects" do
       schema = FilterBuilder.build_filter_schema(AshOaskit.Test.Post)
 
-      or_schema = schema["properties"]["or"]
-      assert or_schema["type"] == "array"
+      or_schema = schema.properties["or"]
+      assert or_schema.type == :array
     end
 
     test "not operator is object" do
       schema = FilterBuilder.build_filter_schema(AshOaskit.Test.Post)
 
-      not_schema = schema["properties"]["not"]
-      assert not_schema["type"] == "object"
+      not_schema = schema.properties["not"]
+      assert not_schema.type == :object
     end
 
     test "boolean operators have descriptions" do
       schema = FilterBuilder.build_filter_schema(AshOaskit.Test.Post)
 
-      assert schema["properties"]["and"]["description"] != nil
-      assert schema["properties"]["or"]["description"] != nil
-      assert schema["properties"]["not"]["description"] != nil
+      assert schema.properties["and"].description != nil
+      assert schema.properties["or"].description != nil
+      assert schema.properties["not"].description != nil
     end
   end
 
@@ -364,7 +364,7 @@ defmodule AshOaskit.FilterBuilderTest do
       attr = %{name: :name, type: Ash.Type.String}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
-      direct = Enum.find(schema["oneOf"], &(&1["type"] == "string"))
+      direct = Enum.find(schema.oneOf, &(&1.type == :string))
       assert direct != nil
     end
 
@@ -372,7 +372,7 @@ defmodule AshOaskit.FilterBuilderTest do
       attr = %{name: :count, type: Ash.Type.Integer}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
-      direct = Enum.find(schema["oneOf"], &(&1["type"] == "integer"))
+      direct = Enum.find(schema.oneOf, &(&1.type == :integer))
       assert direct != nil
     end
 
@@ -380,7 +380,7 @@ defmodule AshOaskit.FilterBuilderTest do
       attr = %{name: :active, type: Ash.Type.Boolean}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
-      direct = Enum.find(schema["oneOf"], &(&1["type"] == "boolean"))
+      direct = Enum.find(schema.oneOf, &(&1.type == :boolean))
       assert direct != nil
     end
 
@@ -389,8 +389,8 @@ defmodule AshOaskit.FilterBuilderTest do
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
       direct =
-        Enum.find(schema["oneOf"], fn s ->
-          s["type"] == "string" and s["format"] == "uuid"
+        Enum.find(schema.oneOf, fn s ->
+          s.type == :string and s[:format] == "uuid"
         end)
 
       assert direct != nil
@@ -401,8 +401,8 @@ defmodule AshOaskit.FilterBuilderTest do
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
       direct =
-        Enum.find(schema["oneOf"], fn s ->
-          s["type"] == "string" and s["format"] == "date"
+        Enum.find(schema.oneOf, fn s ->
+          s.type == :string and s[:format] == "date"
         end)
 
       assert direct != nil
@@ -416,7 +416,7 @@ defmodule AshOaskit.FilterBuilderTest do
       param = FilterBuilder.build_filter_parameter(AshOaskit.Test.Comment)
 
       assert param != nil
-      assert param["schema"]["properties"]["content"] != nil
+      assert param.schema.properties["content"] != nil
     end
 
     test "handles unknown types gracefully" do
@@ -424,7 +424,7 @@ defmodule AshOaskit.FilterBuilderTest do
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
       # Should default to string
-      direct = Enum.find(schema["oneOf"], &(&1["type"] == "string"))
+      direct = Enum.find(schema.oneOf, &(&1.type == :string))
       assert direct != nil
     end
 
@@ -434,7 +434,7 @@ defmodule AshOaskit.FilterBuilderTest do
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
       # Should default to string type
-      direct = Enum.find(schema["oneOf"], &(&1["type"] == "string"))
+      direct = Enum.find(schema.oneOf, &(&1.type == :string))
       assert direct != nil
     end
 
@@ -444,7 +444,7 @@ defmodule AshOaskit.FilterBuilderTest do
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
       # Verify operators schema includes standard operators
-      operators = Enum.find(schema["oneOf"], &Map.has_key?(&1, "properties"))
+      operators = Enum.find(schema.oneOf, &Map.has_key?(&1, :properties))
       assert operators != nil
     end
 
@@ -454,9 +454,9 @@ defmodule AshOaskit.FilterBuilderTest do
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
       # Should produce array schema
-      direct = Enum.find(schema["oneOf"], &(&1["type"] == "array"))
+      direct = Enum.find(schema.oneOf, &(&1.type == :array))
       assert direct != nil
-      assert direct["items"]["type"] == "array"
+      assert direct.items.type == :array
     end
 
     test "normalize_type handles integer as non-string fallback" do
@@ -465,7 +465,7 @@ defmodule AshOaskit.FilterBuilderTest do
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
       # Should fall back to string
-      direct = Enum.find(schema["oneOf"], &(&1["type"] == "string"))
+      direct = Enum.find(schema.oneOf, &(&1.type == :string))
       assert direct != nil
     end
   end

@@ -27,36 +27,36 @@ defmodule AshOaskit.TagBuilderTest do
     test "builds tag with name only" do
       tag = TagBuilder.build_tag("Posts")
 
-      assert tag == %{"name" => "Posts"}
+      assert tag == %{name: "Posts"}
     end
 
     test "builds tag with name and description" do
       tag = TagBuilder.build_tag("Posts", "Blog post operations")
 
-      assert tag == %{"name" => "Posts", "description" => "Blog post operations"}
+      assert tag == %{name: "Posts", description: "Blog post operations"}
     end
 
     test "builds tag with external docs" do
-      external_docs = %{"url" => "https://docs.example.com/posts"}
+      external_docs = %{url: "https://docs.example.com/posts"}
       tag = TagBuilder.build_tag("Posts", nil, external_docs: external_docs)
 
-      assert tag == %{"name" => "Posts", "externalDocs" => external_docs}
+      assert tag == %{name: "Posts", externalDocs: external_docs}
     end
 
     test "builds tag with all fields" do
-      external_docs = %{"url" => "https://docs.example.com/posts", "description" => "Full docs"}
+      external_docs = %{url: "https://docs.example.com/posts", description: "Full docs"}
       tag = TagBuilder.build_tag("Posts", "Blog posts", external_docs: external_docs)
 
-      assert tag["name"] == "Posts"
-      assert tag["description"] == "Blog posts"
-      assert tag["externalDocs"] == external_docs
+      assert tag[:name] == "Posts"
+      assert tag[:description] == "Blog posts"
+      assert tag[:externalDocs] == external_docs
     end
 
     test "ignores nil description" do
       tag = TagBuilder.build_tag("Posts", nil)
 
-      assert tag == %{"name" => "Posts"}
-      refute Map.has_key?(tag, "description")
+      assert tag == %{name: "Posts"}
+      refute Map.has_key?(tag, :description)
     end
   end
 
@@ -163,7 +163,7 @@ defmodule AshOaskit.TagBuilderTest do
         )
 
       assert [_, _] = tags
-      tag_names = Enum.map(tags, & &1["name"])
+      tag_names = Enum.map(tags, & &1[:name])
       assert "Blog" in tag_names
       assert "Publishing" in tag_names
     end
@@ -175,7 +175,7 @@ defmodule AshOaskit.TagBuilderTest do
           false
         )
 
-      tag_names = Enum.map(tags, & &1["name"])
+      tag_names = Enum.map(tags, & &1[:name])
       assert tag_names == ["Blog", "Publishing"]
     end
 
@@ -193,7 +193,7 @@ defmodule AshOaskit.TagBuilderTest do
       tags = TagBuilder.build_domain_tags([AshOaskit.Test.Blog], true)
 
       assert [_] = tags
-      assert tags |> hd() |> Map.get("description") == "Blog domain operations"
+      assert tags |> hd() |> Map.get(:description) == "Blog domain operations"
     end
   end
 
@@ -208,7 +208,7 @@ defmodule AshOaskit.TagBuilderTest do
       tags = TagBuilder.build_custom_tags([AshOaskit.Test.Blog], false)
 
       assert [_] = tags
-      assert hd(tags)["name"] == "Blog"
+      assert hd(tags)[:name] == "Blog"
     end
   end
 
@@ -223,7 +223,7 @@ defmodule AshOaskit.TagBuilderTest do
       tags = TagBuilder.build_tags([AshOaskit.Test.Blog], group_by: :domain)
 
       # Should have domain tag, not resource tags
-      tag_names = Enum.map(tags, & &1["name"])
+      tag_names = Enum.map(tags, & &1[:name])
       assert "Blog" in tag_names
     end
 
@@ -254,12 +254,12 @@ defmodule AshOaskit.TagBuilderTest do
 
       # With descriptions
       unless Enum.empty?(tags_with) do
-        assert Map.has_key?(hd(tags_with), "description")
+        assert Map.has_key?(hd(tags_with), :description)
       end
 
       # Without descriptions
       unless Enum.empty?(tags_without) do
-        refute Map.has_key?(hd(tags_without), "description")
+        refute Map.has_key?(hd(tags_without), :description)
       end
     end
   end
@@ -277,16 +277,16 @@ defmodule AshOaskit.TagBuilderTest do
 
   describe "merge_tags/2" do
     test "returns generated tags when no custom tags" do
-      generated = [%{"name" => "Posts"}, %{"name" => "Comments"}]
+      generated = [%{name: "Posts"}, %{name: "Comments"}]
 
       result = TagBuilder.merge_tags(generated, [])
 
       # merge_tags sorts results alphabetically
-      assert result == [%{"name" => "Comments"}, %{"name" => "Posts"}]
+      assert result == [%{name: "Comments"}, %{name: "Posts"}]
     end
 
     test "returns custom tags when no generated tags" do
-      custom = [%{"name" => "Custom"}]
+      custom = [%{name: "Custom"}]
 
       result = TagBuilder.merge_tags([], custom)
 
@@ -294,65 +294,65 @@ defmodule AshOaskit.TagBuilderTest do
     end
 
     test "custom tags override generated with same name" do
-      generated = [%{"name" => "Posts", "description" => "Generated"}]
-      custom = [%{"name" => "Posts", "description" => "Custom"}]
+      generated = [%{name: "Posts", description: "Generated"}]
+      custom = [%{name: "Posts", description: "Custom"}]
 
       result = TagBuilder.merge_tags(generated, custom)
 
       assert [_] = result
-      assert hd(result)["description"] == "Custom"
+      assert hd(result)[:description] == "Custom"
     end
 
     test "adds custom tags not in generated" do
-      generated = [%{"name" => "Posts"}]
-      custom = [%{"name" => "Custom"}]
+      generated = [%{name: "Posts"}]
+      custom = [%{name: "Custom"}]
 
       result = TagBuilder.merge_tags(generated, custom)
 
       assert [_, _] = result
-      tag_names = Enum.map(result, & &1["name"])
+      tag_names = Enum.map(result, & &1[:name])
       assert "Posts" in tag_names
       assert "Custom" in tag_names
     end
 
     test "sorts merged tags alphabetically" do
-      generated = [%{"name" => "Zebra"}]
-      custom = [%{"name" => "Alpha"}]
+      generated = [%{name: "Zebra"}]
+      custom = [%{name: "Alpha"}]
 
       result = TagBuilder.merge_tags(generated, custom)
 
-      tag_names = Enum.map(result, & &1["name"])
+      tag_names = Enum.map(result, & &1[:name])
       assert tag_names == ["Alpha", "Zebra"]
     end
 
     test "handles complex merge scenario" do
       generated = [
-        %{"name" => "Posts", "description" => "Generated posts"},
-        %{"name" => "Comments", "description" => "Generated comments"}
+        %{name: "Posts", description: "Generated posts"},
+        %{name: "Comments", description: "Generated comments"}
       ]
 
       custom = [
         %{
-          "name" => "Posts",
-          "description" => "Custom posts",
-          "externalDocs" => %{"url" => "..."}
+          name: "Posts",
+          description: "Custom posts",
+          externalDocs: %{url: "..."}
         },
-        %{"name" => "NewTag", "description" => "Brand new"}
+        %{name: "NewTag", description: "Brand new"}
       ]
 
       result = TagBuilder.merge_tags(generated, custom)
 
       assert [_, _, _] = result
 
-      posts_tag = Enum.find(result, &(&1["name"] == "Posts"))
-      assert posts_tag["description"] == "Custom posts"
-      assert Map.has_key?(posts_tag, "externalDocs")
+      posts_tag = Enum.find(result, &(&1[:name] == "Posts"))
+      assert posts_tag[:description] == "Custom posts"
+      assert Map.has_key?(posts_tag, :externalDocs)
 
-      comments_tag = Enum.find(result, &(&1["name"] == "Comments"))
-      assert comments_tag["description"] == "Generated comments"
+      comments_tag = Enum.find(result, &(&1[:name] == "Comments"))
+      assert comments_tag[:description] == "Generated comments"
 
-      new_tag = Enum.find(result, &(&1["name"] == "NewTag"))
-      assert new_tag["description"] == "Brand new"
+      new_tag = Enum.find(result, &(&1[:name] == "NewTag"))
+      assert new_tag[:description] == "Brand new"
     end
   end
 
@@ -366,8 +366,8 @@ defmodule AshOaskit.TagBuilderTest do
 
       unless Enum.empty?(tags) do
         tag = hd(tags)
-        assert Map.has_key?(tag, "externalDocs")
-        assert String.contains?(tag["externalDocs"]["url"], "https://docs.example.com")
+        assert Map.has_key?(tag, :externalDocs)
+        assert String.contains?(tag[:externalDocs][:url], "https://docs.example.com")
       end
     end
 
@@ -391,7 +391,7 @@ defmodule AshOaskit.TagBuilderTest do
 
       unless Enum.empty?(tags) do
         tag = hd(tags)
-        url = tag["externalDocs"]["url"]
+        url = tag[:externalDocs][:url]
         # Should be lowercase
         assert url == String.downcase(url)
       end
@@ -403,25 +403,21 @@ defmodule AshOaskit.TagBuilderTest do
       tags = [
         TagBuilder.build_tag("Posts"),
         TagBuilder.build_tag("Posts", "Description"),
-        TagBuilder.build_tag("Posts", "Description",
-          external_docs: %{"url" => "https://example.com"}
-        )
+        TagBuilder.build_tag("Posts", "Description", external_docs: %{url: "https://example.com"})
       ]
 
       for tag <- tags do
         assert is_map(tag)
-        assert is_binary(tag["name"])
-        if Map.has_key?(tag, "description"), do: assert(is_binary(tag["description"]))
-        if Map.has_key?(tag, "externalDocs"), do: assert(is_map(tag["externalDocs"]))
+        assert is_binary(tag[:name])
+        if Map.has_key?(tag, :description), do: assert(is_binary(tag[:description]))
+        if Map.has_key?(tag, :externalDocs), do: assert(is_map(tag[:externalDocs]))
       end
     end
 
     test "tags can be serialized to JSON" do
       tags = [
         TagBuilder.build_tag("Posts", "Blog posts"),
-        TagBuilder.build_tag("Comments", nil,
-          external_docs: %{"url" => "https://docs.example.com"}
-        )
+        TagBuilder.build_tag("Comments", nil, external_docs: %{url: "https://docs.example.com"})
       ]
 
       assert {:ok, _json} = Jason.encode(tags)
@@ -437,7 +433,7 @@ defmodule AshOaskit.TagBuilderTest do
       refute Enum.empty?(tags)
       # Tags should have names
       for tag <- tags do
-        assert is_binary(tag["name"])
+        assert is_binary(tag[:name])
       end
     end
 
@@ -445,7 +441,7 @@ defmodule AshOaskit.TagBuilderTest do
       tags = TagBuilder.build_resource_tags([AshOaskit.Test.Publishing], false)
 
       for tag <- tags do
-        refute Map.has_key?(tag, "description")
+        refute Map.has_key?(tag, :description)
       end
     end
 
@@ -464,8 +460,8 @@ defmodule AshOaskit.TagBuilderTest do
         )
 
       for tag <- tags do
-        assert Map.has_key?(tag, "externalDocs")
-        assert String.starts_with?(tag["externalDocs"]["url"], "https://api.example.com/docs")
+        assert Map.has_key?(tag, :externalDocs)
+        assert String.starts_with?(tag[:externalDocs][:url], "https://api.example.com/docs")
       end
     end
 
@@ -491,7 +487,7 @@ defmodule AshOaskit.TagBuilderTest do
 
       assert is_list(tags)
       assert [_] = tags
-      assert hd(tags)["name"] == "Publishing"
+      assert hd(tags)[:name] == "Publishing"
     end
 
     test "get_default_grouping with real domain" do
@@ -511,7 +507,7 @@ defmodule AshOaskit.TagBuilderTest do
       domain_tags = TagBuilder.build_tags(domains, group_by: :domain)
 
       assert length(domain_tags) == 3
-      tag_names = Enum.map(domain_tags, & &1["name"])
+      tag_names = Enum.map(domain_tags, & &1[:name])
       assert "Blog" in tag_names
       assert "Publishing" in tag_names
       assert "SimpleDomain" in tag_names
@@ -523,16 +519,16 @@ defmodule AshOaskit.TagBuilderTest do
 
       custom = [
         %{
-          "name" => "Blog",
-          "description" => "Custom blog description with more detail",
-          "externalDocs" => %{
-            "url" => "https://docs.example.com/blog",
-            "description" => "Complete blog API documentation"
+          name: "Blog",
+          description: "Custom blog description with more detail",
+          externalDocs: %{
+            url: "https://docs.example.com/blog",
+            description: "Complete blog API documentation"
           }
         },
         %{
-          "name" => "Webhooks",
-          "description" => "Webhook configuration endpoints"
+          name: "Webhooks",
+          description: "Webhook configuration endpoints"
         }
       ]
 
@@ -541,9 +537,9 @@ defmodule AshOaskit.TagBuilderTest do
       # Should have Blog (custom), Publishing (generated), Webhooks (custom)
       assert length(merged) == 3
 
-      blog = Enum.find(merged, &(&1["name"] == "Blog"))
-      assert blog["description"] == "Custom blog description with more detail"
-      assert Map.has_key?(blog, "externalDocs")
+      blog = Enum.find(merged, &(&1[:name] == "Blog"))
+      assert blog[:description] == "Custom blog description with more detail"
+      assert Map.has_key?(blog, :externalDocs)
     end
 
     test "operation tagging consistency" do
@@ -575,7 +571,7 @@ defmodule AshOaskit.TagBuilderTest do
   describe "resource grouping with Blog domain" do
     test "resource grouping creates one tag per resource" do
       tags = TagBuilder.build_tags([AshOaskit.Test.Blog], group_by: :resource)
-      names = Enum.map(tags, & &1["name"])
+      names = Enum.map(tags, & &1[:name])
       assert "Post" in names
       assert "Comment" in names
     end

@@ -59,14 +59,14 @@ defmodule AshOaskit.SortBuilder do
 
       iex> SortBuilder.build_sort_parameter(MyApp.Post)
       %{
-        "name" => "sort",
-        "in" => "query",
-        "required" => false,
-        "schema" => %{
-          "type" => "string",
-          "description" => "..."
+        name: "sort",
+        in: :query,
+        required: false,
+        schema: %{
+          type: :string,
+          description: "..."
         },
-        "description" => "Sort criteria for Post records"
+        description: "Sort criteria for Post records"
       }
 
   """
@@ -76,11 +76,11 @@ defmodule AshOaskit.SortBuilder do
       sortable_fields = get_sortable_fields(resource)
 
       %{
-        "name" => "sort",
-        "in" => "query",
-        "required" => false,
-        "schema" => build_sort_schema(sortable_fields, opts),
-        "description" => "Sort criteria for #{resource_name(resource)} records"
+        name: "sort",
+        in: :query,
+        required: false,
+        schema: build_sort_schema(sortable_fields, opts),
+        description: "Sort criteria for #{resource_name(resource)} records"
       }
     else
       nil
@@ -139,8 +139,8 @@ defmodule AshOaskit.SortBuilder do
 
       iex> SortBuilder.build_sort_schema([:title, :created_at], [])
       %{
-        "type" => "string",
-        "description" => "Comma-separated list of fields. Prefix with '-' for descending."
+        type: :string,
+        description: "Comma-separated list of fields. Prefix with '-' for descending."
       }
 
   """
@@ -149,8 +149,8 @@ defmodule AshOaskit.SortBuilder do
     field_list = Enum.map_join(sortable_fields, ", ", &to_string/1)
 
     %{
-      "type" => "string",
-      "description" =>
+      type: :string,
+      description:
         "Comma-separated list of fields to sort by. " <>
           "Prefix with '-' for descending order, '+' or no prefix for ascending. " <>
           "Available fields: #{field_list}"
@@ -176,8 +176,8 @@ defmodule AshOaskit.SortBuilder do
 
       iex> SortBuilder.build_sort_enum_schema([:title, :created_at], [])
       %{
-        "type" => "string",
-        "enum" => ["title", "-title", "created_at", "-created_at"]
+        type: :string,
+        enum: ["title", "-title", "created_at", "-created_at"]
       }
 
   """
@@ -190,8 +190,8 @@ defmodule AshOaskit.SortBuilder do
       end)
 
     %{
-      "type" => "string",
-      "enum" => enum_values
+      type: :string,
+      enum: enum_values
     }
   end
 
@@ -215,10 +215,10 @@ defmodule AshOaskit.SortBuilder do
 
       iex> SortBuilder.build_sort_array_schema([:title], [])
       %{
-        "type" => "array",
-        "items" => %{
-          "type" => "string",
-          "enum" => ["title", "-title"]
+        type: :array,
+        items: %{
+          type: :string,
+          enum: ["title", "-title"]
         }
       }
 
@@ -226,8 +226,8 @@ defmodule AshOaskit.SortBuilder do
   @spec build_sort_array_schema([atom()], keyword()) :: map()
   def build_sort_array_schema(sortable_fields, opts) do
     %{
-      "type" => "array",
-      "items" => build_sort_enum_schema(sortable_fields, opts)
+      type: :array,
+      items: build_sort_enum_schema(sortable_fields, opts)
     }
   end
 

@@ -192,8 +192,8 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
 
     schema =
       %{
-        "type" => "object",
-        "properties" => properties
+        type: :object,
+        properties: properties
       }
 
     schema = maybe_add_required(schema, required)
@@ -223,19 +223,19 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
     json_api_type = RelationshipSchemas.get_json_api_type(resource)
 
     data_schema = %{
-      "type" => "object",
-      "properties" => %{
-        "id" => %{"type" => "string"},
-        "type" => %{"type" => "string", "enum" => [json_api_type]},
-        "attributes" => %{"$ref" => "#/components/schemas/#{schema_name}Attributes"}
+      type: :object,
+      properties: %{
+        id: %{type: :string},
+        type: %{type: :string, enum: [json_api_type]},
+        attributes: %{"$ref" => "#/components/schemas/#{schema_name}Attributes"}
       },
-      "required" => ["id", "type"]
+      required: ["id", "type"]
     }
 
     # Add relationships reference if resource has relationships
     data_schema =
       if RelationshipSchemas.has_relationships?(resource) do
-        put_in(data_schema, ["properties", "relationships"], %{
+        put_in(data_schema, [:properties, :relationships], %{
           "$ref" => "#/components/schemas/#{schema_name}Relationships"
         })
       else
@@ -243,9 +243,9 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
       end
 
     response_schema = %{
-      "type" => "object",
-      "properties" => %{
-        "data" => data_schema
+      type: :object,
+      properties: %{
+        data: data_schema
       }
     }
 
@@ -304,8 +304,8 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
 
     schema =
       %{
-        "type" => "object",
-        "properties" => properties
+        type: :object,
+        properties: properties
       }
 
     schema = maybe_add_required(schema, required)
@@ -337,8 +337,8 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
 
     # For update, nothing is required (partial updates)
     schema = %{
-      "type" => "object",
-      "properties" => properties
+      type: :object,
+      properties: properties
     }
 
     add_schema_fn.(builder, "#{schema_name}UpdateInput", schema)
@@ -447,5 +447,5 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   # Adds required field to schema if there are required properties
   @spec maybe_add_required(map(), [String.t()]) :: map()
   defp maybe_add_required(schema, []), do: schema
-  defp maybe_add_required(schema, required), do: Map.put(schema, "required", required)
+  defp maybe_add_required(schema, required), do: Map.put(schema, :required, required)
 end

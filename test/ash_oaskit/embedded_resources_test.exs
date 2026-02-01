@@ -75,8 +75,9 @@ defmodule AshOaskit.EmbeddedResourcesTest do
           AshOaskit.Test.Author
         )
 
+      # Embedded schema outer structure uses atom keys
       schema = SchemaBuilder.get_schema(builder, "Profile")
-      assert schema["type"] == "object"
+      assert schema[:type] == :object
     end
 
     test "embedded resource properties are generated" do
@@ -86,13 +87,14 @@ defmodule AshOaskit.EmbeddedResourcesTest do
           AshOaskit.Test.Author
         )
 
+      # Embedded schema uses atom keys for property names
       schema = SchemaBuilder.get_schema(builder, "Profile")
 
       # Profile has bio, website, avatar_url, address, social_links
-      assert Map.has_key?(schema["properties"], "bio")
-      assert Map.has_key?(schema["properties"], "website")
-      assert Map.has_key?(schema["properties"], "avatar_url")
-      assert Map.has_key?(schema["properties"], "social_links")
+      assert Map.has_key?(schema[:properties], :bio)
+      assert Map.has_key?(schema[:properties], :website)
+      assert Map.has_key?(schema[:properties], :avatar_url)
+      assert Map.has_key?(schema[:properties], :social_links)
     end
 
     test "parent resource references embedded schema" do
@@ -102,10 +104,11 @@ defmodule AshOaskit.EmbeddedResourcesTest do
           AshOaskit.Test.Author
         )
 
+      # Attributes schema uses atom keys for outer structure
       schema = SchemaBuilder.get_schema(builder, "AuthorAttributes")
 
-      # profile attribute should reference Profile schema
-      profile = schema["properties"]["profile"]
+      # profile attribute - value comes from TypeMapper (string keys)
+      profile = schema[:properties][:profile]
 
       # It may be wrapped in nullable handling
       ref =
@@ -141,14 +144,15 @@ defmodule AshOaskit.EmbeddedResourcesTest do
           AshOaskit.Test.Author
         )
 
+      # Embedded schema uses atom keys for property names
       schema = SchemaBuilder.get_schema(builder, "Address")
 
       # Address has street, city, state, postal_code, country
-      assert Map.has_key?(schema["properties"], "street")
-      assert Map.has_key?(schema["properties"], "city")
-      assert Map.has_key?(schema["properties"], "state")
-      assert Map.has_key?(schema["properties"], "postal_code")
-      assert Map.has_key?(schema["properties"], "country")
+      assert Map.has_key?(schema[:properties], :street)
+      assert Map.has_key?(schema[:properties], :city)
+      assert Map.has_key?(schema[:properties], :state)
+      assert Map.has_key?(schema[:properties], :postal_code)
+      assert Map.has_key?(schema[:properties], :country)
     end
 
     test "parent embedded references nested embedded" do
@@ -160,23 +164,25 @@ defmodule AshOaskit.EmbeddedResourcesTest do
 
       schema = SchemaBuilder.get_schema(builder, "Profile")
 
-      # address attribute should reference Address schema
-      address = schema["properties"]["address"]
+      # address attribute value comes from TypeMapper (string keys)
+      address = schema[:properties][:address]
 
-      # Check for $ref (may be wrapped)
+      # Check for $ref (may be wrapped) - TypeMapper uses string keys
       has_ref =
         cond do
+          is_nil(address) -> false
           Map.has_key?(address, "$ref") -> true
           Map.has_key?(address, "allOf") -> Enum.any?(address["allOf"], &Map.has_key?(&1, "$ref"))
           true -> false
         end
 
-      assert has_ref or address["type"] == "object"
+      assert has_ref or (address != nil and address["type"] == "object")
     end
   end
 
   describe "embedded resource attributes" do
     # Tests for attribute handling in embedded resources.
+    # Embedded attribute VALUES come from TypeMapper (string keys).
 
     setup do
       builder =
@@ -191,14 +197,16 @@ defmodule AshOaskit.EmbeddedResourcesTest do
     test "string attributes are typed correctly", %{builder: builder} do
       schema = SchemaBuilder.get_schema(builder, "Address")
 
-      street = schema["properties"]["street"]
+      # Attribute values come from TypeMapper (string keys)
+      street = schema[:properties][:street]
       assert "string" in List.wrap(street["type"])
     end
 
     test "constraints are preserved", %{builder: builder} do
       schema = SchemaBuilder.get_schema(builder, "Profile")
 
-      bio = schema["properties"]["bio"]
+      # Attribute values come from TypeMapper (string keys)
+      bio = schema[:properties][:bio]
       # bio has max_length: 500
       assert bio["maxLength"] == 500
     end
@@ -206,7 +214,8 @@ defmodule AshOaskit.EmbeddedResourcesTest do
     test "regex patterns are preserved", %{builder: builder} do
       schema = SchemaBuilder.get_schema(builder, "Address")
 
-      postal_code = schema["properties"]["postal_code"]
+      # Attribute values come from TypeMapper (string keys)
+      postal_code = schema[:properties][:postal_code]
       # postal_code has match constraint
       assert Map.has_key?(postal_code, "pattern")
     end
@@ -214,7 +223,8 @@ defmodule AshOaskit.EmbeddedResourcesTest do
     test "defaults are included", %{builder: builder} do
       schema = SchemaBuilder.get_schema(builder, "Address")
 
-      country = schema["properties"]["country"]
+      # Attribute values come from TypeMapper (string keys)
+      country = schema[:properties][:country]
       # country has default: "US"
       assert country["default"] == "US"
     end
@@ -222,21 +232,24 @@ defmodule AshOaskit.EmbeddedResourcesTest do
     test "descriptions are included", %{builder: builder} do
       schema = SchemaBuilder.get_schema(builder, "Address")
 
-      city = schema["properties"]["city"]
+      # Attribute values come from TypeMapper (string keys)
+      city = schema[:properties][:city]
       assert city["description"] == "City name"
     end
 
     test "required fields are detected", %{builder: builder} do
       schema = SchemaBuilder.get_schema(builder, "Address")
 
+      # Required list entries stay as strings
       # city has allow_nil?: false
-      assert "city" in (schema["required"] || [])
+      assert "city" in (schema[:required] || [])
     end
 
     test "array attributes work in embedded", %{builder: builder} do
       schema = SchemaBuilder.get_schema(builder, "Profile")
 
-      social_links = schema["properties"]["social_links"]
+      # Attribute values come from TypeMapper (string keys)
+      social_links = schema[:properties][:social_links]
       assert "array" in List.wrap(social_links["type"])
     end
   end
@@ -293,10 +306,11 @@ defmodule AshOaskit.EmbeddedResourcesTest do
           AshOaskit.Test.Author
         )
 
+      # Attributes schema: outer uses atom keys, values from TypeMapper use string keys
       schema = SchemaBuilder.get_schema(builder, "AuthorAttributes")
 
-      # profile is nullable
-      profile = schema["properties"]["profile"]
+      # profile is nullable - value from TypeMapper
+      profile = schema[:properties][:profile]
       assert profile["nullable"] == true or Map.has_key?(profile, "$ref")
     end
   end
@@ -311,10 +325,12 @@ defmodule AshOaskit.EmbeddedResourcesTest do
           AshOaskit.Test.Author
         )
 
+      # Attributes schema: outer uses atom keys, values from TypeMapper use string keys
       schema = SchemaBuilder.get_schema(builder, "AuthorAttributes")
 
       # profile is nullable - check for 3.1 nullable patterns
-      profile = schema["properties"]["profile"]
+      # Value from TypeMapper uses string keys
+      profile = schema[:properties][:profile]
 
       has_nullable_pattern =
         cond do
@@ -331,6 +347,7 @@ defmodule AshOaskit.EmbeddedResourcesTest do
 
   describe "embedded in input schemas" do
     # Tests that embedded types also work in input schemas.
+    # Input attribute values come from TypeMapper (string keys).
 
     setup do
       builder =
@@ -345,15 +362,15 @@ defmodule AshOaskit.EmbeddedResourcesTest do
     test "create input can include embedded field", %{builder: builder} do
       schema = SchemaBuilder.get_schema(builder, "AuthorCreateInput")
 
-      # profile should be in create input
-      assert Map.has_key?(schema["properties"], "profile")
+      # profile should be in create input - property names are atoms
+      assert Map.has_key?(schema[:properties], :profile)
     end
 
     test "update input can include embedded field", %{builder: builder} do
       schema = SchemaBuilder.get_schema(builder, "AuthorUpdateInput")
 
-      # profile should be in update input
-      assert Map.has_key?(schema["properties"], "profile")
+      # profile should be in update input - property names are atoms
+      assert Map.has_key?(schema[:properties], :profile)
     end
   end
 
@@ -394,10 +411,11 @@ defmodule AshOaskit.EmbeddedResourcesTest do
 
       address = SchemaBuilder.get_schema(builder, "Address")
 
+      # Outer structure uses atom keys
       # Should be a proper object schema
-      assert address["type"] == "object"
-      assert is_map(address["properties"])
-      assert map_size(address["properties"]) > 0
+      assert address[:type] == :object
+      assert is_map(address[:properties])
+      assert map_size(address[:properties]) > 0
     end
   end
 end

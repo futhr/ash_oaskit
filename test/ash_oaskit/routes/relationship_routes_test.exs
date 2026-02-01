@@ -186,41 +186,41 @@ defmodule AshOaskit.RelationshipRoutesTest do
       operation = RelationshipRoutes.build_operation(mock_related_route())
 
       assert is_map(operation)
-      assert Map.has_key?(operation, "operationId")
-      assert Map.has_key?(operation, "summary")
-      assert Map.has_key?(operation, "responses")
+      assert Map.has_key?(operation, :operationId)
+      assert Map.has_key?(operation, :summary)
+      assert Map.has_key?(operation, :responses)
     end
 
     test "operation has correct operationId format" do
       operation = RelationshipRoutes.build_operation(mock_related_route())
 
-      assert operation["operationId"] == "post_comments_related"
+      assert operation[:operationId] == "post_comments_related"
     end
 
     test "operation includes tags" do
       operation = RelationshipRoutes.build_operation(mock_related_route())
 
-      assert operation["tags"] == ["Post"]
+      assert operation[:tags] == ["Post"]
     end
 
     test "operation includes parameters" do
       operation = RelationshipRoutes.build_operation(mock_related_route())
 
-      assert is_list(operation["parameters"])
-      assert operation["parameters"] != []
+      assert is_list(operation[:parameters])
+      assert operation[:parameters] != []
     end
 
     test "related route includes pagination parameters" do
       operation = RelationshipRoutes.build_operation(mock_related_route())
 
-      param_names = Enum.map(operation["parameters"], & &1["name"])
+      param_names = Enum.map(operation[:parameters], & &1[:name])
       assert "page" in param_names
     end
 
     test "relationship route does not include pagination parameters" do
       operation = RelationshipRoutes.build_operation(mock_relationship_route())
 
-      param_names = Enum.map(operation["parameters"], & &1["name"])
+      param_names = Enum.map(operation[:parameters], & &1[:name])
       refute "page" in param_names
     end
 
@@ -251,14 +251,14 @@ defmodule AshOaskit.RelationshipRoutesTest do
     test "related route does not include request body" do
       operation = RelationshipRoutes.build_operation(mock_related_route())
 
-      refute Map.has_key?(operation, "requestBody")
+      refute Map.has_key?(operation, :requestBody)
     end
 
     test "operation includes description" do
       operation = RelationshipRoutes.build_operation(mock_related_route())
 
-      assert Map.has_key?(operation, "description")
-      assert is_binary(operation["description"])
+      assert Map.has_key?(operation, :description)
+      assert is_binary(operation[:description])
     end
   end
 
@@ -268,38 +268,38 @@ defmodule AshOaskit.RelationshipRoutesTest do
     test "generates object type schema" do
       schema = RelationshipRoutes.build_resource_identifier_schema("comment")
 
-      assert schema["type"] == "object"
+      assert schema[:type] == :object
     end
 
     test "requires type and id fields" do
       schema = RelationshipRoutes.build_resource_identifier_schema("comment")
 
-      assert "type" in schema["required"]
-      assert "id" in schema["required"]
+      assert "type" in schema[:required]
+      assert "id" in schema[:required]
     end
 
     test "type property has enum with resource type" do
       schema = RelationshipRoutes.build_resource_identifier_schema("comment")
 
-      assert schema["properties"]["type"]["enum"] == ["comment"]
+      assert schema[:properties]["type"][:enum] == ["comment"]
     end
 
     test "id property is string type" do
       schema = RelationshipRoutes.build_resource_identifier_schema("comment")
 
-      assert schema["properties"]["id"]["type"] == "string"
+      assert schema[:properties]["id"][:type] == :string
     end
 
     test "handles different resource types" do
       schema = RelationshipRoutes.build_resource_identifier_schema("posts")
 
-      assert schema["properties"]["type"]["enum"] == ["posts"]
+      assert schema[:properties]["type"][:enum] == ["posts"]
     end
 
     test "includes description for id field" do
       schema = RelationshipRoutes.build_resource_identifier_schema("comment")
 
-      assert Map.has_key?(schema["properties"]["id"], "description")
+      assert Map.has_key?(schema[:properties]["id"], :description)
     end
   end
 
@@ -338,8 +338,8 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      assert schema["type"] == "array"
-      assert Map.has_key?(schema, "items")
+      assert schema[:type] == :array
+      assert Map.has_key?(schema, :items)
     end
 
     test "to-many relationship items are resource identifiers" do
@@ -349,9 +349,9 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      assert schema["items"]["type"] == "object"
-      assert "type" in schema["items"]["required"]
-      assert "id" in schema["items"]["required"]
+      assert schema[:items][:type] == :object
+      assert "type" in schema[:items][:required]
+      assert "id" in schema[:items][:required]
     end
 
     test "belongs_to relationship generates nullable object schema (3.1)" do
@@ -362,7 +362,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
         )
 
       # In 3.1, nullable is expressed as type array
-      assert "null" in schema["type"] or schema["type"] == ["object", "null"]
+      assert "null" in schema[:type] or schema[:type] == [:object, "null"]
     end
 
     test "has_one relationship generates nullable object schema (3.1)" do
@@ -372,7 +372,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      assert "null" in schema["type"] or schema["type"] == ["object", "null"]
+      assert "null" in schema[:type] or schema[:type] == [:object, "null"]
     end
 
     test "belongs_to relationship uses nullable: true for 3.0" do
@@ -382,7 +382,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.0"
         )
 
-      assert schema["nullable"] == true
+      assert schema[:nullable] == true
     end
 
     test "default version is 3.1" do
@@ -393,7 +393,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
         )
 
       # 3.1 uses type array for nullable
-      assert "null" in schema["type"] or schema["type"] == ["object", "null"]
+      assert "null" in schema[:type] or schema[:type] == [:object, "null"]
     end
   end
 
@@ -415,7 +415,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      assert schema["type"] == "object"
+      assert schema[:type] == :object
     end
 
     test "includes data property" do
@@ -425,7 +425,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      assert Map.has_key?(schema["properties"], "data")
+      assert Map.has_key?(schema[:properties], "data")
     end
 
     test "includes links property" do
@@ -435,9 +435,9 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      assert Map.has_key?(schema["properties"], "links")
-      assert Map.has_key?(schema["properties"]["links"]["properties"], "self")
-      assert Map.has_key?(schema["properties"]["links"]["properties"], "related")
+      assert Map.has_key?(schema[:properties], "links")
+      assert Map.has_key?(schema[:properties]["links"][:properties], "self")
+      assert Map.has_key?(schema[:properties]["links"][:properties], "related")
     end
 
     test "includes meta property" do
@@ -447,7 +447,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      assert Map.has_key?(schema["properties"], "meta")
+      assert Map.has_key?(schema[:properties], "meta")
     end
 
     test "links have URI format" do
@@ -457,8 +457,8 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      assert schema["properties"]["links"]["properties"]["self"]["format"] == "uri"
-      assert schema["properties"]["links"]["properties"]["related"]["format"] == "uri"
+      assert schema[:properties]["links"][:properties]["self"][:format] == :uri
+      assert schema[:properties]["links"][:properties]["related"][:format] == :uri
     end
   end
 
@@ -488,7 +488,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      assert schema["type"] == "object"
+      assert schema[:type] == :object
     end
 
     test "to-many relationship has array data" do
@@ -498,7 +498,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      assert schema["properties"]["data"]["type"] == "array"
+      assert schema[:properties]["data"][:type] == :array
     end
 
     test "to-many relationship references response schema" do
@@ -508,7 +508,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      assert schema["properties"]["data"]["items"]["$ref"] =~ "Response"
+      assert schema[:properties]["data"][:items]["$ref"] =~ "Response"
     end
 
     test "to-one relationship has single nullable data" do
@@ -519,7 +519,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
         )
 
       # Should reference a response schema, not be an array
-      refute schema["properties"]["data"]["type"] == "array"
+      refute schema[:properties]["data"][:type] == :array
     end
 
     test "includes pagination links" do
@@ -529,7 +529,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      links = schema["properties"]["links"]["properties"]
+      links = schema[:properties]["links"][:properties]
       assert Map.has_key?(links, "first")
       assert Map.has_key?(links, "last")
       assert Map.has_key?(links, "prev")
@@ -543,7 +543,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      assert Map.has_key?(schema["properties"]["meta"]["properties"], "total")
+      assert Map.has_key?(schema[:properties]["meta"][:properties], "total")
     end
   end
 
@@ -553,25 +553,25 @@ defmodule AshOaskit.RelationshipRoutesTest do
     test "related route has 200 and 404 responses" do
       operation = RelationshipRoutes.build_operation(mock_related_route())
 
-      assert Map.has_key?(operation["responses"], "200")
-      assert Map.has_key?(operation["responses"], "404")
+      assert Map.has_key?(operation[:responses], "200")
+      assert Map.has_key?(operation[:responses], "404")
     end
 
     test "post_to_relationship has 200, 400, 404 responses" do
       # Note: 422 response is added when relationship exists on the resource
       operation = RelationshipRoutes.build_operation(mock_post_relationship_route())
 
-      assert Map.has_key?(operation["responses"], "200")
-      assert Map.has_key?(operation["responses"], "400")
-      assert Map.has_key?(operation["responses"], "404")
+      assert Map.has_key?(operation[:responses], "200")
+      assert Map.has_key?(operation[:responses], "400")
+      assert Map.has_key?(operation[:responses], "404")
     end
 
     test "delete_from_relationship has 200, 204, 404 responses" do
       operation = RelationshipRoutes.build_operation(mock_delete_relationship_route())
 
-      assert Map.has_key?(operation["responses"], "200")
-      assert Map.has_key?(operation["responses"], "204")
-      assert Map.has_key?(operation["responses"], "404")
+      assert Map.has_key?(operation[:responses], "200")
+      assert Map.has_key?(operation[:responses], "204")
+      assert Map.has_key?(operation[:responses], "404")
     end
   end
 
@@ -581,28 +581,28 @@ defmodule AshOaskit.RelationshipRoutesTest do
     test "extracts single path parameter" do
       operation = RelationshipRoutes.build_operation(mock_related_route())
 
-      path_params = Enum.filter(operation["parameters"], &(&1["in"] == "path"))
+      path_params = Enum.filter(operation[:parameters], &(&1[:in] == :path))
       assert [path_param] = path_params
-      assert path_param["name"] == "id"
+      assert path_param[:name] == "id"
     end
 
     test "path parameters are required" do
       operation = RelationshipRoutes.build_operation(mock_related_route())
 
-      path_params = Enum.filter(operation["parameters"], &(&1["in"] == "path"))
+      path_params = Enum.filter(operation[:parameters], &(&1[:in] == :path))
 
       Enum.each(path_params, fn param ->
-        assert param["required"] == true
+        assert param[:required] == true
       end)
     end
 
     test "path parameters have string schema" do
       operation = RelationshipRoutes.build_operation(mock_related_route())
 
-      path_params = Enum.filter(operation["parameters"], &(&1["in"] == "path"))
+      path_params = Enum.filter(operation[:parameters], &(&1[:in] == :path))
 
       Enum.each(path_params, fn param ->
-        assert param["schema"]["type"] == "string"
+        assert param[:schema][:type] == :string
       end)
     end
   end
@@ -648,10 +648,10 @@ defmodule AshOaskit.RelationshipRoutesTest do
       }
 
       operation = RelationshipRoutes.build_operation(route)
-      path_params = Enum.filter(operation["parameters"], &(&1["in"] == "path"))
+      path_params = Enum.filter(operation[:parameters], &(&1[:in] == :path))
 
       assert [_, _] = path_params
-      param_names = Enum.map(path_params, & &1["name"])
+      param_names = Enum.map(path_params, & &1[:name])
       assert "user_id" in param_names
       assert "id" in param_names
     end
@@ -664,14 +664,14 @@ defmodule AshOaskit.RelationshipRoutesTest do
       operation = RelationshipRoutes.build_operation(mock_related_route(), version: "3.1")
 
       assert is_map(operation)
-      assert Map.has_key?(operation, "responses")
+      assert Map.has_key?(operation, :responses)
     end
 
     test "3.0 version generates valid schema" do
       operation = RelationshipRoutes.build_operation(mock_related_route(), version: "3.0")
 
       assert is_map(operation)
-      assert Map.has_key?(operation, "responses")
+      assert Map.has_key?(operation, :responses)
     end
   end
 
@@ -704,32 +704,32 @@ defmodule AshOaskit.RelationshipRoutesTest do
     test "related route with existing relationship includes proper response schema" do
       operation = RelationshipRoutes.build_operation(related_route_with_real_relationship())
 
-      assert operation["responses"]["200"]["content"]["application/vnd.api+json"]["schema"]
+      assert operation[:responses]["200"][:content]["application/vnd.api+json"][:schema]
     end
 
     test "relationship route with existing relationship includes proper response schema" do
       operation = RelationshipRoutes.build_operation(route_with_real_relationship(:relationship))
 
       response_schema =
-        operation["responses"]["200"]["content"]["application/vnd.api+json"]["schema"]
+        operation[:responses]["200"][:content]["application/vnd.api+json"][:schema]
 
-      assert response_schema["properties"]["data"]
-      assert response_schema["properties"]["links"]
+      assert response_schema[:properties]["data"]
+      assert response_schema[:properties]["links"]
     end
 
     test "post_to_relationship with real relationship includes request body" do
       operation =
         RelationshipRoutes.build_operation(route_with_real_relationship(:post_to_relationship))
 
-      assert operation["requestBody"]
-      assert operation["requestBody"]["content"]["application/vnd.api+json"]["schema"]
+      assert operation[:requestBody]
+      assert operation[:requestBody][:content]["application/vnd.api+json"][:schema]
     end
 
     test "patch_relationship with real relationship includes request body" do
       operation =
         RelationshipRoutes.build_operation(route_with_real_relationship(:patch_relationship))
 
-      assert operation["requestBody"]
+      assert operation[:requestBody]
     end
 
     test "delete_from_relationship with real relationship includes request body" do
@@ -738,7 +738,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
           route_with_real_relationship(:delete_from_relationship)
         )
 
-      assert operation["requestBody"]
+      assert operation[:requestBody]
     end
   end
 
@@ -758,7 +758,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
       operation = RelationshipRoutes.build_operation(route)
 
       # Should use fallback format
-      assert operation["operationId"] =~ "post_comments"
+      assert operation[:operationId] =~ "post_comments"
     end
 
     test "unknown route type uses fallback summary" do
@@ -774,7 +774,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
       operation = RelationshipRoutes.build_operation(route)
 
       # Should use fallback summary
-      assert operation["summary"] =~ "operation"
+      assert operation[:summary] =~ "operation"
     end
 
     test "unknown route type uses fallback responses" do
@@ -789,7 +789,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
 
       operation = RelationshipRoutes.build_operation(route)
 
-      assert operation["responses"]["200"]["description"] == "Successful response"
+      assert operation[:responses]["200"][:description] == "Successful response"
     end
   end
 end

@@ -160,7 +160,7 @@ defmodule AshOaskit.SchemaBuilder do
   ## Examples
 
       iex> builder = AshOaskit.SchemaBuilder.new()
-      ...> schema = %{"type" => "object", "properties" => %{}}
+      ...> schema = %{type: :object, properties: %{}}
       ...> builder = AshOaskit.SchemaBuilder.add_schema(builder, "Post", schema)
       ...> AshOaskit.SchemaBuilder.has_schema?(builder, "Post")
       true
@@ -304,7 +304,7 @@ defmodule AshOaskit.SchemaBuilder do
   A map suitable for the `components` section of an OpenAPI spec:
 
       %{
-        "schemas" => %{
+        schemas: %{
           "PostAttributes" => %{...},
           "PostResponse" => %{...},
           ...
@@ -314,14 +314,14 @@ defmodule AshOaskit.SchemaBuilder do
   ## Examples
 
       iex> builder = AshOaskit.SchemaBuilder.new()
-      ...> builder = AshOaskit.SchemaBuilder.add_schema(builder, "Post", %{"type" => "object"})
+      ...> builder = AshOaskit.SchemaBuilder.add_schema(builder, "Post", %{type: :object})
       ...> components = AshOaskit.SchemaBuilder.to_components(builder)
-      ...> Map.has_key?(components["schemas"], "Post")
+      ...> Map.has_key?(components.schemas, "Post")
       true
   """
   @spec to_components(t()) :: map()
   def to_components(%{schemas: schemas}) do
-    %{"schemas" => schemas}
+    %{schemas: schemas}
   end
 
   @doc """

@@ -40,21 +40,21 @@ defmodule AshOaskit.QueryParametersTest do
     test "generates page parameter with deepObject style" do
       param = QueryParameters.build_page_parameter([])
 
-      assert param["name"] == "page"
-      assert param["in"] == "query"
-      assert param["style"] == "deepObject"
+      assert param.name == "page"
+      assert param.in == :query
+      assert param.style == :deepObject
     end
 
     test "has object type schema" do
       param = QueryParameters.build_page_parameter([])
 
-      assert param["schema"]["type"] == "object"
+      assert param.schema.type == :object
     end
 
     test "default strategy includes offset properties" do
       param = QueryParameters.build_page_parameter([])
 
-      properties = param["schema"]["properties"]
+      properties = param.schema.properties
       assert Map.has_key?(properties, "offset")
       assert Map.has_key?(properties, "limit")
     end
@@ -62,7 +62,7 @@ defmodule AshOaskit.QueryParametersTest do
     test "default strategy includes keyset properties" do
       param = QueryParameters.build_page_parameter([])
 
-      properties = param["schema"]["properties"]
+      properties = param.schema.properties
       assert Map.has_key?(properties, "after")
       assert Map.has_key?(properties, "before")
     end
@@ -70,14 +70,14 @@ defmodule AshOaskit.QueryParametersTest do
     test "includes count property" do
       param = QueryParameters.build_page_parameter([])
 
-      assert Map.has_key?(param["schema"]["properties"], "count")
-      assert param["schema"]["properties"]["count"]["type"] == "boolean"
+      assert Map.has_key?(param.schema.properties, "count")
+      assert param.schema.properties["count"].type == :boolean
     end
 
     test "offset strategy only includes offset properties" do
       param = QueryParameters.build_page_parameter(pagination_strategy: :offset)
 
-      properties = param["schema"]["properties"]
+      properties = param.schema.properties
       assert Map.has_key?(properties, "offset")
       assert Map.has_key?(properties, "limit")
       refute Map.has_key?(properties, "after")
@@ -87,7 +87,7 @@ defmodule AshOaskit.QueryParametersTest do
     test "keyset strategy only includes keyset properties" do
       param = QueryParameters.build_page_parameter(pagination_strategy: :keyset)
 
-      properties = param["schema"]["properties"]
+      properties = param.schema.properties
       assert Map.has_key?(properties, "after")
       assert Map.has_key?(properties, "before")
       refute Map.has_key?(properties, "offset")
@@ -96,29 +96,29 @@ defmodule AshOaskit.QueryParametersTest do
     test "limit has minimum and maximum constraints" do
       param = QueryParameters.build_page_parameter([])
 
-      limit = param["schema"]["properties"]["limit"]
-      assert limit["minimum"] == 1
-      assert limit["maximum"] == 1000
+      limit = param.schema.properties["limit"]
+      assert limit.minimum == 1
+      assert limit.maximum == 1000
     end
 
     test "offset has minimum constraint" do
       param = QueryParameters.build_page_parameter([])
 
-      offset = param["schema"]["properties"]["offset"]
-      assert offset["minimum"] == 0
+      offset = param.schema.properties["offset"]
+      assert offset.minimum == 0
     end
 
     test "includes description" do
       param = QueryParameters.build_page_parameter([])
 
-      assert Map.has_key?(param, "description")
-      assert is_binary(param["description"])
+      assert Map.has_key?(param, :description)
+      assert is_binary(param.description)
     end
 
     test "is not required" do
       param = QueryParameters.build_page_parameter([])
 
-      assert param["required"] == false
+      assert param.required == false
     end
   end
 
@@ -128,21 +128,21 @@ defmodule AshOaskit.QueryParametersTest do
     test "generates fields parameter with deepObject style" do
       param = QueryParameters.build_fields_parameter(["post", "author"])
 
-      assert param["name"] == "fields"
-      assert param["in"] == "query"
-      assert param["style"] == "deepObject"
+      assert param.name == "fields"
+      assert param.in == :query
+      assert param.style == :deepObject
     end
 
     test "has object type schema" do
       param = QueryParameters.build_fields_parameter(["post"])
 
-      assert param["schema"]["type"] == "object"
+      assert param.schema.type == :object
     end
 
     test "includes property for each resource type" do
       param = QueryParameters.build_fields_parameter(["post", "author", "comment"])
 
-      properties = param["schema"]["properties"]
+      properties = param.schema.properties
       assert Map.has_key?(properties, "post")
       assert Map.has_key?(properties, "author")
       assert Map.has_key?(properties, "comment")
@@ -151,34 +151,34 @@ defmodule AshOaskit.QueryParametersTest do
     test "each property is string type" do
       param = QueryParameters.build_fields_parameter(["post", "author"])
 
-      Enum.each(param["schema"]["properties"], fn {_name, prop} ->
-        assert prop["type"] == "string"
+      Enum.each(param.schema.properties, fn {_name, prop} ->
+        assert prop.type == :string
       end)
     end
 
     test "includes additionalProperties for unknown types" do
       param = QueryParameters.build_fields_parameter(["post"])
 
-      assert Map.has_key?(param["schema"], "additionalProperties")
+      assert Map.has_key?(param.schema, :additionalProperties)
     end
 
     test "handles empty resource types list" do
       param = QueryParameters.build_fields_parameter([])
 
-      assert param["schema"]["type"] == "object"
-      assert param["schema"]["properties"] == %{}
+      assert param.schema.type == :object
+      assert param.schema.properties == %{}
     end
 
     test "includes description" do
       param = QueryParameters.build_fields_parameter(["post"])
 
-      assert param["description"] =~ "Sparse fieldsets"
+      assert param.description =~ "Sparse fieldsets"
     end
 
     test "is not required" do
       param = QueryParameters.build_fields_parameter(["post"])
 
-      assert param["required"] == false
+      assert param.required == false
     end
   end
 
@@ -188,47 +188,47 @@ defmodule AshOaskit.QueryParametersTest do
     test "generates include parameter" do
       param = QueryParameters.build_include_parameter([:author, :comments])
 
-      assert param["name"] == "include"
-      assert param["in"] == "query"
+      assert param.name == "include"
+      assert param.in == :query
     end
 
     test "has string type schema" do
       param = QueryParameters.build_include_parameter([:author])
 
-      assert param["schema"]["type"] == "string"
+      assert param.schema.type == :string
     end
 
     test "includes available relationships in description" do
       param = QueryParameters.build_include_parameter([:author, :comments])
 
-      assert param["description"] =~ "author"
-      assert param["description"] =~ "comments"
+      assert param.description =~ "author"
+      assert param.description =~ "comments"
     end
 
     test "mentions dot notation for nested includes" do
       param = QueryParameters.build_include_parameter([:author])
 
-      assert param["description"] =~ "dot notation"
+      assert param.description =~ "dot notation"
     end
 
     test "handles empty includes list" do
       param = QueryParameters.build_include_parameter([])
 
-      assert param["schema"]["type"] == "string"
-      assert param["description"] =~ "relationship paths"
+      assert param.schema.type == :string
+      assert param.description =~ "relationship paths"
     end
 
     test "handles string include paths" do
       param = QueryParameters.build_include_parameter(["author", "comments.author"])
 
-      assert param["description"] =~ "author"
-      assert param["description"] =~ "comments.author"
+      assert param.description =~ "author"
+      assert param.description =~ "comments.author"
     end
 
     test "is not required" do
       param = QueryParameters.build_include_parameter([:author])
 
-      assert param["required"] == false
+      assert param.required == false
     end
   end
 
@@ -244,28 +244,28 @@ defmodule AshOaskit.QueryParametersTest do
 
     test "includes page parameter" do
       params = QueryParameters.all_parameters(AshOaskit.Test.Post)
-      param_names = Enum.map(params, & &1["name"])
+      param_names = Enum.map(params, & &1.name)
 
       assert "page" in param_names
     end
 
     test "includes include parameter" do
       params = QueryParameters.all_parameters(AshOaskit.Test.Post)
-      param_names = Enum.map(params, & &1["name"])
+      param_names = Enum.map(params, & &1.name)
 
       assert "include" in param_names
     end
 
     test "includes fields parameter" do
       params = QueryParameters.all_parameters(AshOaskit.Test.Post)
-      param_names = Enum.map(params, & &1["name"])
+      param_names = Enum.map(params, & &1.name)
 
       assert "fields" in param_names
     end
 
     test "may include filter parameter" do
       params = QueryParameters.all_parameters(AshOaskit.Test.Post)
-      param_names = Enum.map(params, & &1["name"])
+      param_names = Enum.map(params, & &1.name)
 
       # Filter is optional based on derive_filter? setting
       assert is_list(param_names)
@@ -273,7 +273,7 @@ defmodule AshOaskit.QueryParametersTest do
 
     test "may include sort parameter" do
       params = QueryParameters.all_parameters(AshOaskit.Test.Post)
-      param_names = Enum.map(params, & &1["name"])
+      param_names = Enum.map(params, & &1.name)
 
       # Sort is optional based on derive_sort? setting
       assert is_list(param_names)
@@ -288,7 +288,7 @@ defmodule AshOaskit.QueryParametersTest do
     test "accepts pagination_strategy option" do
       params = QueryParameters.all_parameters(AshOaskit.Test.Post, pagination_strategy: :offset)
 
-      page_param = Enum.find(params, &(&1["name"] == "page"))
+      page_param = Enum.find(params, &(&1.name == "page"))
       assert page_param != nil
     end
   end
@@ -304,7 +304,7 @@ defmodule AshOaskit.QueryParametersTest do
 
     test "includes page, include, fields" do
       params = QueryParameters.basic_parameters(AshOaskit.Test.Post)
-      param_names = Enum.map(params, & &1["name"])
+      param_names = Enum.map(params, & &1.name)
 
       assert "page" in param_names
       assert "include" in param_names
@@ -313,14 +313,14 @@ defmodule AshOaskit.QueryParametersTest do
 
     test "does not include filter" do
       params = QueryParameters.basic_parameters(AshOaskit.Test.Post)
-      param_names = Enum.map(params, & &1["name"])
+      param_names = Enum.map(params, & &1.name)
 
       refute "filter" in param_names
     end
 
     test "does not include sort" do
       params = QueryParameters.basic_parameters(AshOaskit.Test.Post)
-      param_names = Enum.map(params, & &1["name"])
+      param_names = Enum.map(params, & &1.name)
 
       refute "sort" in param_names
     end
@@ -348,7 +348,7 @@ defmodule AshOaskit.QueryParametersTest do
 
     test "includes include and fields only" do
       params = QueryParameters.show_parameters(AshOaskit.Test.Post)
-      param_names = Enum.map(params, & &1["name"])
+      param_names = Enum.map(params, & &1.name)
 
       assert "include" in param_names
       assert "fields" in param_names
@@ -356,7 +356,7 @@ defmodule AshOaskit.QueryParametersTest do
 
     test "does not include page, filter, or sort" do
       params = QueryParameters.show_parameters(AshOaskit.Test.Post)
-      param_names = Enum.map(params, & &1["name"])
+      param_names = Enum.map(params, & &1.name)
 
       refute "page" in param_names
       refute "filter" in param_names
@@ -372,9 +372,9 @@ defmodule AshOaskit.QueryParametersTest do
 
       Enum.each(params, fn param ->
         assert is_map(param)
-        assert Map.has_key?(param, "name")
-        assert Map.has_key?(param, "in")
-        assert Map.has_key?(param, "schema")
+        assert Map.has_key?(param, :name)
+        assert Map.has_key?(param, :in)
+        assert Map.has_key?(param, :schema)
       end)
     end
 
@@ -382,7 +382,7 @@ defmodule AshOaskit.QueryParametersTest do
       params = QueryParameters.all_parameters(AshOaskit.Test.Post)
 
       Enum.each(params, fn param ->
-        assert is_binary(param["name"])
+        assert is_binary(param.name)
       end)
     end
 
@@ -390,7 +390,7 @@ defmodule AshOaskit.QueryParametersTest do
       params = QueryParameters.all_parameters(AshOaskit.Test.Post)
 
       Enum.each(params, fn param ->
-        assert param["in"] in ["query", "path", "header", "cookie"]
+        assert param.in in [:query, :path, :header, :cookie]
       end)
     end
 
@@ -404,8 +404,8 @@ defmodule AshOaskit.QueryParametersTest do
     test "pagination properties have descriptions" do
       param = QueryParameters.build_page_parameter([])
 
-      Enum.each(param["schema"]["properties"], fn {_name, prop} ->
-        assert Map.has_key?(prop, "description")
+      Enum.each(param.schema.properties, fn {_name, prop} ->
+        assert Map.has_key?(prop, :description)
       end)
     end
   end
@@ -416,13 +416,13 @@ defmodule AshOaskit.QueryParametersTest do
     test "page parameter has explode: true for deepObject" do
       param = QueryParameters.build_page_parameter([])
 
-      assert param["explode"] == true
+      assert param.explode == true
     end
 
     test "fields parameter has explode: true for deepObject" do
       param = QueryParameters.build_fields_parameter(["post"])
 
-      assert param["explode"] == true
+      assert param.explode == true
     end
 
     test "parameters conform to OpenAPI 3.0+ parameter object" do
@@ -430,11 +430,11 @@ defmodule AshOaskit.QueryParametersTest do
 
       Enum.each(params, fn param ->
         # Required fields
-        assert Map.has_key?(param, "name")
-        assert Map.has_key?(param, "in")
+        assert Map.has_key?(param, :name)
+        assert Map.has_key?(param, :in)
 
         # Schema is required for non-body parameters
-        assert Map.has_key?(param, "schema")
+        assert Map.has_key?(param, :schema)
       end)
     end
   end
@@ -493,7 +493,7 @@ defmodule AshOaskit.QueryParametersTest do
   describe "all_parameters for Article resource" do
     test "returns filter, sort, page, include, and fields params for Article" do
       params = QueryParameters.all_parameters(AshOaskit.Test.Article, version: "3.1")
-      names = Enum.map(params, & &1["name"])
+      names = Enum.map(params, & &1.name)
 
       assert "filter" in names
       assert "sort" in names
@@ -504,14 +504,14 @@ defmodule AshOaskit.QueryParametersTest do
 
     test "include parameter lists relationship names for Article" do
       params = QueryParameters.all_parameters(AshOaskit.Test.Article, version: "3.1")
-      include_param = Enum.find(params, &(&1["name"] == "include"))
-      assert include_param["description"] =~ "author"
+      include_param = Enum.find(params, &(&1.name == "include"))
+      assert include_param.description =~ "author"
     end
 
     test "fields parameter includes related resource types for Article" do
       params = QueryParameters.all_parameters(AshOaskit.Test.Article, version: "3.1")
-      fields_param = Enum.find(params, &(&1["name"] == "fields"))
-      props = fields_param["schema"]["properties"]
+      fields_param = Enum.find(params, &(&1.name == "fields"))
+      props = fields_param.schema.properties
       assert Map.has_key?(props, "article")
     end
   end
@@ -524,7 +524,7 @@ defmodule AshOaskit.QueryParametersTest do
       param = QueryParameters.build_page_parameter(pagination_strategy: :unknown_strategy)
 
       # Should have all pagination properties (falls back to :both)
-      props = param["schema"]["properties"]
+      props = param.schema.properties
       assert Map.has_key?(props, "limit")
       assert Map.has_key?(props, "offset")
       assert Map.has_key?(props, "after")
@@ -534,25 +534,25 @@ defmodule AshOaskit.QueryParametersTest do
     test "offset pagination has offset-specific description" do
       param = QueryParameters.build_page_parameter(pagination_strategy: :offset)
 
-      assert param["description"] =~ "Offset-based pagination"
+      assert param.description =~ "Offset-based pagination"
     end
 
     test "keyset pagination has keyset-specific description" do
       param = QueryParameters.build_page_parameter(pagination_strategy: :keyset)
 
-      assert param["description"] =~ "Keyset"
+      assert param.description =~ "Keyset"
     end
 
     test "both pagination has combined description" do
       param = QueryParameters.build_page_parameter(pagination_strategy: :both)
 
-      assert param["description"] =~ "both offset"
+      assert param.description =~ "both offset"
     end
 
     test "unknown pagination strategy falls back to both description" do
       param = QueryParameters.build_page_parameter(pagination_strategy: :invalid)
 
-      assert param["description"] =~ "both"
+      assert param.description =~ "both"
     end
 
     test "handles resource without AshJsonApi type" do
@@ -575,7 +575,7 @@ defmodule AshOaskit.QueryParametersTest do
       params = QueryParameters.index_parameters(AshOaskit.Test.NoTypeResource)
 
       # fields parameter should still work
-      fields_param = Enum.find(params, &(&1["name"] == "fields"))
+      fields_param = Enum.find(params, &(&1.name == "fields"))
       assert fields_param != nil
     end
   end

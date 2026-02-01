@@ -68,64 +68,62 @@ defmodule AshOaskit.ErrorSchemas do
 
   ## Examples
 
-      iex> ErrorSchemas.error_object_schema()
-      %{
-        "type" => "object",
-        "properties" => %{
-          "id" => %{"type" => "string"},
-          "status" => %{"type" => "string"},
-          ...
-        }
-      }
+      iex> schema = ErrorSchemas.error_object_schema()
+      ...> schema[:type]
+      :object
+      iex> Map.has_key?(schema[:properties], :id)
+      true
+      iex> Map.has_key?(schema[:properties], :status)
+      true
 
   """
   @spec error_object_schema() :: map()
   def error_object_schema do
     %{
-      "type" => "object",
-      "properties" => %{
-        "id" => %{
-          "type" => "string",
-          "description" => "A unique identifier for this particular occurrence of the problem"
+      type: :object,
+      properties: %{
+        id: %{
+          type: :string,
+          description: "A unique identifier for this particular occurrence of the problem"
         },
-        "status" => %{
-          "type" => "string",
-          "description" => "The HTTP status code applicable to this problem, as a string"
+        status: %{
+          type: :string,
+          description: "The HTTP status code applicable to this problem, as a string"
         },
-        "code" => %{
-          "type" => "string",
-          "description" => "An application-specific error code"
+        code: %{
+          type: :string,
+          description: "An application-specific error code"
         },
-        "title" => %{
-          "type" => "string",
-          "description" => "A short, human-readable summary of the problem"
+        title: %{
+          type: :string,
+          description: "A short, human-readable summary of the problem"
         },
-        "detail" => %{
-          "type" => "string",
-          "description" => "A human-readable explanation specific to this occurrence"
+        detail: %{
+          type: :string,
+          description: "A human-readable explanation specific to this occurrence"
         },
-        "source" => %{
-          "type" => "object",
-          "description" => "An object containing references to the source of the error",
-          "properties" => %{
-            "pointer" => %{
-              "type" => "string",
-              "description" => "A JSON Pointer to the value in the request that caused the error"
+        source: %{
+          type: :object,
+          description: "An object containing references to the source of the error",
+          properties: %{
+            pointer: %{
+              type: :string,
+              description: "A JSON Pointer to the value in the request that caused the error"
             },
-            "parameter" => %{
-              "type" => "string",
-              "description" => "A string indicating which query parameter caused the error"
+            parameter: %{
+              type: :string,
+              description: "A string indicating which query parameter caused the error"
             },
-            "header" => %{
-              "type" => "string",
-              "description" => "A string indicating which header caused the error"
+            header: %{
+              type: :string,
+              description: "A string indicating which header caused the error"
             }
           }
         },
-        "meta" => %{
-          "type" => "object",
-          "description" => "A meta object containing non-standard meta-information",
-          "additionalProperties" => true
+        meta: %{
+          type: :object,
+          description: "A meta object containing non-standard meta-information",
+          additionalProperties: true
         }
       }
     }
@@ -144,11 +142,11 @@ defmodule AshOaskit.ErrorSchemas do
 
       iex> ErrorSchemas.error_response_schema()
       %{
-        "type" => "object",
-        "properties" => %{
-          "errors" => %{
-            "type" => "array",
-            "items" => %{...}
+        type: :object,
+        properties: %{
+          errors: %{
+            type: :array,
+            items: %{...}
           }
         }
       }
@@ -157,27 +155,27 @@ defmodule AshOaskit.ErrorSchemas do
   @spec error_response_schema() :: map()
   def error_response_schema do
     %{
-      "type" => "object",
-      "required" => ["errors"],
-      "properties" => %{
-        "errors" => %{
-          "type" => "array",
-          "items" => error_object_schema(),
-          "minItems" => 1,
-          "description" => "An array of error objects"
+      type: :object,
+      required: ["errors"],
+      properties: %{
+        errors: %{
+          type: :array,
+          items: error_object_schema(),
+          minItems: 1,
+          description: "An array of error objects"
         },
-        "meta" => %{
-          "type" => "object",
-          "description" => "A meta object containing non-standard meta-information",
-          "additionalProperties" => true
+        meta: %{
+          type: :object,
+          description: "A meta object containing non-standard meta-information",
+          additionalProperties: true
         },
-        "jsonapi" => %{
-          "type" => "object",
-          "description" => "The JSON:API version object",
-          "properties" => %{
-            "version" => %{
-              "type" => "string",
-              "description" => "The JSON:API version"
+        jsonapi: %{
+          type: :object,
+          description: "The JSON:API version object",
+          properties: %{
+            version: %{
+              type: :string,
+              description: "The JSON:API version"
             }
           }
         }
@@ -203,10 +201,10 @@ defmodule AshOaskit.ErrorSchemas do
 
       iex> ErrorSchemas.error_response("404")
       %{
-        "description" => "Resource not found",
-        "content" => %{
+        description: "Resource not found",
+        content: %{
           "application/vnd.api+json" => %{
-            "schema" => %{"$ref" => "#/components/schemas/JsonApiError"}
+            schema: %{"$ref" => "#/components/schemas/JsonApiError"}
           }
         }
       }
@@ -215,10 +213,10 @@ defmodule AshOaskit.ErrorSchemas do
   @spec error_response(String.t()) :: map()
   def error_response(status_code) do
     %{
-      "description" => error_description(status_code),
-      "content" => %{
+      description: error_description(status_code),
+      content: %{
         "application/vnd.api+json" => %{
-          "schema" => %{
+          schema: %{
             "$ref" => "#/components/schemas/JsonApiError"
           }
         }
@@ -344,9 +342,9 @@ defmodule AshOaskit.ErrorSchemas do
 
   ## Examples
 
-      iex> ErrorSchemas.add_error_components(%{"schemas" => %{}})
+      iex> ErrorSchemas.add_error_components(%{schemas: %{}})
       %{
-        "schemas" => %{
+        schemas: %{
           "JsonApiError" => %{...},
           "JsonApiErrorObject" => %{...}
         }
@@ -355,14 +353,14 @@ defmodule AshOaskit.ErrorSchemas do
   """
   @spec add_error_components(map()) :: map()
   def add_error_components(components) do
-    schemas = Map.get(components, "schemas", %{})
+    schemas = Map.get(components, :schemas, %{})
 
     updated_schemas =
       schemas
       |> Map.put("JsonApiError", error_response_schema())
       |> Map.put("JsonApiErrorObject", error_object_schema())
 
-    Map.put(components, "schemas", updated_schemas)
+    Map.put(components, :schemas, updated_schemas)
   end
 
   @doc """
@@ -410,10 +408,10 @@ defmodule AshOaskit.ErrorSchemas do
   @spec inline_error_response(String.t()) :: map()
   def inline_error_response(status_code) do
     %{
-      "description" => error_description(status_code),
-      "content" => %{
+      description: error_description(status_code),
+      content: %{
         "application/vnd.api+json" => %{
-          "schema" => error_response_schema()
+          schema: error_response_schema()
         }
       }
     }

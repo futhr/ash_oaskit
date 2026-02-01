@@ -79,12 +79,12 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemas do
           {rel_schema, bldr} =
             build_relationship_schema(bldr, rel, seen_fn, add_resource_schemas_fn)
 
-          {Map.put(props, to_string(rel.name), rel_schema), bldr}
+          {Map.put(props, rel.name, rel_schema), bldr}
         end)
 
       schema = %{
-        "type" => "object",
-        "properties" => properties
+        type: :object,
+        properties: properties
       }
 
       add_schema_fn.(builder, "#{schema_name}Relationships", schema)
@@ -139,12 +139,12 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemas do
 
     # Resource identifier schema
     identifier_schema = %{
-      "type" => "object",
-      "properties" => %{
-        "id" => %{"type" => "string"},
-        "type" => %{"type" => "string", "enum" => [rel_type]}
+      type: :object,
+      properties: %{
+        id: %{type: :string},
+        type: %{type: :string, enum: [rel_type]}
       },
-      "required" => ["id", "type"]
+      required: ["id", "type"]
     }
 
     # Data schema based on cardinality
@@ -152,35 +152,35 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemas do
       case cardinality do
         :many ->
           %{
-            "type" => "array",
-            "items" => identifier_schema
+            type: :array,
+            items: identifier_schema
           }
 
         :one ->
           case builder.version do
             "3.1" ->
               %{
-                "oneOf" => [
+                oneOf: [
                   identifier_schema,
-                  %{"type" => "null"}
+                  %{type: :null}
                 ]
               }
 
             _ ->
-              Map.put(identifier_schema, "nullable", true)
+              Map.put(identifier_schema, :nullable, true)
           end
       end
 
     # Relationship object with data and links
     rel_schema = %{
-      "type" => "object",
-      "properties" => %{
-        "data" => data_schema,
-        "links" => %{
-          "type" => "object",
-          "properties" => %{
-            "related" => %{"type" => "string", "format" => "uri"},
-            "self" => %{"type" => "string", "format" => "uri"}
+      type: :object,
+      properties: %{
+        data: data_schema,
+        links: %{
+          type: :object,
+          properties: %{
+            related: %{type: :string, format: :uri},
+            self: %{type: :string, format: :uri}
           }
         }
       }

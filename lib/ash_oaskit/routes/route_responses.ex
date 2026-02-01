@@ -61,22 +61,22 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
 
       iex> RouteResponses.build_resource_identifier_schema("comment")
       %{
-        "type" => "object",
-        "required" => ["type", "id"],
-        "properties" => %{
-          "type" => %{"type" => "string", "enum" => ["comment"]},
-          "id" => %{"type" => "string", "description" => "The unique identifier of the resource"}
+        type: :object,
+        required: ["type", "id"],
+        properties: %{
+          "type" => %{type: :string, enum: ["comment"]},
+          "id" => %{type: :string, description: "The unique identifier of the resource"}
         }
       }
   """
   @spec build_resource_identifier_schema(String.t()) :: map()
   def build_resource_identifier_schema(resource_type) do
     %{
-      "type" => "object",
-      "required" => ["type", "id"],
-      "properties" => %{
-        "type" => %{"type" => "string", "enum" => [resource_type]},
-        "id" => %{"type" => "string", "description" => "The unique identifier of the resource"}
+      type: :object,
+      required: ["type", "id"],
+      properties: %{
+        "type" => %{type: :string, enum: [resource_type]},
+        "id" => %{type: :string, description: "The unique identifier of the resource"}
       }
     }
   end
@@ -108,8 +108,8 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
 
       :many ->
         %{
-          "type" => "array",
-          "items" => identifier_schema
+          type: :array,
+          items: identifier_schema
         }
     end
   end
@@ -131,27 +131,27 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
   @spec build_relationship_response_schema(map() | struct(), keyword()) :: map()
   def build_relationship_response_schema(relationship, opts) do
     %{
-      "type" => "object",
-      "properties" => %{
+      type: :object,
+      properties: %{
         "data" => build_relationship_linkage_schema(relationship, opts),
         "links" => %{
-          "type" => "object",
-          "properties" => %{
+          type: :object,
+          properties: %{
             "self" => %{
-              "type" => "string",
-              "format" => "uri",
-              "description" => "Link to this relationship"
+              type: :string,
+              format: :uri,
+              description: "Link to this relationship"
             },
             "related" => %{
-              "type" => "string",
-              "format" => "uri",
-              "description" => "Link to the related resource(s)"
+              type: :string,
+              format: :uri,
+              description: "Link to the related resource(s)"
             }
           }
         },
         "meta" => %{
-          "type" => "object",
-          "description" => "Optional metadata about the relationship"
+          type: :object,
+          description: "Optional metadata about the relationship"
         }
       }
     }
@@ -187,29 +187,29 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
 
         :many ->
           %{
-            "type" => "array",
-            "items" => %{"$ref" => "#/components/schemas/#{schema_name}Response"}
+            type: :array,
+            items: %{"$ref" => "#/components/schemas/#{schema_name}Response"}
           }
       end
 
     %{
-      "type" => "object",
-      "properties" => %{
+      type: :object,
+      properties: %{
         "data" => data_schema,
         "links" => %{
-          "type" => "object",
-          "properties" => %{
-            "self" => %{"type" => "string", "format" => "uri"},
-            "first" => %{"type" => "string", "format" => "uri"},
-            "last" => %{"type" => "string", "format" => "uri"},
-            "prev" => %{"type" => "string", "format" => "uri"},
-            "next" => %{"type" => "string", "format" => "uri"}
+          type: :object,
+          properties: %{
+            "self" => %{type: :string, format: :uri},
+            "first" => %{type: :string, format: :uri},
+            "last" => %{type: :string, format: :uri},
+            "prev" => %{type: :string, format: :uri},
+            "next" => %{type: :string, format: :uri}
           }
         },
         "meta" => %{
-          "type" => "object",
-          "properties" => %{
-            "total" => %{"type" => "integer", "description" => "Total count of related resources"}
+          type: :object,
+          properties: %{
+            "total" => %{type: :integer, description: "Total count of related resources"}
           }
         }
       }
@@ -235,19 +235,19 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
     if relationship do
       %{
         "200" => %{
-          "description" => "Successful response with related resources",
-          "content" => %{
+          description: "Successful response with related resources",
+          content: %{
             "application/vnd.api+json" => %{
-              "schema" => build_related_response_schema(relationship, opts)
+              schema: build_related_response_schema(relationship, opts)
             }
           }
         },
-        "404" => %{"description" => "Resource not found"}
+        "404" => %{description: "Resource not found"}
       }
     else
       %{
-        "200" => %{"description" => "Successful response"},
-        "404" => %{"description" => "Resource not found"}
+        "200" => %{description: "Successful response"},
+        "404" => %{description: "Resource not found"}
       }
     end
   end
@@ -271,19 +271,19 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
     if relationship do
       %{
         "200" => %{
-          "description" => "Successful response with relationship linkage",
-          "content" => %{
+          description: "Successful response with relationship linkage",
+          content: %{
             "application/vnd.api+json" => %{
-              "schema" => build_relationship_response_schema(relationship, opts)
+              schema: build_relationship_response_schema(relationship, opts)
             }
           }
         },
-        "404" => %{"description" => "Resource not found"}
+        "404" => %{description: "Resource not found"}
       }
     else
       %{
-        "200" => %{"description" => "Successful response"},
-        "404" => %{"description" => "Resource not found"}
+        "200" => %{description: "Successful response"},
+        "404" => %{description: "Resource not found"}
       }
     end
   end
@@ -308,22 +308,22 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
     if relationship do
       %{
         success_code => %{
-          "description" => "Relationship modified successfully",
-          "content" => %{
+          description: "Relationship modified successfully",
+          content: %{
             "application/vnd.api+json" => %{
-              "schema" => build_relationship_response_schema(relationship, opts)
+              schema: build_relationship_response_schema(relationship, opts)
             }
           }
         },
-        "400" => %{"description" => "Bad request - invalid relationship data"},
-        "404" => %{"description" => "Resource not found"},
-        "422" => %{"description" => "Unprocessable entity - validation error"}
+        "400" => %{description: "Bad request - invalid relationship data"},
+        "404" => %{description: "Resource not found"},
+        "422" => %{description: "Unprocessable entity - validation error"}
       }
     else
       %{
-        success_code => %{"description" => "Successful response"},
-        "400" => %{"description" => "Bad request"},
-        "404" => %{"description" => "Resource not found"}
+        success_code => %{description: "Successful response"},
+        "400" => %{description: "Bad request"},
+        "404" => %{description: "Resource not found"}
       }
     end
   end
@@ -338,9 +338,9 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
   @spec build_delete_relationship_responses() :: map()
   def build_delete_relationship_responses do
     %{
-      "200" => %{"description" => "Resources removed from relationship successfully"},
-      "204" => %{"description" => "Relationship cleared successfully"},
-      "404" => %{"description" => "Resource not found"}
+      "200" => %{description: "Resources removed from relationship successfully"},
+      "204" => %{description: "Relationship cleared successfully"},
+      "404" => %{description: "Resource not found"}
     }
   end
 
@@ -359,13 +359,13 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
   @spec build_request_body(map() | struct(), keyword()) :: map()
   def build_request_body(relationship, opts) do
     %{
-      "required" => true,
-      "content" => %{
+      required: true,
+      content: %{
         "application/vnd.api+json" => %{
-          "schema" => %{
-            "type" => "object",
-            "required" => ["data"],
-            "properties" => %{
+          schema: %{
+            type: :object,
+            required: ["data"],
+            properties: %{
               "data" => build_relationship_linkage_schema(relationship, opts)
             }
           }
@@ -427,10 +427,10 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
 
   # Makes schema nullable based on OpenAPI version
   defp nullable_schema(schema, "3.1") do
-    Map.update(schema, "type", ["object", "null"], fn type -> [type, "null"] end)
+    Map.update(schema, :type, [:object, "null"], fn type -> [type, "null"] end)
   end
 
   defp nullable_schema(schema, _version) do
-    Map.put(schema, "nullable", true)
+    Map.put(schema, :nullable, true)
   end
 end

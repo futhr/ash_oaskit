@@ -79,9 +79,9 @@ defmodule AshOaskit.ResponseLinks do
 
       iex> AshOaskit.ResponseLinks.build_resource_links_schema(version: "3.1")
       %{
-        "type" => "object",
-        "properties" => %{
-          "self" => %{"type" => "string", "format" => "uri"}
+        type: :object,
+        properties: %{
+          self: %{type: :string, format: :uri}
         }
       }
   """
@@ -90,11 +90,11 @@ defmodule AshOaskit.ResponseLinks do
     _version = Keyword.get(opts, :version, "3.1")
 
     %{
-      "type" => "object",
-      "properties" => %{
-        "self" => uri_schema()
+      type: :object,
+      properties: %{
+        self: uri_schema()
       },
-      "additionalProperties" => false
+      additionalProperties: false
     }
   end
 
@@ -112,13 +112,13 @@ defmodule AshOaskit.ResponseLinks do
 
       iex> AshOaskit.ResponseLinks.build_collection_links_schema(version: "3.1")
       %{
-        "type" => "object",
-        "properties" => %{
-          "self" => %{"type" => "string", "format" => "uri"},
-          "first" => %{"type" => "string", "format" => "uri"},
-          "last" => %{"type" => "string", "format" => "uri"},
-          "prev" => %{"type" => ["string", "null"], "format" => "uri"},
-          "next" => %{"type" => ["string", "null"], "format" => "uri"}
+        type: :object,
+        properties: %{
+          self: %{type: :string, format: :uri},
+          first: %{type: :string, format: :uri},
+          last: %{type: :string, format: :uri},
+          prev: %{type: [:string, :null], format: :uri},
+          next: %{type: [:string, :null], format: :uri}
         }
       }
   """
@@ -127,15 +127,15 @@ defmodule AshOaskit.ResponseLinks do
     version = Keyword.get(opts, :version, "3.1")
 
     %{
-      "type" => "object",
-      "properties" => %{
-        "self" => uri_schema(),
-        "first" => uri_schema(),
-        "last" => uri_schema(),
-        "prev" => nullable_uri_schema(version),
-        "next" => nullable_uri_schema(version)
+      type: :object,
+      properties: %{
+        self: uri_schema(),
+        first: uri_schema(),
+        last: uri_schema(),
+        prev: nullable_uri_schema(version),
+        next: nullable_uri_schema(version)
       },
-      "additionalProperties" => false
+      additionalProperties: false
     }
   end
 
@@ -152,12 +152,12 @@ defmodule AshOaskit.ResponseLinks do
 
       iex> AshOaskit.ResponseLinks.build_pagination_links_schema(version: "3.0")
       %{
-        "type" => "object",
-        "properties" => %{
-          "first" => %{"type" => "string", "format" => "uri"},
-          "last" => %{"type" => "string", "format" => "uri"},
-          "prev" => %{"type" => "string", "format" => "uri", "nullable" => true},
-          "next" => %{"type" => "string", "format" => "uri", "nullable" => true}
+        type: :object,
+        properties: %{
+          first: %{type: :string, format: :uri},
+          last: %{type: :string, format: :uri},
+          prev: %{type: :string, format: :uri, nullable: true},
+          next: %{type: :string, format: :uri, nullable: true}
         }
       }
   """
@@ -166,14 +166,14 @@ defmodule AshOaskit.ResponseLinks do
     version = Keyword.get(opts, :version, "3.1")
 
     %{
-      "type" => "object",
-      "properties" => %{
-        "first" => uri_schema(),
-        "last" => uri_schema(),
-        "prev" => nullable_uri_schema(version),
-        "next" => nullable_uri_schema(version)
+      type: :object,
+      properties: %{
+        first: uri_schema(),
+        last: uri_schema(),
+        prev: nullable_uri_schema(version),
+        next: nullable_uri_schema(version)
       },
-      "description" => "Pagination navigation links"
+      description: "Pagination navigation links"
     }
   end
 
@@ -192,10 +192,10 @@ defmodule AshOaskit.ResponseLinks do
 
       iex> AshOaskit.ResponseLinks.build_relationship_links_schema(version: "3.1")
       %{
-        "type" => "object",
-        "properties" => %{
-          "self" => %{"type" => "string", "format" => "uri"},
-          "related" => %{"type" => "string", "format" => "uri"}
+        type: :object,
+        properties: %{
+          self: %{type: :string, format: :uri},
+          related: %{type: :string, format: :uri}
         }
       }
   """
@@ -204,12 +204,12 @@ defmodule AshOaskit.ResponseLinks do
     _version = Keyword.get(opts, :version, "3.1")
 
     %{
-      "type" => "object",
-      "properties" => %{
-        "self" => uri_schema(),
-        "related" => uri_schema()
+      type: :object,
+      properties: %{
+        self: uri_schema(),
+        related: uri_schema()
       },
-      "description" => "Links for relationship navigation"
+      description: "Links for relationship navigation"
     }
   end
 
@@ -228,13 +228,13 @@ defmodule AshOaskit.ResponseLinks do
 
       iex> AshOaskit.ResponseLinks.build_document_links_schema(version: "3.1", paginated: true)
       %{
-        "type" => "object",
-        "properties" => %{
-          "self" => %{"type" => "string", "format" => "uri"},
-          "first" => %{"type" => "string", "format" => "uri"},
-          "last" => %{"type" => "string", "format" => "uri"},
-          "prev" => %{"type" => ["string", "null"], "format" => "uri"},
-          "next" => %{"type" => ["string", "null"], "format" => "uri"}
+        type: :object,
+        properties: %{
+          self: %{type: :string, format: :uri},
+          first: %{type: :string, format: :uri},
+          last: %{type: :string, format: :uri},
+          prev: %{type: [:string, :null], format: :uri},
+          next: %{type: [:string, :null], format: :uri}
         }
       }
   """
@@ -244,24 +244,24 @@ defmodule AshOaskit.ResponseLinks do
     paginated = Keyword.get(opts, :paginated, false)
 
     base_properties = %{
-      "self" => uri_schema()
+      self: uri_schema()
     }
 
     properties =
       if paginated do
         Map.merge(base_properties, %{
-          "first" => uri_schema(),
-          "last" => uri_schema(),
-          "prev" => nullable_uri_schema(version),
-          "next" => nullable_uri_schema(version)
+          first: uri_schema(),
+          last: uri_schema(),
+          prev: nullable_uri_schema(version),
+          next: nullable_uri_schema(version)
         })
       else
         base_properties
       end
 
     %{
-      "type" => "object",
-      "properties" => properties
+      type: :object,
+      properties: properties
     }
   end
 
@@ -279,16 +279,16 @@ defmodule AshOaskit.ResponseLinks do
 
       iex> AshOaskit.ResponseLinks.build_flexible_links_schema(version: "3.1")
       %{
-        "type" => "object",
-        "properties" => %{
-          "self" => %{"type" => "string", "format" => "uri"},
-          "related" => %{"type" => "string", "format" => "uri"},
-          "first" => %{"type" => "string", "format" => "uri"},
-          "last" => %{"type" => "string", "format" => "uri"},
-          "prev" => %{"type" => ["string", "null"], "format" => "uri"},
-          "next" => %{"type" => ["string", "null"], "format" => "uri"}
+        type: :object,
+        properties: %{
+          self: %{type: :string, format: :uri},
+          related: %{type: :string, format: :uri},
+          first: %{type: :string, format: :uri},
+          last: %{type: :string, format: :uri},
+          prev: %{type: [:string, :null], format: :uri},
+          next: %{type: [:string, :null], format: :uri}
         },
-        "additionalProperties" => %{"type" => "string", "format" => "uri"}
+        additionalProperties: %{type: :string, format: :uri}
       }
   """
   @spec build_flexible_links_schema(keyword()) :: map()
@@ -296,17 +296,17 @@ defmodule AshOaskit.ResponseLinks do
     version = Keyword.get(opts, :version, "3.1")
 
     %{
-      "type" => "object",
-      "properties" => %{
-        "self" => uri_schema(),
-        "related" => uri_schema(),
-        "first" => uri_schema(),
-        "last" => uri_schema(),
-        "prev" => nullable_uri_schema(version),
-        "next" => nullable_uri_schema(version)
+      type: :object,
+      properties: %{
+        self: uri_schema(),
+        related: uri_schema(),
+        first: uri_schema(),
+        last: uri_schema(),
+        prev: nullable_uri_schema(version),
+        next: nullable_uri_schema(version)
       },
-      "additionalProperties" => uri_schema(),
-      "description" => "Links object for HATEOAS navigation"
+      additionalProperties: uri_schema(),
+      description: "Links object for HATEOAS navigation"
     }
   end
 
@@ -323,13 +323,13 @@ defmodule AshOaskit.ResponseLinks do
 
   ## Examples
 
-      response = %{"type" => "object", "properties" => %{"data" => %{}}}
+      response = %{type: :object, properties: %{data: %{}}}
       AshOaskit.ResponseLinks.add_links_to_response(response, link_type: :collection)
       # => %{
-      #      "type" => "object",
-      #      "properties" => %{
-      #        "data" => %{},
-      #        "links" => %{...collection_links_schema...}
+      #      type: :object,
+      #      properties: %{
+      #        data: %{},
+      #        links: %{...collection_links_schema...}
       #      }
       #    }
   """
@@ -345,10 +345,10 @@ defmodule AshOaskit.ResponseLinks do
         _ -> build_resource_links_schema(opts)
       end
 
-    properties = Map.get(response_schema, "properties", %{})
-    updated_properties = Map.put(properties, "links", links_schema)
+    properties = Map.get(response_schema, :properties, %{})
+    updated_properties = Map.put(properties, :links, links_schema)
 
-    Map.put(response_schema, "properties", updated_properties)
+    Map.put(response_schema, :properties, updated_properties)
   end
 
   @doc """
@@ -412,14 +412,14 @@ defmodule AshOaskit.ResponseLinks do
 
       iex> AshOaskit.ResponseLinks.build_link_object_schema(version: "3.1")
       %{
-        "oneOf" => [
-          %{"type" => "string", "format" => "uri"},
+        oneOf: [
+          %{type: :string, format: :uri},
           %{
-            "type" => "object",
-            "required" => ["href"],
-            "properties" => %{
-              "href" => %{"type" => "string", "format" => "uri"},
-              "meta" => %{"type" => "object", "additionalProperties" => true}
+            type: :object,
+            required: ["href"],
+            properties: %{
+              href: %{type: :string, format: :uri},
+              meta: %{type: :object, additionalProperties: true}
             }
           }
         ]
@@ -430,23 +430,22 @@ defmodule AshOaskit.ResponseLinks do
     _version = Keyword.get(opts, :version, "3.1")
 
     %{
-      "oneOf" => [
+      oneOf: [
         uri_schema(),
         %{
-          "type" => "object",
-          "required" => ["href"],
-          "properties" => %{
-            "href" => uri_schema(),
-            "meta" => %{
-              "type" => "object",
-              "additionalProperties" => true,
-              "description" => "Non-standard meta information about the link"
+          type: :object,
+          required: ["href"],
+          properties: %{
+            href: uri_schema(),
+            meta: %{
+              type: :object,
+              additionalProperties: true,
+              description: "Non-standard meta information about the link"
             }
           }
         }
       ],
-      "description" =>
-        "A link, either as a URL string or a link object with href and optional meta"
+      description: "A link, either as a URL string or a link object with href and optional meta"
     }
   end
 
@@ -463,9 +462,9 @@ defmodule AshOaskit.ResponseLinks do
 
       AshOaskit.ResponseLinks.build_nullable_link_object_schema(version: "3.1")
       # => %{
-      #      "oneOf" => [
-      #        %{"type" => "null"},
-      #        %{"type" => "string", "format" => "uri"},
+      #      oneOf: [
+      #        %{type: :null},
+      #        %{type: :string, format: :uri},
       #        %{...link_object...}
       #      ]
       #    }
@@ -477,11 +476,11 @@ defmodule AshOaskit.ResponseLinks do
     link_object_schema = build_link_object_schema(opts)
 
     if version == "3.1" do
-      Map.update!(link_object_schema, "oneOf", fn schemas ->
-        [%{"type" => "null"} | schemas]
+      Map.update!(link_object_schema, :oneOf, fn schemas ->
+        [%{type: :null} | schemas]
       end)
     else
-      Map.put(link_object_schema, "nullable", true)
+      Map.put(link_object_schema, :nullable, true)
     end
   end
 
@@ -490,24 +489,24 @@ defmodule AshOaskit.ResponseLinks do
   @spec uri_schema() :: map()
   defp uri_schema do
     %{
-      "type" => "string",
-      "format" => "uri"
+      type: :string,
+      format: :uri
     }
   end
 
   @spec nullable_uri_schema(String.t()) :: map()
   defp nullable_uri_schema("3.1") do
     %{
-      "type" => ["string", "null"],
-      "format" => "uri"
+      type: [:string, :null],
+      format: :uri
     }
   end
 
   defp nullable_uri_schema(_version) do
     %{
-      "type" => "string",
-      "format" => "uri",
-      "nullable" => true
+      type: :string,
+      format: :uri,
+      nullable: true
     }
   end
 end

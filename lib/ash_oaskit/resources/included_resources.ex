@@ -71,9 +71,9 @@ defmodule AshOaskit.IncludedResources do
 
       iex> AshOaskit.IncludedResources.build_included_schema(Post)
       %{
-        "type" => "array",
-        "items" => %{
-          "oneOf" => [
+        type: :array,
+        items: %{
+          oneOf: [
             %{"$ref" => "#/components/schemas/UserResource"},
             %{"$ref" => "#/components/schemas/CommentResource"}
           ]
@@ -104,9 +104,9 @@ defmodule AshOaskit.IncludedResources do
 
       iex> AshOaskit.IncludedResources.build_included_schema_for_types(["User", "Comment"])
       %{
-        "type" => "array",
-        "items" => %{
-          "oneOf" => [
+        type: :array,
+        items: %{
+          oneOf: [
             %{"$ref" => "#/components/schemas/UserResource"},
             %{"$ref" => "#/components/schemas/CommentResource"}
           ]
@@ -133,17 +133,17 @@ defmodule AshOaskit.IncludedResources do
 
     if length(refs) == 1 do
       %{
-        "type" => "array",
-        "items" => hd(refs),
-        "description" => "Included related resources"
+        type: :array,
+        items: hd(refs),
+        description: "Included related resources"
       }
     else
       %{
-        "type" => "array",
-        "items" => %{
-          "oneOf" => refs
+        type: :array,
+        items: %{
+          oneOf: refs
         },
-        "description" => "Included related resources"
+        description: "Included related resources"
       }
     end
   end
@@ -157,18 +157,18 @@ defmodule AshOaskit.IncludedResources do
 
       iex> AshOaskit.IncludedResources.build_empty_included_schema()
       %{
-        "type" => "array",
-        "items" => %{},
-        "maxItems" => 0
+        type: :array,
+        items: %{},
+        maxItems: 0
       }
   """
   @spec build_empty_included_schema() :: map()
   def build_empty_included_schema do
     %{
-      "type" => "array",
-      "items" => %{},
-      "maxItems" => 0,
-      "description" => "No related resources to include"
+      type: :array,
+      items: %{},
+      maxItems: 0,
+      description: "No related resources to include"
     }
   end
 
@@ -238,12 +238,12 @@ defmodule AshOaskit.IncludedResources do
       iex> types = [{"users", "User"}, {"comments", "Comment"}]
       ...> AshOaskit.IncludedResources.build_included_schema_with_discriminator(types)
       %{
-        "type" => "array",
-        "items" => %{
-          "oneOf" => [...],
-          "discriminator" => %{
-            "propertyName" => "type",
-            "mapping" => %{
+        type: :array,
+        items: %{
+          oneOf: [...],
+          discriminator: %{
+            propertyName: "type",
+            mapping: %{
               "users" => "#/components/schemas/UserResource",
               "comments" => "#/components/schemas/CommentResource"
             }
@@ -272,15 +272,15 @@ defmodule AshOaskit.IncludedResources do
     refs = Enum.reverse(refs)
 
     %{
-      "type" => "array",
-      "items" => %{
-        "oneOf" => refs,
-        "discriminator" => %{
-          "propertyName" => "type",
-          "mapping" => mapping
+      type: :array,
+      items: %{
+        oneOf: refs,
+        discriminator: %{
+          propertyName: "type",
+          mapping: mapping
         }
       },
-      "description" => "Included related resources"
+      description: "Included related resources"
     }
   end
 
@@ -295,16 +295,16 @@ defmodule AshOaskit.IncludedResources do
 
   ## Examples
 
-      iex> response = %{"type" => "object", "properties" => %{"data" => %{}}}
+      iex> response = %{type: :object, properties: %{data: %{}}}
       ...>
       ...> AshOaskit.IncludedResources.add_included_to_response(response,
       ...>   types: ["User", "Comment"]
       ...> )
       %{
-        "type" => "object",
-        "properties" => %{
-          "data" => %{},
-          "included" => %{...}
+        type: :object,
+        properties: %{
+          data: %{},
+          included: %{...}
         }
       }
   """
@@ -320,10 +320,10 @@ defmodule AshOaskit.IncludedResources do
         true -> build_empty_included_schema()
       end
 
-    properties = Map.get(response_schema, "properties", %{})
-    updated_properties = Map.put(properties, "included", included_schema)
+    properties = Map.get(response_schema, :properties, %{})
+    updated_properties = Map.put(properties, :included, included_schema)
 
-    Map.put(response_schema, "properties", updated_properties)
+    Map.put(response_schema, :properties, updated_properties)
   end
 
   @doc """
@@ -367,7 +367,7 @@ defmodule AshOaskit.IncludedResources do
   end
 
   @doc """
-  Gets the configured includes for a resource from AshJsonApi DSL.
+  Gives the configured includes for a resource from AshJsonApi DSL.
 
   ## Examples
 

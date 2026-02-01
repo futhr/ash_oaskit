@@ -83,12 +83,12 @@ defmodule AshOaskit.QueryParameters do
 
       iex> QueryParameters.build_page_parameter([])
       %{
-        "name" => "page",
-        "in" => "query",
-        "style" => "deepObject",
-        "schema" => %{
-          "type" => "object",
-          "properties" => %{
+        name: "page",
+        in: :query,
+        style: :deepObject,
+        schema: %{
+          type: :object,
+          properties: %{
             "offset" => %{...},
             "limit" => %{...},
             ...
@@ -104,16 +104,16 @@ defmodule AshOaskit.QueryParameters do
     properties = build_pagination_properties(strategy)
 
     %{
-      "name" => "page",
-      "in" => "query",
-      "required" => false,
-      "style" => "deepObject",
-      "explode" => true,
-      "schema" => %{
-        "type" => "object",
-        "properties" => properties
+      name: "page",
+      in: :query,
+      required: false,
+      style: :deepObject,
+      explode: true,
+      schema: %{
+        type: :object,
+        properties: properties
       },
-      "description" => build_pagination_description(strategy)
+      description: build_pagination_description(strategy)
     }
   end
 
@@ -133,14 +133,14 @@ defmodule AshOaskit.QueryParameters do
 
       iex> QueryParameters.build_fields_parameter(["post", "author"])
       %{
-        "name" => "fields",
-        "in" => "query",
-        "style" => "deepObject",
-        "schema" => %{
-          "type" => "object",
-          "properties" => %{
-            "post" => %{"type" => "string"},
-            "author" => %{"type" => "string"}
+        name: "fields",
+        in: :query,
+        style: :deepObject,
+        schema: %{
+          type: :object,
+          properties: %{
+            "post" => %{type: :string},
+            "author" => %{type: :string}
           }
         }
       }
@@ -153,27 +153,27 @@ defmodule AshOaskit.QueryParameters do
       |> Enum.map(fn type ->
         {type,
          %{
-           "type" => "string",
-           "description" => "Comma-separated list of #{type} fields to include"
+           type: :string,
+           description: "Comma-separated list of #{type} fields to include"
          }}
       end)
       |> Enum.into(%{})
 
     %{
-      "name" => "fields",
-      "in" => "query",
-      "required" => false,
-      "style" => "deepObject",
-      "explode" => true,
-      "schema" => %{
-        "type" => "object",
-        "properties" => properties,
-        "additionalProperties" => %{
-          "type" => "string",
-          "description" => "Comma-separated list of fields for any resource type"
+      name: "fields",
+      in: :query,
+      required: false,
+      style: :deepObject,
+      explode: true,
+      schema: %{
+        type: :object,
+        properties: properties,
+        additionalProperties: %{
+          type: :string,
+          description: "Comma-separated list of fields for any resource type"
         }
       },
-      "description" =>
+      description:
         "Sparse fieldsets - specify which fields to include for each resource type. " <>
           "Format: fields[type]=field1,field2"
     }
@@ -195,11 +195,11 @@ defmodule AshOaskit.QueryParameters do
 
       iex> QueryParameters.build_include_parameter([:author, :comments])
       %{
-        "name" => "include",
-        "in" => "query",
-        "schema" => %{
-          "type" => "string",
-          "description" => "..."
+        name: "include",
+        in: :query,
+        schema: %{
+          type: :string,
+          description: "..."
         }
       }
 
@@ -219,13 +219,13 @@ defmodule AshOaskit.QueryParameters do
       end
 
     %{
-      "name" => "include",
-      "in" => "query",
-      "required" => false,
-      "schema" => %{
-        "type" => "string"
+      name: "include",
+      in: :query,
+      required: false,
+      schema: %{
+        type: :string
       },
-      "description" => description
+      description: description
     }
   end
 
@@ -248,14 +248,14 @@ defmodule AshOaskit.QueryParameters do
 
   ## Examples
 
-      iex> QueryParameters.all_parameters(MyApp.Post, version: "3.1")
-      [
-        %{"name" => "filter", ...},
-        %{"name" => "sort", ...},
-        %{"name" => "page", ...},
-        %{"name" => "include", ...},
-        %{"name" => "fields", ...}
-      ]
+      QueryParameters.all_parameters(MyApp.Post, version: "3.1")
+      #=> [
+      #=>   %{name: "filter", ...},
+      #=>   %{name: "sort", ...},
+      #=>   %{name: "page", ...},
+      #=>   %{name: "include", ...},
+      #=>   %{name: "fields", ...}
+      #=> ]
 
   """
   @spec all_parameters(module(), keyword()) :: [map()]
@@ -357,19 +357,19 @@ defmodule AshOaskit.QueryParameters do
   defp build_pagination_properties(:offset) do
     %{
       "offset" => %{
-        "type" => "integer",
-        "minimum" => 0,
-        "description" => "Number of records to skip"
+        type: :integer,
+        minimum: 0,
+        description: "Number of records to skip"
       },
       "limit" => %{
-        "type" => "integer",
-        "minimum" => 1,
-        "maximum" => 1000,
-        "description" => "Maximum number of records to return"
+        type: :integer,
+        minimum: 1,
+        maximum: 1000,
+        description: "Maximum number of records to return"
       },
       "count" => %{
-        "type" => "boolean",
-        "description" => "Include total count in response"
+        type: :boolean,
+        description: "Include total count in response"
       }
     }
   end
@@ -377,22 +377,22 @@ defmodule AshOaskit.QueryParameters do
   defp build_pagination_properties(:keyset) do
     %{
       "after" => %{
-        "type" => "string",
-        "description" => "Cursor for fetching records after this position"
+        type: :string,
+        description: "Cursor for fetching records after this position"
       },
       "before" => %{
-        "type" => "string",
-        "description" => "Cursor for fetching records before this position"
+        type: :string,
+        description: "Cursor for fetching records before this position"
       },
       "limit" => %{
-        "type" => "integer",
-        "minimum" => 1,
-        "maximum" => 1000,
-        "description" => "Maximum number of records to return"
+        type: :integer,
+        minimum: 1,
+        maximum: 1000,
+        description: "Maximum number of records to return"
       },
       "count" => %{
-        "type" => "boolean",
-        "description" => "Include total count in response"
+        type: :boolean,
+        description: "Include total count in response"
       }
     }
   end
@@ -400,27 +400,27 @@ defmodule AshOaskit.QueryParameters do
   defp build_pagination_properties(:both) do
     %{
       "offset" => %{
-        "type" => "integer",
-        "minimum" => 0,
-        "description" => "Number of records to skip (offset pagination)"
+        type: :integer,
+        minimum: 0,
+        description: "Number of records to skip (offset pagination)"
       },
       "limit" => %{
-        "type" => "integer",
-        "minimum" => 1,
-        "maximum" => 1000,
-        "description" => "Maximum number of records to return"
+        type: :integer,
+        minimum: 1,
+        maximum: 1000,
+        description: "Maximum number of records to return"
       },
       "after" => %{
-        "type" => "string",
-        "description" => "Cursor for fetching records after this position (keyset pagination)"
+        type: :string,
+        description: "Cursor for fetching records after this position (keyset pagination)"
       },
       "before" => %{
-        "type" => "string",
-        "description" => "Cursor for fetching records before this position (keyset pagination)"
+        type: :string,
+        description: "Cursor for fetching records before this position (keyset pagination)"
       },
       "count" => %{
-        "type" => "boolean",
-        "description" => "Include total count in response"
+        type: :boolean,
+        description: "Include total count in response"
       }
     }
   end

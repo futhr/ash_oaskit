@@ -77,10 +77,10 @@ defmodule AshOaskit.ResponseMeta do
 
       iex> AshOaskit.ResponseMeta.build_pagination_meta_schema(version: "3.1")
       %{
-        "type" => "object",
-        "properties" => %{
-          "count" => %{"type" => "integer"},
-          "page" => %{...}
+        type: :object,
+        properties: %{
+          count: %{type: :integer},
+          page: %{...}
         }
       }
   """
@@ -92,16 +92,16 @@ defmodule AshOaskit.ResponseMeta do
     page_schema = build_page_info_schema(strategy, version)
 
     %{
-      "type" => "object",
-      "properties" => %{
-        "count" => %{
-          "type" => "integer",
-          "minimum" => 0,
-          "description" => "Total count of records matching the query"
+      type: :object,
+      properties: %{
+        count: %{
+          type: :integer,
+          minimum: 0,
+          description: "Total count of records matching the query"
         },
-        "page" => page_schema
+        page: page_schema
       },
-      "description" => "Pagination and count metadata"
+      description: "Pagination and count metadata"
     }
   end
 
@@ -117,11 +117,11 @@ defmodule AshOaskit.ResponseMeta do
 
       iex> AshOaskit.ResponseMeta.build_page_info_schema(:offset)
       %{
-        "type" => "object",
-        "properties" => %{
-          "offset" => %{"type" => "integer"},
-          "limit" => %{"type" => "integer"},
-          "total" => %{"type" => "integer"}
+        type: :object,
+        properties: %{
+          offset: %{type: :integer},
+          limit: %{type: :integer},
+          total: %{type: :integer}
         }
       }
   """
@@ -130,64 +130,64 @@ defmodule AshOaskit.ResponseMeta do
 
   def build_page_info_schema(:offset, _version) do
     %{
-      "type" => "object",
-      "properties" => %{
-        "offset" => %{
-          "type" => "integer",
-          "minimum" => 0,
-          "description" => "Current offset position"
+      type: :object,
+      properties: %{
+        offset: %{
+          type: :integer,
+          minimum: 0,
+          description: "Current offset position"
         },
-        "limit" => %{
-          "type" => "integer",
-          "minimum" => 1,
-          "description" => "Number of records per page"
+        limit: %{
+          type: :integer,
+          minimum: 1,
+          description: "Number of records per page"
         },
-        "total" => %{
-          "type" => "integer",
-          "minimum" => 0,
-          "description" => "Total number of records"
+        total: %{
+          type: :integer,
+          minimum: 0,
+          description: "Total number of records"
         },
-        "has_more" => %{
-          "type" => "boolean",
-          "description" => "Whether more records exist beyond current page"
+        has_more: %{
+          type: :boolean,
+          description: "Whether more records exist beyond current page"
         }
       },
-      "description" => "Offset-based pagination info"
+      description: "Offset-based pagination info"
     }
   end
 
   def build_page_info_schema(:keyset, version) do
     %{
-      "type" => "object",
-      "properties" => %{
-        "after" => nullable_string_schema(version, "Cursor for next page"),
-        "before" => nullable_string_schema(version, "Cursor for previous page"),
-        "limit" => %{
-          "type" => "integer",
-          "minimum" => 1,
-          "description" => "Number of records per page"
+      type: :object,
+      properties: %{
+        after: nullable_string_schema(version, "Cursor for next page"),
+        before: nullable_string_schema(version, "Cursor for previous page"),
+        limit: %{
+          type: :integer,
+          minimum: 1,
+          description: "Number of records per page"
         },
-        "has_next_page" => %{
-          "type" => "boolean",
-          "description" => "Whether a next page exists"
+        has_next_page: %{
+          type: :boolean,
+          description: "Whether a next page exists"
         },
-        "has_previous_page" => %{
-          "type" => "boolean",
-          "description" => "Whether a previous page exists"
+        has_previous_page: %{
+          type: :boolean,
+          description: "Whether a previous page exists"
         }
       },
-      "description" => "Keyset/cursor-based pagination info"
+      description: "Keyset/cursor-based pagination info"
     }
   end
 
   def build_page_info_schema(:both, version) do
-    offset_props = build_page_info_schema(:offset, version)["properties"]
-    keyset_props = build_page_info_schema(:keyset, version)["properties"]
+    offset_props = build_page_info_schema(:offset, version)[:properties]
+    keyset_props = build_page_info_schema(:keyset, version)[:properties]
 
     %{
-      "type" => "object",
-      "properties" => Map.merge(offset_props, keyset_props),
-      "description" => "Pagination info (supports both offset and keyset strategies)"
+      type: :object,
+      properties: Map.merge(offset_props, keyset_props),
+      description: "Pagination info (supports both offset and keyset strategies)"
     }
   end
 
@@ -209,8 +209,8 @@ defmodule AshOaskit.ResponseMeta do
 
       iex> AshOaskit.ResponseMeta.build_resource_meta_schema()
       %{
-        "type" => "object",
-        "additionalProperties" => true
+        type: :object,
+        additionalProperties: true
       }
   """
   @spec build_resource_meta_schema(keyword()) :: map()
@@ -218,9 +218,9 @@ defmodule AshOaskit.ResponseMeta do
     _version = Keyword.get(opts, :version, "3.1")
 
     %{
-      "type" => "object",
-      "additionalProperties" => true,
-      "description" => "Non-standard meta information about the resource"
+      type: :object,
+      additionalProperties: true,
+      description: "Non-standard meta information about the resource"
     }
   end
 
@@ -238,9 +238,9 @@ defmodule AshOaskit.ResponseMeta do
 
       iex> AshOaskit.ResponseMeta.build_jsonapi_object_schema()
       %{
-        "type" => "object",
-        "properties" => %{
-          "version" => %{"type" => "string", "enum" => ["1.0", "1.1"]}
+        type: :object,
+        properties: %{
+          version: %{type: :string, enum: ["1.0", "1.1"]}
         }
       }
   """
@@ -250,25 +250,25 @@ defmodule AshOaskit.ResponseMeta do
     supported_versions = Keyword.get(opts, :supported_versions, ["1.0", "1.1"])
 
     %{
-      "type" => "object",
-      "properties" => %{
-        "version" => %{
-          "type" => "string",
-          "enum" => supported_versions,
-          "description" => "JSON:API specification version"
+      type: :object,
+      properties: %{
+        version: %{
+          type: :string,
+          enum: supported_versions,
+          description: "JSON:API specification version"
         },
-        "ext" => %{
-          "type" => "array",
-          "items" => %{"type" => "string", "format" => "uri"},
-          "description" => "Array of URIs for applied extensions"
+        ext: %{
+          type: :array,
+          items: %{type: :string, format: :uri},
+          description: "Array of URIs for applied extensions"
         },
-        "profile" => %{
-          "type" => "array",
-          "items" => %{"type" => "string", "format" => "uri"},
-          "description" => "Array of URIs for applied profiles"
+        profile: %{
+          type: :array,
+          items: %{type: :string, format: :uri},
+          description: "Array of URIs for applied profiles"
         }
       },
-      "description" => "JSON:API implementation information"
+      description: "JSON:API implementation information"
     }
   end
 
@@ -288,9 +288,9 @@ defmodule AshOaskit.ResponseMeta do
 
       iex> AshOaskit.ResponseMeta.build_document_meta_schema(include_count: true)
       %{
-        "type" => "object",
-        "properties" => %{
-          "count" => %{"type" => "integer"}
+        type: :object,
+        properties: %{
+          count: %{type: :integer}
         }
       }
   """
@@ -305,10 +305,10 @@ defmodule AshOaskit.ResponseMeta do
 
     properties =
       if include_count do
-        Map.put(properties, "count", %{
-          "type" => "integer",
-          "minimum" => 0,
-          "description" => "Total count of records"
+        Map.put(properties, :count, %{
+          type: :integer,
+          minimum: 0,
+          description: "Total count of records"
         })
       else
         properties
@@ -317,19 +317,19 @@ defmodule AshOaskit.ResponseMeta do
     properties =
       if include_page do
         page_schema = build_page_info_schema(pagination_strategy, version)
-        Map.put(properties, "page", page_schema)
+        Map.put(properties, :page, page_schema)
       else
         properties
       end
 
     base = %{
-      "type" => "object",
-      "additionalProperties" => true,
-      "description" => "Document-level meta information"
+      type: :object,
+      additionalProperties: true,
+      description: "Document-level meta information"
     }
 
     if map_size(properties) > 0 do
-      Map.put(base, "properties", properties)
+      Map.put(base, :properties, properties)
     else
       base
     end
@@ -375,13 +375,13 @@ defmodule AshOaskit.ResponseMeta do
 
   ## Examples
 
-      response = %{"type" => "object", "properties" => %{"data" => %{}}}
+      response = %{type: :object, properties: %{data: %{}}}
       AshOaskit.ResponseMeta.add_meta_to_response(response, meta_type: :pagination)
       # => %{
-      #      "type" => "object",
-      #      "properties" => %{
-      #        "data" => %{},
-      #        "meta" => %{...pagination_meta_schema...}
+      #      type: :object,
+      #      properties: %{
+      #        data: %{},
+      #        meta: %{...pagination_meta_schema...}
       #      }
       #    }
   """
@@ -396,10 +396,10 @@ defmodule AshOaskit.ResponseMeta do
         _ -> build_resource_meta_schema(opts)
       end
 
-    properties = Map.get(response_schema, "properties", %{})
-    updated_properties = Map.put(properties, "meta", meta_schema)
+    properties = Map.get(response_schema, :properties, %{})
+    updated_properties = Map.put(properties, :meta, meta_schema)
 
-    Map.put(response_schema, "properties", updated_properties)
+    Map.put(response_schema, :properties, updated_properties)
   end
 
   @doc """
@@ -412,13 +412,13 @@ defmodule AshOaskit.ResponseMeta do
 
   ## Examples
 
-      response = %{"type" => "object", "properties" => %{"data" => %{}}}
+      response = %{type: :object, properties: %{data: %{}}}
       AshOaskit.ResponseMeta.add_jsonapi_object_to_response(response)
       # => %{
-      #      "type" => "object",
-      #      "properties" => %{
-      #        "data" => %{},
-      #        "jsonapi" => %{...jsonapi_object_schema...}
+      #      type: :object,
+      #      properties: %{
+      #        data: %{},
+      #        jsonapi: %{...jsonapi_object_schema...}
       #      }
       #    }
   """
@@ -426,10 +426,10 @@ defmodule AshOaskit.ResponseMeta do
   def add_jsonapi_object_to_response(response_schema, opts \\ []) do
     jsonapi_schema = build_jsonapi_object_schema(opts)
 
-    properties = Map.get(response_schema, "properties", %{})
-    updated_properties = Map.put(properties, "jsonapi", jsonapi_schema)
+    properties = Map.get(response_schema, :properties, %{})
+    updated_properties = Map.put(properties, :jsonapi, jsonapi_schema)
 
-    Map.put(response_schema, "properties", updated_properties)
+    Map.put(response_schema, :properties, updated_properties)
   end
 
   @doc """
@@ -502,12 +502,12 @@ defmodule AshOaskit.ResponseMeta do
       ...>   include_page: true
       ...> )
       %{
-        "type" => "object",
-        "properties" => %{
-          "count" => %{...},
-          "page" => %{...}
+        type: :object,
+        properties: %{
+          count: %{...},
+          page: %{...}
         },
-        "additionalProperties" => true
+        additionalProperties: true
       }
   """
   @spec build_complete_meta_schema(keyword()) :: map()
@@ -521,10 +521,10 @@ defmodule AshOaskit.ResponseMeta do
 
     properties =
       if include_count do
-        Map.put(properties, "count", %{
-          "type" => "integer",
-          "minimum" => 0,
-          "description" => "Total count of records matching the query"
+        Map.put(properties, :count, %{
+          type: :integer,
+          minimum: 0,
+          description: "Total count of records matching the query"
         })
       else
         properties
@@ -532,32 +532,32 @@ defmodule AshOaskit.ResponseMeta do
 
     properties =
       if include_page do
-        Map.put(properties, "page", build_page_info_schema(strategy, version))
+        Map.put(properties, :page, build_page_info_schema(strategy, version))
       else
         properties
       end
 
     %{
-      "type" => "object",
-      "properties" => properties,
-      "additionalProperties" => true,
-      "description" => "Response meta information including pagination details"
+      type: :object,
+      properties: properties,
+      additionalProperties: true,
+      description: "Response meta information including pagination details"
     }
   end
 
   @spec nullable_string_schema(String.t(), String.t()) :: map()
   defp nullable_string_schema("3.1", description) do
     %{
-      "type" => ["string", "null"],
-      "description" => description
+      type: [:string, :null],
+      description: description
     }
   end
 
   defp nullable_string_schema(_version, description) do
     %{
-      "type" => "string",
-      "nullable" => true,
-      "description" => description
+      type: :string,
+      nullable: true,
+      description: description
     }
   end
 end

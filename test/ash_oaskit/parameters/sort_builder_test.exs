@@ -39,24 +39,24 @@ defmodule AshOaskit.SortBuilderTest do
       result = SortBuilder.build_sort_parameter(AshOaskit.Test.Post)
 
       assert result != nil
-      assert result["name"] == "sort"
-      assert result["in"] == "query"
-      assert result["required"] == false
-      assert is_map(result["schema"])
-      assert result["description"] =~ "Sort criteria"
-      assert result["description"] =~ "Post"
+      assert result.name == "sort"
+      assert result.in == :query
+      assert result.required == false
+      assert is_map(result.schema)
+      assert result.description =~ "Sort criteria"
+      assert result.description =~ "Post"
     end
 
     test "schema has string type" do
       result = SortBuilder.build_sort_parameter(AshOaskit.Test.Post)
 
-      assert result["schema"]["type"] == "string"
+      assert result.schema.type == :string
     end
 
     test "schema description lists available fields" do
       result = SortBuilder.build_sort_parameter(AshOaskit.Test.Post)
 
-      description = result["schema"]["description"]
+      description = result.schema.description
       assert description =~ "Comma-separated"
       assert description =~ "-"
       assert description =~ "descending"
@@ -74,8 +74,8 @@ defmodule AshOaskit.SortBuilderTest do
       result = SortBuilder.build_sort_parameter(AshOaskit.Test.Comment)
 
       assert result != nil
-      assert result["name"] == "sort"
-      assert result["schema"]["type"] == "string"
+      assert result.name == "sort"
+      assert result.schema.type == :string
     end
   end
 
@@ -133,44 +133,44 @@ defmodule AshOaskit.SortBuilderTest do
     test "generates string type schema" do
       schema = SortBuilder.build_sort_schema([:title, :created_at], [])
 
-      assert schema["type"] == "string"
+      assert schema.type == :string
     end
 
     test "includes description with field list" do
       schema = SortBuilder.build_sort_schema([:title, :created_at], [])
 
-      assert schema["description"] =~ "title"
-      assert schema["description"] =~ "created_at"
+      assert schema.description =~ "title"
+      assert schema.description =~ "created_at"
     end
 
     test "description explains sort direction syntax" do
       schema = SortBuilder.build_sort_schema([:title], [])
 
-      assert schema["description"] =~ "-"
-      assert schema["description"] =~ "descending"
-      assert schema["description"] =~ "ascending"
+      assert schema.description =~ "-"
+      assert schema.description =~ "descending"
+      assert schema.description =~ "ascending"
     end
 
     test "handles empty field list" do
       schema = SortBuilder.build_sort_schema([], [])
 
-      assert schema["type"] == "string"
-      assert schema["description"] =~ "Available fields:"
+      assert schema.type == :string
+      assert schema.description =~ "Available fields:"
     end
 
     test "handles single field" do
       schema = SortBuilder.build_sort_schema([:name], [])
 
-      assert schema["description"] =~ "name"
+      assert schema.description =~ "name"
     end
 
     test "handles multiple fields" do
       schema = SortBuilder.build_sort_schema([:a, :b, :c, :d], [])
 
-      assert schema["description"] =~ "a"
-      assert schema["description"] =~ "b"
-      assert schema["description"] =~ "c"
-      assert schema["description"] =~ "d"
+      assert schema.description =~ "a"
+      assert schema.description =~ "b"
+      assert schema.description =~ "c"
+      assert schema.description =~ "d"
     end
   end
 
@@ -180,18 +180,18 @@ defmodule AshOaskit.SortBuilderTest do
     test "generates enum with ascending and descending variants" do
       schema = SortBuilder.build_sort_enum_schema([:title], [])
 
-      assert schema["type"] == "string"
-      assert "title" in schema["enum"]
-      assert "-title" in schema["enum"]
+      assert schema.type == :string
+      assert "title" in schema.enum
+      assert "-title" in schema.enum
     end
 
     test "includes all fields in enum" do
       schema = SortBuilder.build_sort_enum_schema([:title, :created_at], [])
 
-      assert "title" in schema["enum"]
-      assert "-title" in schema["enum"]
-      assert "created_at" in schema["enum"]
-      assert "-created_at" in schema["enum"]
+      assert "title" in schema.enum
+      assert "-title" in schema.enum
+      assert "created_at" in schema.enum
+      assert "-created_at" in schema.enum
     end
 
     test "enum has twice as many values as fields" do
@@ -199,29 +199,29 @@ defmodule AshOaskit.SortBuilderTest do
       schema = SortBuilder.build_sort_enum_schema(fields, [])
 
       # Each field has ascending and descending variant
-      assert length(schema["enum"]) == length(fields) * 2
+      assert length(schema.enum) == length(fields) * 2
     end
 
     test "handles empty field list" do
       schema = SortBuilder.build_sort_enum_schema([], [])
 
-      assert schema["type"] == "string"
-      assert schema["enum"] == []
+      assert schema.type == :string
+      assert schema.enum == []
     end
 
     test "converts atom field names to strings" do
       schema = SortBuilder.build_sort_enum_schema([:my_field], [])
 
-      assert "my_field" in schema["enum"]
-      assert "-my_field" in schema["enum"]
-      refute :my_field in schema["enum"]
+      assert "my_field" in schema.enum
+      assert "-my_field" in schema.enum
+      refute :my_field in schema.enum
     end
 
     test "preserves field name case" do
       schema = SortBuilder.build_sort_enum_schema([:createdAt, :UpdatedAt], [])
 
-      assert "createdAt" in schema["enum"]
-      assert "UpdatedAt" in schema["enum"]
+      assert "createdAt" in schema.enum
+      assert "UpdatedAt" in schema.enum
     end
   end
 
@@ -231,21 +231,21 @@ defmodule AshOaskit.SortBuilderTest do
     test "generates array type schema" do
       schema = SortBuilder.build_sort_array_schema([:title], [])
 
-      assert schema["type"] == "array"
+      assert schema.type == :array
     end
 
     test "has items with enum schema" do
       schema = SortBuilder.build_sort_array_schema([:title], [])
 
-      assert is_map(schema["items"])
-      assert schema["items"]["type"] == "string"
-      assert is_list(schema["items"]["enum"])
+      assert is_map(schema.items)
+      assert schema.items.type == :string
+      assert is_list(schema.items.enum)
     end
 
     test "items enum includes all sort variants" do
       schema = SortBuilder.build_sort_array_schema([:title, :name], [])
 
-      items_enum = schema["items"]["enum"]
+      items_enum = schema.items.enum
       assert "title" in items_enum
       assert "-title" in items_enum
       assert "name" in items_enum
@@ -255,8 +255,8 @@ defmodule AshOaskit.SortBuilderTest do
     test "handles empty field list" do
       schema = SortBuilder.build_sort_array_schema([], [])
 
-      assert schema["type"] == "array"
-      assert schema["items"]["enum"] == []
+      assert schema.type == :array
+      assert schema.items.enum == []
     end
   end
 
@@ -267,21 +267,21 @@ defmodule AshOaskit.SortBuilderTest do
       result = SortBuilder.build_sort_parameter(AshOaskit.Test.Post, version: "3.1")
 
       assert result != nil
-      assert result["schema"]["type"] == "string"
+      assert result.schema.type == :string
     end
 
     test "version 3.0 option generates valid schema" do
       result = SortBuilder.build_sort_parameter(AshOaskit.Test.Post, version: "3.0")
 
       assert result != nil
-      assert result["schema"]["type"] == "string"
+      assert result.schema.type == :string
     end
 
     test "default version generates valid schema" do
       result = SortBuilder.build_sort_parameter(AshOaskit.Test.Post)
 
       assert result != nil
-      assert result["schema"]["type"] == "string"
+      assert result.schema.type == :string
     end
   end
 
@@ -292,8 +292,8 @@ defmodule AshOaskit.SortBuilderTest do
       result = SortBuilder.build_sort_parameter(AshOaskit.Test.Post)
 
       # Should use "Post" not full module path
-      assert result["description"] =~ "Post"
-      refute result["description"] =~ "AshOaskit.Test"
+      assert result.description =~ "Post"
+      refute result.description =~ "AshOaskit.Test"
     end
 
     test "sortable fields returns list even for minimal resource" do
@@ -306,16 +306,16 @@ defmodule AshOaskit.SortBuilderTest do
     test "build_sort_schema handles field names with underscores" do
       schema = SortBuilder.build_sort_schema([:created_at, :updated_by_id], [])
 
-      assert schema["description"] =~ "created_at"
-      assert schema["description"] =~ "updated_by_id"
+      assert schema.description =~ "created_at"
+      assert schema.description =~ "updated_by_id"
     end
 
     test "build_sort_enum_schema handles field names with numbers" do
       schema = SortBuilder.build_sort_enum_schema([:field1, :field2], [])
 
-      assert "field1" in schema["enum"]
-      assert "-field1" in schema["enum"]
-      assert "field2" in schema["enum"]
+      assert "field1" in schema.enum
+      assert "-field1" in schema.enum
+      assert "field2" in schema.enum
     end
 
     test "all schema builders return maps" do
@@ -345,8 +345,8 @@ defmodule AshOaskit.SortBuilderTest do
   describe "sort parameter for Article resource" do
     test "builds sort parameter with field description for Article" do
       result = SortBuilder.build_sort_parameter(AshOaskit.Test.Article, version: "3.1")
-      assert result["name"] == "sort"
-      assert result["schema"]["description"] =~ "title"
+      assert result.name == "sort"
+      assert result.schema.description =~ "title"
     end
   end
 
@@ -373,20 +373,20 @@ defmodule AshOaskit.SortBuilderTest do
       result = SortBuilder.build_sort_parameter(AshOaskit.Test.Post)
 
       # Required fields for OpenAPI parameter object
-      assert Map.has_key?(result, "name")
-      assert Map.has_key?(result, "in")
-      assert Map.has_key?(result, "schema")
+      assert Map.has_key?(result, :name)
+      assert Map.has_key?(result, :in)
+      assert Map.has_key?(result, :schema)
 
       # Valid "in" value
-      assert result["in"] in ["query", "path", "header", "cookie"]
+      assert result.in in [:query, :path, :header, :cookie]
     end
 
     test "schema is valid OpenAPI schema object" do
       result = SortBuilder.build_sort_parameter(AshOaskit.Test.Post)
 
-      schema = result["schema"]
-      assert Map.has_key?(schema, "type")
-      assert schema["type"] in ["string", "integer", "number", "boolean", "array", "object"]
+      schema = result.schema
+      assert Map.has_key?(schema, :type)
+      assert schema.type in [:string, :integer, :number, :boolean, :array, :object]
     end
 
     test "can be used directly in parameters array" do
@@ -394,7 +394,7 @@ defmodule AshOaskit.SortBuilderTest do
       parameters = [param]
 
       assert length(parameters) == 1
-      assert hd(parameters)["name"] == "sort"
+      assert hd(parameters).name == "sort"
     end
   end
 end

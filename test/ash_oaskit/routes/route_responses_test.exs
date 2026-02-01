@@ -39,8 +39,8 @@ defmodule AshOaskit.RouteResponsesTest do
       schema =
         RouteResponses.build_resource_identifier_schema("comment")
 
-      assert schema["required"] == ["type", "id"]
-      assert schema["properties"]["type"]["enum"] == ["comment"]
+      assert schema[:required] == ["type", "id"]
+      assert schema[:properties]["type"][:enum] == ["comment"]
     end
 
     test "to-many relationship linkage is an array" do
@@ -51,7 +51,7 @@ defmodule AshOaskit.RouteResponsesTest do
           version: "3.1"
         )
 
-      assert schema["type"] == "array"
+      assert schema[:type] == :array
     end
 
     test "to-one relationship linkage is nullable in 3.1" do
@@ -62,7 +62,7 @@ defmodule AshOaskit.RouteResponsesTest do
           version: "3.1"
         )
 
-      assert schema["type"] == ["object", "null"]
+      assert schema[:type] == [:object, "null"]
     end
 
     test "to-one relationship linkage is nullable in 3.0" do
@@ -73,7 +73,7 @@ defmodule AshOaskit.RouteResponsesTest do
           version: "3.0"
         )
 
-      assert schema["nullable"] == true
+      assert schema[:nullable] == true
     end
 
     test "builds full relationship response schema" do
@@ -84,8 +84,8 @@ defmodule AshOaskit.RouteResponsesTest do
           version: "3.1"
         )
 
-      assert Map.has_key?(schema["properties"], "data")
-      assert Map.has_key?(schema["properties"], "links")
+      assert Map.has_key?(schema[:properties], "data")
+      assert Map.has_key?(schema[:properties], "links")
     end
 
     test "builds related response for to-many" do
@@ -96,8 +96,8 @@ defmodule AshOaskit.RouteResponsesTest do
           version: "3.1"
         )
 
-      assert schema["properties"]["data"]["type"] == "array"
-      assert schema["properties"]["data"]["items"]["$ref"] =~ "ReviewResponse"
+      assert schema[:properties]["data"][:type] == :array
+      assert schema[:properties]["data"][:items]["$ref"] =~ "ReviewResponse"
     end
 
     test "builds related response for to-one" do
@@ -108,14 +108,14 @@ defmodule AshOaskit.RouteResponsesTest do
           version: "3.1"
         )
 
-      assert schema["properties"]["data"]["type"] == ["object", "null"]
+      assert schema[:properties]["data"][:type] == [:object, "null"]
     end
 
     test "builds request body for relationship modification" do
       rel = %{type: :has_many, destination: Review}
       body = RouteResponses.build_request_body(rel, version: "3.1")
-      assert body["required"] == true
-      assert body["content"]["application/vnd.api+json"]["schema"]["required"] == ["data"]
+      assert body[:required] == true
+      assert body[:content]["application/vnd.api+json"][:schema][:required] == ["data"]
     end
 
     test "delete relationship responses include 200 and 204" do
@@ -196,7 +196,7 @@ defmodule AshOaskit.RouteResponsesTest do
           version: "3.1"
         )
 
-      assert responses["200"]["description"] == "Successful response"
+      assert responses["200"][:description] == "Successful response"
     end
   end
 end

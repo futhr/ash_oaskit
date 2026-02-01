@@ -30,63 +30,63 @@ defmodule AshOaskit.ErrorSchemasTest do
     test "returns object type schema" do
       schema = ErrorSchemas.error_object_schema()
 
-      assert schema["type"] == "object"
+      assert schema[:type] == :object
     end
 
     test "includes id property" do
       schema = ErrorSchemas.error_object_schema()
 
-      assert Map.has_key?(schema["properties"], "id")
-      assert schema["properties"]["id"]["type"] == "string"
+      assert Map.has_key?(schema[:properties], :id)
+      assert schema[:properties][:id][:type] == :string
     end
 
     test "includes status property" do
       schema = ErrorSchemas.error_object_schema()
 
-      assert Map.has_key?(schema["properties"], "status")
-      assert schema["properties"]["status"]["type"] == "string"
+      assert Map.has_key?(schema[:properties], :status)
+      assert schema[:properties][:status][:type] == :string
     end
 
     test "includes code property" do
       schema = ErrorSchemas.error_object_schema()
 
-      assert Map.has_key?(schema["properties"], "code")
+      assert Map.has_key?(schema[:properties], :code)
     end
 
     test "includes title property" do
       schema = ErrorSchemas.error_object_schema()
 
-      assert Map.has_key?(schema["properties"], "title")
+      assert Map.has_key?(schema[:properties], :title)
     end
 
     test "includes detail property" do
       schema = ErrorSchemas.error_object_schema()
 
-      assert Map.has_key?(schema["properties"], "detail")
+      assert Map.has_key?(schema[:properties], :detail)
     end
 
     test "includes source object with pointer and parameter" do
       schema = ErrorSchemas.error_object_schema()
 
-      assert Map.has_key?(schema["properties"], "source")
-      source = schema["properties"]["source"]
-      assert source["type"] == "object"
-      assert Map.has_key?(source["properties"], "pointer")
-      assert Map.has_key?(source["properties"], "parameter")
+      assert Map.has_key?(schema[:properties], :source)
+      source = schema[:properties][:source]
+      assert source[:type] == :object
+      assert Map.has_key?(source[:properties], :pointer)
+      assert Map.has_key?(source[:properties], :parameter)
     end
 
     test "includes meta property" do
       schema = ErrorSchemas.error_object_schema()
 
-      assert Map.has_key?(schema["properties"], "meta")
-      assert schema["properties"]["meta"]["type"] == "object"
+      assert Map.has_key?(schema[:properties], :meta)
+      assert schema[:properties][:meta][:type] == :object
     end
 
     test "all properties have descriptions" do
       schema = ErrorSchemas.error_object_schema()
 
-      Enum.each(schema["properties"], fn {_name, prop} ->
-        assert Map.has_key?(prop, "description"),
+      Enum.each(schema[:properties], fn {_name, prop} ->
+        assert Map.has_key?(prop, :description),
                "Property #{inspect(prop)} should have description"
       end)
     end
@@ -98,44 +98,44 @@ defmodule AshOaskit.ErrorSchemasTest do
     test "returns object type schema" do
       schema = ErrorSchemas.error_response_schema()
 
-      assert schema["type"] == "object"
+      assert schema[:type] == :object
     end
 
     test "requires errors array" do
       schema = ErrorSchemas.error_response_schema()
 
-      assert "errors" in schema["required"]
+      assert "errors" in schema[:required]
     end
 
     test "errors property is array type" do
       schema = ErrorSchemas.error_response_schema()
 
-      assert schema["properties"]["errors"]["type"] == "array"
+      assert schema[:properties][:errors][:type] == :array
     end
 
     test "errors array has minItems of 1" do
       schema = ErrorSchemas.error_response_schema()
 
-      assert schema["properties"]["errors"]["minItems"] == 1
+      assert schema[:properties][:errors][:minItems] == 1
     end
 
     test "includes optional meta property" do
       schema = ErrorSchemas.error_response_schema()
 
-      assert Map.has_key?(schema["properties"], "meta")
+      assert Map.has_key?(schema[:properties], :meta)
     end
 
     test "includes optional jsonapi property" do
       schema = ErrorSchemas.error_response_schema()
 
-      assert Map.has_key?(schema["properties"], "jsonapi")
+      assert Map.has_key?(schema[:properties], :jsonapi)
     end
 
     test "jsonapi property has version" do
       schema = ErrorSchemas.error_response_schema()
 
-      jsonapi = schema["properties"]["jsonapi"]
-      assert Map.has_key?(jsonapi["properties"], "version")
+      jsonapi = schema[:properties][:jsonapi]
+      assert Map.has_key?(jsonapi[:properties], :version)
     end
   end
 
@@ -145,70 +145,70 @@ defmodule AshOaskit.ErrorSchemasTest do
     test "returns response with description" do
       response = ErrorSchemas.error_response("404")
 
-      assert Map.has_key?(response, "description")
-      assert is_binary(response["description"])
+      assert Map.has_key?(response, :description)
+      assert is_binary(response[:description])
     end
 
     test "returns response with content" do
       response = ErrorSchemas.error_response("404")
 
-      assert Map.has_key?(response, "content")
-      assert Map.has_key?(response["content"], "application/vnd.api+json")
+      assert Map.has_key?(response, :content)
+      assert Map.has_key?(response[:content], "application/vnd.api+json")
     end
 
     test "content references JsonApiError schema" do
       response = ErrorSchemas.error_response("404")
 
-      schema = response["content"]["application/vnd.api+json"]["schema"]
+      schema = response[:content]["application/vnd.api+json"][:schema]
       assert schema["$ref"] == "#/components/schemas/JsonApiError"
     end
 
     test "400 has appropriate description" do
       response = ErrorSchemas.error_response("400")
 
-      assert response["description"] =~ "Bad request"
+      assert response[:description] =~ "Bad request"
     end
 
     test "401 has appropriate description" do
       response = ErrorSchemas.error_response("401")
 
-      assert response["description"] =~ "Unauthorized"
+      assert response[:description] =~ "Unauthorized"
     end
 
     test "403 has appropriate description" do
       response = ErrorSchemas.error_response("403")
 
-      assert response["description"] =~ "Forbidden"
+      assert response[:description] =~ "Forbidden"
     end
 
     test "404 has appropriate description" do
       response = ErrorSchemas.error_response("404")
 
-      assert response["description"] =~ "Not found"
+      assert response[:description] =~ "Not found"
     end
 
     test "409 has appropriate description" do
       response = ErrorSchemas.error_response("409")
 
-      assert response["description"] =~ "Conflict"
+      assert response[:description] =~ "Conflict"
     end
 
     test "422 has appropriate description" do
       response = ErrorSchemas.error_response("422")
 
-      assert response["description"] =~ "Unprocessable"
+      assert response[:description] =~ "Unprocessable"
     end
 
     test "500 has appropriate description" do
       response = ErrorSchemas.error_response("500")
 
-      assert response["description"] =~ "Internal server error"
+      assert response[:description] =~ "Internal server error"
     end
 
     test "unknown status code has generic description" do
       response = ErrorSchemas.error_response("418")
 
-      assert response["description"] == "Error response"
+      assert response[:description] == "Error response"
     end
   end
 
@@ -227,8 +227,8 @@ defmodule AshOaskit.ErrorSchemasTest do
       responses = ErrorSchemas.error_responses(["400", "404", "422"])
 
       Enum.each(responses, fn {_code, response} ->
-        assert Map.has_key?(response, "description")
-        assert Map.has_key?(response, "content")
+        assert Map.has_key?(response, :description)
+        assert Map.has_key?(response, :content)
       end)
     end
 
@@ -336,30 +336,30 @@ defmodule AshOaskit.ErrorSchemasTest do
     # Tests for component integration
 
     test "adds JsonApiError schema" do
-      components = ErrorSchemas.add_error_components(%{"schemas" => %{}})
+      components = ErrorSchemas.add_error_components(%{schemas: %{}})
 
-      assert Map.has_key?(components["schemas"], "JsonApiError")
+      assert Map.has_key?(components[:schemas], "JsonApiError")
     end
 
     test "adds JsonApiErrorObject schema" do
-      components = ErrorSchemas.add_error_components(%{"schemas" => %{}})
+      components = ErrorSchemas.add_error_components(%{schemas: %{}})
 
-      assert Map.has_key?(components["schemas"], "JsonApiErrorObject")
+      assert Map.has_key?(components[:schemas], "JsonApiErrorObject")
     end
 
     test "preserves existing schemas" do
-      existing = %{"schemas" => %{"Post" => %{"type" => "object"}}}
+      existing = %{schemas: %{"Post" => %{type: :object}}}
       components = ErrorSchemas.add_error_components(existing)
 
-      assert Map.has_key?(components["schemas"], "Post")
-      assert Map.has_key?(components["schemas"], "JsonApiError")
+      assert Map.has_key?(components[:schemas], "Post")
+      assert Map.has_key?(components[:schemas], "JsonApiError")
     end
 
     test "handles empty components" do
       components = ErrorSchemas.add_error_components(%{})
 
-      assert Map.has_key?(components, "schemas")
-      assert Map.has_key?(components["schemas"], "JsonApiError")
+      assert Map.has_key?(components, :schemas)
+      assert Map.has_key?(components[:schemas], "JsonApiError")
     end
   end
 
@@ -433,16 +433,16 @@ defmodule AshOaskit.ErrorSchemasTest do
     test "includes inline schema instead of $ref" do
       response = ErrorSchemas.inline_error_response("400")
 
-      schema = response["content"]["application/vnd.api+json"]["schema"]
+      schema = response[:content]["application/vnd.api+json"][:schema]
       refute Map.has_key?(schema, "$ref")
-      assert schema["type"] == "object"
+      assert schema[:type] == :object
     end
 
     test "has same description as regular response" do
       inline = ErrorSchemas.inline_error_response("404")
       regular = ErrorSchemas.error_response("404")
 
-      assert inline["description"] == regular["description"]
+      assert inline[:description] == regular[:description]
     end
   end
 
@@ -465,7 +465,7 @@ defmodule AshOaskit.ErrorSchemasTest do
 
     test "schema references use correct path format" do
       response = ErrorSchemas.error_response("400")
-      ref = response["content"]["application/vnd.api+json"]["schema"]["$ref"]
+      ref = response[:content]["application/vnd.api+json"][:schema]["$ref"]
 
       assert String.starts_with?(ref, "#/components/schemas/")
     end

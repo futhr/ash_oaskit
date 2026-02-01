@@ -185,8 +185,8 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemas do
 
     schema =
       %{
-        "type" => "object",
-        "properties" => properties
+        type: :object,
+        properties: properties
       }
 
     schema = maybe_add_required(schema, required)
@@ -237,5 +237,5 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemas do
   # Adds required field to schema if there are required properties
   @spec maybe_add_required(map(), [String.t()]) :: map()
   defp maybe_add_required(schema, []), do: schema
-  defp maybe_add_required(schema, required), do: Map.put(schema, "required", required)
+  defp maybe_add_required(schema, required), do: Map.put(schema, :required, required)
 end

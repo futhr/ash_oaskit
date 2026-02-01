@@ -66,23 +66,23 @@ defmodule AshOaskit.RelationshipRoutes do
   ### Resource Identifier Object
 
       %{
-        "type" => "object",
-        "required" => ["type", "id"],
-        "properties" => %{
-          "type" => %{"type" => "string"},
-          "id" => %{"type" => "string"}
+        type: :object,
+        required: ["type", "id"],
+        properties: %{
+          "type" => %{type: :string},
+          "id" => %{type: :string}
         }
       }
 
   ### Relationship Linkage Response
 
       %{
-        "type" => "object",
-        "properties" => %{
+        type: :object,
+        properties: %{
           "data" => resource_identifier_or_array,
           "links" => %{
-            "self" => %{"type" => "string"},
-            "related" => %{"type" => "string"}
+            "self" => %{type: :string},
+            "related" => %{type: :string}
           }
         }
       }
@@ -148,8 +148,8 @@ defmodule AshOaskit.RelationshipRoutes do
 
       RelationshipRoutes.build_operation(%{type: :related, ...}, [])
       # => %{
-      #      "operationId" => "post_comments_related",
-      #      "summary" => "Get related comments",
+      #      operationId: "post_comments_related",
+      #      summary: "Get related comments",
       #      ...
       #    }
   """
@@ -207,11 +207,11 @@ defmodule AshOaskit.RelationshipRoutes do
 
       iex> RelationshipRoutes.build_resource_identifier_schema("comment")
       %{
-        "type" => "object",
-        "required" => ["type", "id"],
-        "properties" => %{
-          "type" => %{"type" => "string", "enum" => ["comment"]},
-          "id" => %{"type" => "string", "description" => "The unique identifier of the resource"}
+        type: :object,
+        required: ["type", "id"],
+        properties: %{
+          "type" => %{type: :string, enum: ["comment"]},
+          "id" => %{type: :string, description: "The unique identifier of the resource"}
         }
       }
   """

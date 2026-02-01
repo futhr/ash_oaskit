@@ -104,7 +104,7 @@ defmodule AshOaskit.SchemaBuilderTest do
 
     test "adds a schema to the builder" do
       builder = SchemaBuilder.new()
-      schema = %{"type" => "object", "properties" => %{}}
+      schema = %{type: :object, properties: %{}}
 
       builder = SchemaBuilder.add_schema(builder, "Post", schema)
 
@@ -114,14 +114,14 @@ defmodule AshOaskit.SchemaBuilderTest do
 
     test "does not overwrite existing schema" do
       builder = SchemaBuilder.new()
-      schema1 = %{"type" => "object", "description" => "first"}
-      schema2 = %{"type" => "object", "description" => "second"}
+      schema1 = %{type: :object, description: "first"}
+      schema2 = %{type: :object, description: "second"}
 
       builder = SchemaBuilder.add_schema(builder, "Post", schema1)
       builder = SchemaBuilder.add_schema(builder, "Post", schema2)
 
       # First definition wins
-      assert SchemaBuilder.get_schema(builder, "Post")["description"] == "first"
+      assert SchemaBuilder.get_schema(builder, "Post")[:description] == "first"
     end
 
     test "adds multiple schemas" do
@@ -129,9 +129,9 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       builder =
         builder
-        |> SchemaBuilder.add_schema("Post", %{"type" => "object"})
-        |> SchemaBuilder.add_schema("Comment", %{"type" => "object"})
-        |> SchemaBuilder.add_schema("Author", %{"type" => "object"})
+        |> SchemaBuilder.add_schema("Post", %{type: :object})
+        |> SchemaBuilder.add_schema("Comment", %{type: :object})
+        |> SchemaBuilder.add_schema("Author", %{type: :object})
 
       assert SchemaBuilder.schema_count(builder) == 3
       assert "Post" in SchemaBuilder.schema_names(builder)
@@ -143,23 +143,23 @@ defmodule AshOaskit.SchemaBuilderTest do
       builder = SchemaBuilder.new()
 
       schema = %{
-        "type" => "object",
-        "properties" => %{
-          "id" => %{"type" => "string"},
-          "nested" => %{
-            "type" => "object",
-            "properties" => %{
-              "value" => %{"type" => "integer"}
+        type: :object,
+        properties: %{
+          id: %{type: :string},
+          nested: %{
+            type: :object,
+            properties: %{
+              value: %{type: :integer}
             }
           }
         },
-        "required" => ["id"]
+        required: ["id"]
       }
 
       builder = SchemaBuilder.add_schema(builder, "Complex", schema)
 
       retrieved = SchemaBuilder.get_schema(builder, "Complex")
-      assert retrieved["properties"]["nested"]["properties"]["value"]["type"] == "integer"
+      assert retrieved[:properties][:nested][:properties][:value][:type] == :integer
     end
   end
 
@@ -197,7 +197,7 @@ defmodule AshOaskit.SchemaBuilderTest do
     end
 
     test "returns schema for existing name" do
-      schema = %{"type" => "string", "format" => "uuid"}
+      schema = %{type: :string, format: :uuid}
 
       builder = SchemaBuilder.add_schema(SchemaBuilder.new(), "UUID", schema)
 
@@ -249,9 +249,9 @@ defmodule AshOaskit.SchemaBuilderTest do
     test "does not count duplicates" do
       builder =
         SchemaBuilder.new()
-        |> SchemaBuilder.add_schema("Same", %{"v" => 1})
-        |> SchemaBuilder.add_schema("Same", %{"v" => 2})
-        |> SchemaBuilder.add_schema("Same", %{"v" => 3})
+        |> SchemaBuilder.add_schema("Same", %{v: 1})
+        |> SchemaBuilder.add_schema("Same", %{v: 2})
+        |> SchemaBuilder.add_schema("Same", %{v: 3})
 
       assert SchemaBuilder.schema_count(builder) == 1
     end
@@ -334,34 +334,34 @@ defmodule AshOaskit.SchemaBuilderTest do
       builder = SchemaBuilder.new()
       components = SchemaBuilder.to_components(builder)
 
-      assert components == %{"schemas" => %{}}
+      assert components == %{schemas: %{}}
     end
 
     test "returns components with all schemas" do
       builder =
         SchemaBuilder.new()
-        |> SchemaBuilder.add_schema("Post", %{"type" => "object"})
-        |> SchemaBuilder.add_schema("Comment", %{"type" => "object"})
+        |> SchemaBuilder.add_schema("Post", %{type: :object})
+        |> SchemaBuilder.add_schema("Comment", %{type: :object})
 
       components = SchemaBuilder.to_components(builder)
 
-      assert Map.has_key?(components["schemas"], "Post")
-      assert Map.has_key?(components["schemas"], "Comment")
+      assert Map.has_key?(components.schemas, "Post")
+      assert Map.has_key?(components.schemas, "Comment")
     end
 
     test "preserves full schema structure" do
       schema = %{
-        "type" => "object",
-        "properties" => %{
-          "name" => %{"type" => "string"}
+        type: :object,
+        properties: %{
+          name: %{type: :string}
         },
-        "required" => ["name"]
+        required: ["name"]
       }
 
       builder = SchemaBuilder.add_schema(SchemaBuilder.new(), "Person", schema)
       components = SchemaBuilder.to_components(builder)
 
-      assert components["schemas"]["Person"] == schema
+      assert components.schemas["Person"] == schema
     end
   end
 
@@ -393,6 +393,7 @@ defmodule AshOaskit.SchemaBuilderTest do
 
   describe "add_resource_schemas/2 with Post resource" do
     # Tests for generating schemas from the Post test resource.
+    # Attribute property values come from TypeMapper (string keys).
 
     setup do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Post)
@@ -404,33 +405,33 @@ defmodule AshOaskit.SchemaBuilderTest do
       assert SchemaBuilder.has_schema?(builder, "PostAttributes")
 
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
-      assert schema["type"] == "object"
-      assert Map.has_key?(schema["properties"], "title")
-      assert Map.has_key?(schema["properties"], "body")
+      assert schema[:type] == :object
+      assert Map.has_key?(schema[:properties], :title)
+      assert Map.has_key?(schema[:properties], :body)
     end
 
     test "generates response schema", %{builder: builder} do
       assert SchemaBuilder.has_schema?(builder, "PostResponse")
 
       schema = SchemaBuilder.get_schema(builder, "PostResponse")
-      assert schema["type"] == "object"
-      assert Map.has_key?(schema["properties"], "data")
+      assert schema[:type] == :object
+      assert Map.has_key?(schema[:properties], :data)
     end
 
     test "generates create input schema", %{builder: builder} do
       assert SchemaBuilder.has_schema?(builder, "PostCreateInput")
 
       schema = SchemaBuilder.get_schema(builder, "PostCreateInput")
-      assert schema["type"] == "object"
+      assert schema[:type] == :object
     end
 
     test "generates update input schema", %{builder: builder} do
       assert SchemaBuilder.has_schema?(builder, "PostUpdateInput")
 
       schema = SchemaBuilder.get_schema(builder, "PostUpdateInput")
-      assert schema["type"] == "object"
+      assert schema[:type] == :object
       # Update schemas should not have required fields (partial updates)
-      refute Map.has_key?(schema, "required")
+      refute Map.has_key?(schema, :required)
     end
 
     test "marks resource as seen", %{builder: builder} do
@@ -441,31 +442,32 @@ defmodule AshOaskit.SchemaBuilderTest do
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
 
       # id, inserted_at, updated_at should not be in attributes
-      refute Map.has_key?(schema["properties"], "id")
-      refute Map.has_key?(schema["properties"], "inserted_at")
-      refute Map.has_key?(schema["properties"], "updated_at")
+      refute Map.has_key?(schema[:properties], :id)
+      refute Map.has_key?(schema[:properties], :inserted_at)
+      refute Map.has_key?(schema[:properties], :updated_at)
     end
 
     test "response schema has JSON:API structure", %{builder: builder} do
       schema = SchemaBuilder.get_schema(builder, "PostResponse")
 
-      data = schema["properties"]["data"]
-      assert data["type"] == "object"
-      assert Map.has_key?(data["properties"], "id")
-      assert Map.has_key?(data["properties"], "type")
-      assert Map.has_key?(data["properties"], "attributes")
+      data = schema[:properties][:data]
+      assert data[:type] == :object
+      assert Map.has_key?(data[:properties], :id)
+      assert Map.has_key?(data[:properties], :type)
+      assert Map.has_key?(data[:properties], :attributes)
     end
 
     test "response schema includes type enum", %{builder: builder} do
       schema = SchemaBuilder.get_schema(builder, "PostResponse")
 
-      type_schema = schema["properties"]["data"]["properties"]["type"]
-      assert type_schema["enum"] == ["post"]
+      type_schema = schema[:properties][:data][:properties][:type]
+      assert type_schema[:enum] == ["post"]
     end
   end
 
   describe "add_resource_schemas/2 with version 3.0" do
     # Tests for OpenAPI 3.0 specific schema generation.
+    # Attribute values from TypeMapper use string keys.
 
     test "uses nullable: true for nullable fields" do
       builder =
@@ -473,14 +475,15 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
 
-      # Body is nullable
-      body_schema = schema["properties"]["body"]
+      # Body is nullable - value from TypeMapper (string keys)
+      body_schema = schema[:properties][:body]
       assert body_schema["nullable"] == true
     end
   end
 
   describe "add_resource_schemas/2 with version 3.1" do
     # Tests for OpenAPI 3.1 specific schema generation.
+    # Attribute values from TypeMapper use string keys.
 
     test "uses type array for nullable fields" do
       builder =
@@ -488,8 +491,8 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
 
-      # Body is nullable - should use type array
-      body_schema = schema["properties"]["body"]
+      # Body is nullable - value from TypeMapper (string keys)
+      body_schema = schema[:properties][:body]
       assert is_list(body_schema["type"])
       assert "null" in body_schema["type"]
     end
@@ -504,7 +507,7 @@ defmodule AshOaskit.SchemaBuilderTest do
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
 
       # title has allow_nil?: false
-      assert "title" in (schema["required"] || [])
+      assert "title" in (schema[:required] || [])
     end
 
     test "create input has required for non-nullable fields without defaults" do
@@ -514,8 +517,8 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       # title is required for create (allow_nil?: false, no default)
       # is_featured has a default, so not required for create
-      if schema["required"] do
-        assert "title" in schema["required"]
+      if schema[:required] do
+        assert "title" in schema[:required]
       end
     end
 
@@ -525,7 +528,7 @@ defmodule AshOaskit.SchemaBuilderTest do
       schema = SchemaBuilder.get_schema(builder, "PostUpdateInput")
 
       # Partial updates - nothing required
-      refute Map.has_key?(schema, "required")
+      refute Map.has_key?(schema, :required)
     end
   end
 
@@ -565,8 +568,8 @@ defmodule AshOaskit.SchemaBuilderTest do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Comment)
 
       schema = SchemaBuilder.get_schema(builder, "CommentAttributes")
-      assert schema["type"] == "object"
-      assert Map.has_key?(schema["properties"], "content")
+      assert schema[:type] == :object
+      assert Map.has_key?(schema[:properties], :content)
     end
 
     test "handles adding same resource twice" do
@@ -594,36 +597,38 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "relationship schema generation" do
+    # Relationship schemas use atom keys throughout (from RelationshipSchemas).
+
     test "generates relationships schema for resource with relationships" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Article)
 
       assert SchemaBuilder.has_schema?(builder, "ArticleRelationships")
 
       schema = SchemaBuilder.get_schema(builder, "ArticleRelationships")
-      assert schema["type"] == "object"
+      assert schema[:type] == :object
       # Article has author, reviews, and tags relationships
-      assert Map.has_key?(schema["properties"], "author")
+      assert Map.has_key?(schema[:properties], :author)
     end
 
     test "includes data and links in relationship objects" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Article)
 
       schema = SchemaBuilder.get_schema(builder, "ArticleRelationships")
-      author_rel = schema["properties"]["author"]
+      author_rel = schema[:properties][:author]
 
-      assert Map.has_key?(author_rel["properties"], "data")
-      assert Map.has_key?(author_rel["properties"], "links")
+      assert Map.has_key?(author_rel[:properties], :data)
+      assert Map.has_key?(author_rel[:properties], :links)
     end
 
     test "response schema references relationships for resources with relationships" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Article)
 
       schema = SchemaBuilder.get_schema(builder, "ArticleResponse")
-      data = schema["properties"]["data"]
+      data = schema[:properties][:data]
 
-      assert Map.has_key?(data["properties"], "relationships")
+      assert Map.has_key?(data[:properties], :relationships)
 
-      assert data["properties"]["relationships"]["$ref"] ==
+      assert data[:properties][:relationships]["$ref"] ==
                "#/components/schemas/ArticleRelationships"
     end
 
@@ -631,31 +636,31 @@ defmodule AshOaskit.SchemaBuilderTest do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Post)
 
       schema = SchemaBuilder.get_schema(builder, "PostResponse")
-      data = schema["properties"]["data"]
+      data = schema[:properties][:data]
 
-      refute Map.has_key?(data["properties"], "relationships")
+      refute Map.has_key?(data[:properties], :relationships)
     end
 
     test "handles to-one relationships" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Article)
 
       schema = SchemaBuilder.get_schema(builder, "ArticleRelationships")
-      author_rel = schema["properties"]["author"]
+      author_rel = schema[:properties][:author]
 
       # To-one should have nullable identifier (not array)
-      data = author_rel["properties"]["data"]
-      refute data["type"] == "array"
+      data = author_rel[:properties][:data]
+      refute data[:type] == :array
     end
 
     test "handles to-many relationships" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Article)
 
       schema = SchemaBuilder.get_schema(builder, "ArticleRelationships")
-      reviews_rel = schema["properties"]["reviews"]
+      reviews_rel = schema[:properties][:reviews]
 
       # To-many should be array
-      data = reviews_rel["properties"]["data"]
-      assert data["type"] == "array"
+      data = reviews_rel[:properties][:data]
+      assert data[:type] == :array
     end
 
     test "generates related resource schemas" do
@@ -668,14 +673,16 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "calculation schema generation" do
+    # Calculation values come from PropertyBuilders (atom keys).
+
     test "includes calculations in attributes schema" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Author)
 
       schema = SchemaBuilder.get_schema(builder, "AuthorAttributes")
 
       # Author has full_name and article_count calculations
-      assert Map.has_key?(schema["properties"], "full_name")
-      assert Map.has_key?(schema["properties"], "article_count")
+      assert Map.has_key?(schema[:properties], :full_name)
+      assert Map.has_key?(schema[:properties], :article_count)
     end
 
     test "calculations are nullable (may not be loaded)" do
@@ -686,40 +693,42 @@ defmodule AshOaskit.SchemaBuilderTest do
         )
 
       schema = SchemaBuilder.get_schema(builder, "AuthorAttributes")
-      full_name = schema["properties"]["full_name"]
+      full_name = schema[:properties][:full_name]
 
-      # Should be nullable for 3.1
-      assert "null" in List.wrap(full_name["type"])
+      # Should be nullable for 3.1 - PropertyBuilders returns atom keys
+      assert :null in List.wrap(full_name[:type])
     end
 
     test "calculation descriptions are included" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Author)
 
       schema = SchemaBuilder.get_schema(builder, "AuthorAttributes")
-      full_name = schema["properties"]["full_name"]
+      full_name = schema[:properties][:full_name]
 
-      assert full_name["description"] == "Author's full name"
+      assert full_name[:description] == "Author's full name"
     end
   end
 
   describe "aggregate schema generation" do
+    # Aggregate values come from PropertyBuilders (atom keys).
+
     test "includes aggregates in attributes schema" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Author)
 
       schema = SchemaBuilder.get_schema(builder, "AuthorAttributes")
 
       # Author has total_articles aggregate
-      assert Map.has_key?(schema["properties"], "total_articles")
+      assert Map.has_key?(schema[:properties], :total_articles)
     end
 
     test "count aggregates are integer type" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Author)
 
       schema = SchemaBuilder.get_schema(builder, "AuthorAttributes")
-      total_articles = schema["properties"]["total_articles"]
+      total_articles = schema[:properties][:total_articles]
 
-      # Count aggregates should be integer
-      assert "integer" in List.wrap(total_articles["type"])
+      # Count aggregates should be integer - PropertyBuilders returns atom keys
+      assert :integer in List.wrap(total_articles[:type])
     end
 
     test "aggregates are nullable (may not be loaded)" do
@@ -730,33 +739,36 @@ defmodule AshOaskit.SchemaBuilderTest do
         )
 
       schema = SchemaBuilder.get_schema(builder, "AuthorAttributes")
-      total_articles = schema["properties"]["total_articles"]
+      total_articles = schema[:properties][:total_articles]
 
-      # Should have nullable: true for 3.0
-      assert total_articles["nullable"] == true
+      # Should have nullable: true for 3.0 - PropertyBuilders returns atom keys
+      assert total_articles[:nullable] == true
     end
 
     test "aggregate descriptions are included" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Author)
 
       schema = SchemaBuilder.get_schema(builder, "AuthorAttributes")
-      total_articles = schema["properties"]["total_articles"]
+      total_articles = schema[:properties][:total_articles]
 
-      assert total_articles["description"] == "Total number of articles"
+      assert total_articles[:description] == "Total number of articles"
     end
 
     test "avg aggregates are number type" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Article)
 
       schema = SchemaBuilder.get_schema(builder, "ArticleAttributes")
-      avg_rating = schema["properties"]["average_rating"]
+      avg_rating = schema[:properties][:average_rating]
 
-      # Avg aggregates should be number
-      assert "number" in List.wrap(avg_rating["type"])
+      # Avg aggregates should be number - PropertyBuilders returns atom keys
+      assert :number in List.wrap(avg_rating[:type])
     end
   end
 
   describe "embedded resource schema generation" do
+    # Embedded schemas: outer structure uses atom keys,
+    # attribute property values from TypeMapper use string keys.
+
     test "generates schema for embedded resources in attributes" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Author)
 
@@ -769,9 +781,9 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       schema = SchemaBuilder.get_schema(builder, "Profile")
 
-      assert schema["type"] == "object"
-      assert Map.has_key?(schema["properties"], "bio")
-      assert Map.has_key?(schema["properties"], "website")
+      assert schema[:type] == :object
+      assert Map.has_key?(schema[:properties], :bio)
+      assert Map.has_key?(schema[:properties], :website)
     end
 
     test "handles nested embedded resources" do
@@ -781,15 +793,16 @@ defmodule AshOaskit.SchemaBuilderTest do
       assert SchemaBuilder.has_schema?(builder, "Address")
 
       address_schema = SchemaBuilder.get_schema(builder, "Address")
-      assert Map.has_key?(address_schema["properties"], "street")
-      assert Map.has_key?(address_schema["properties"], "city")
+      assert Map.has_key?(address_schema[:properties], :street)
+      assert Map.has_key?(address_schema[:properties], :city)
     end
 
     test "embedded resource constraints are included" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Author)
 
       schema = SchemaBuilder.get_schema(builder, "Profile")
-      bio = schema["properties"]["bio"]
+      # bio value comes from TypeMapper (string keys)
+      bio = schema[:properties][:bio]
 
       # bio has max_length: 500
       assert bio["maxLength"] == 500
@@ -811,8 +824,8 @@ defmodule AshOaskit.SchemaBuilderTest do
       schema = SchemaBuilder.get_schema(builder, "CategoryRelationships")
 
       # parent and children should reference Category
-      assert Map.has_key?(schema["properties"], "parent")
-      assert Map.has_key?(schema["properties"], "children")
+      assert Map.has_key?(schema[:properties], :parent)
+      assert Map.has_key?(schema[:properties], :children)
     end
 
     test "resource is only processed once" do
@@ -825,14 +838,15 @@ defmodule AshOaskit.SchemaBuilderTest do
 
   describe "type mapping integration" do
     # Tests for verifying TypeMapper integration in schema building.
+    # Attribute values come from TypeMapper (string keys).
 
     test "maps string type correctly" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Post)
 
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
 
-      # title is a string
-      title_schema = schema["properties"]["title"]
+      # title is a string - TypeMapper returns string keys
+      title_schema = schema[:properties][:title]
       assert "string" in List.wrap(title_schema["type"])
     end
 
@@ -841,8 +855,8 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
 
-      # view_count is an integer
-      count_schema = schema["properties"]["view_count"]
+      # view_count is an integer - TypeMapper returns string keys
+      count_schema = schema[:properties][:view_count]
       assert "integer" in List.wrap(count_schema["type"])
     end
 
@@ -851,8 +865,8 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
 
-      # tags is {:array, :string}
-      tags_schema = schema["properties"]["tags"]
+      # tags is {:array, :string} - TypeMapper returns string keys
+      tags_schema = schema[:properties][:tags]
       assert "array" in List.wrap(tags_schema["type"])
       assert tags_schema["items"]["type"] == "string"
     end
@@ -862,13 +876,13 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
 
-      # title has min_length: 1, max_length: 255
-      title_schema = schema["properties"]["title"]
+      # title has min_length: 1, max_length: 255 - TypeMapper returns string keys
+      title_schema = schema[:properties][:title]
       assert title_schema["minLength"] == 1
       assert title_schema["maxLength"] == 255
 
       # view_count has min: 0
-      count_schema = schema["properties"]["view_count"]
+      count_schema = schema[:properties][:view_count]
       assert count_schema["minimum"] == 0
     end
 
@@ -877,8 +891,8 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
 
-      # status has one_of: [:draft, :published]
-      status_schema = schema["properties"]["status"]
+      # status has one_of: [:draft, :published] - TypeMapper returns string keys
+      status_schema = schema[:properties][:status]
       assert status_schema["enum"] == ["draft", "published"]
     end
 
@@ -887,8 +901,8 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
 
-      # body has a description
-      body_schema = schema["properties"]["body"]
+      # body has a description - TypeMapper returns string keys
+      body_schema = schema[:properties][:body]
       assert body_schema["description"] == "Post content"
     end
 
@@ -897,14 +911,15 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
 
-      # is_featured has default: false
-      featured_schema = schema["properties"]["is_featured"]
+      # is_featured has default: false - TypeMapper returns string keys
+      featured_schema = schema[:properties][:is_featured]
       assert featured_schema["default"] == false
     end
   end
 
   describe "aggregate kind schemas" do
-    # Tests for different aggregate kinds to cover dynamic_aggregate_schema branches
+    # Tests for different aggregate kinds to cover dynamic_aggregate_schema branches.
+    # Aggregate values come from PropertyBuilders (atom keys).
 
     test "first aggregate type" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Article)
@@ -912,7 +927,7 @@ defmodule AshOaskit.SchemaBuilderTest do
       schema = SchemaBuilder.get_schema(builder, "ArticleAttributes")
 
       # first_review_rating is a :first aggregate
-      assert Map.has_key?(schema["properties"], "first_review_rating")
+      assert Map.has_key?(schema[:properties], :first_review_rating)
     end
 
     test "list aggregate generates array schema" do
@@ -921,8 +936,9 @@ defmodule AshOaskit.SchemaBuilderTest do
       schema = SchemaBuilder.get_schema(builder, "ArticleAttributes")
 
       # review_ratings is a :list aggregate - should be an array
-      ratings = schema["properties"]["review_ratings"]
-      assert "array" in List.wrap(ratings["type"])
+      # PropertyBuilders returns atom keys
+      ratings = schema[:properties][:review_ratings]
+      assert :array in List.wrap(ratings[:type])
     end
 
     test "min aggregate type" do
@@ -930,7 +946,7 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       schema = SchemaBuilder.get_schema(builder, "ArticleAttributes")
 
-      assert Map.has_key?(schema["properties"], "min_review_rating")
+      assert Map.has_key?(schema[:properties], :min_review_rating)
     end
 
     test "max aggregate type" do
@@ -938,7 +954,7 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       schema = SchemaBuilder.get_schema(builder, "ArticleAttributes")
 
-      assert Map.has_key?(schema["properties"], "max_review_rating")
+      assert Map.has_key?(schema[:properties], :max_review_rating)
     end
 
     test "sum aggregate type" do
@@ -946,7 +962,7 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       schema = SchemaBuilder.get_schema(builder, "ArticleAttributes")
 
-      assert Map.has_key?(schema["properties"], "total_rating")
+      assert Map.has_key?(schema[:properties], :total_rating)
     end
 
     test "exists aggregate is boolean type" do
@@ -955,8 +971,9 @@ defmodule AshOaskit.SchemaBuilderTest do
       schema = SchemaBuilder.get_schema(builder, "ArticleAttributes")
 
       # has_reviews is an :exists aggregate - should be boolean
-      has_reviews = schema["properties"]["has_reviews"]
-      assert "boolean" in List.wrap(has_reviews["type"])
+      # PropertyBuilders returns atom keys
+      has_reviews = schema[:properties][:has_reviews]
+      assert :boolean in List.wrap(has_reviews[:type])
     end
   end
 
@@ -980,7 +997,7 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       # The term attribute type should map to something
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
-      assert Map.has_key?(schema["properties"], "config")
+      assert Map.has_key?(schema[:properties], :config)
     end
 
     test "relationship cardinality fallback for nil" do
@@ -989,8 +1006,8 @@ defmodule AshOaskit.SchemaBuilderTest do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Article)
 
       schema = SchemaBuilder.get_schema(builder, "ArticleRelationships")
-      # reviews is has_many
-      assert schema["properties"]["reviews"]["properties"]["data"]["type"] == "array"
+      # reviews is has_many - RelationshipSchemas returns atom keys
+      assert schema[:properties][:reviews][:properties][:data][:type] == :array
     end
 
     test "make_nullable_31 passes through non-map schemas" do
@@ -1003,7 +1020,7 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       # All schemas should be properly generated
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
-      assert schema["type"] == "object"
+      assert schema[:type] == :object
     end
 
     test "description added from source when present" do
@@ -1011,8 +1028,8 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
 
-      # body has description "Post content"
-      assert schema["properties"]["body"]["description"] == "Post content"
+      # body has description "Post content" - TypeMapper returns string keys
+      assert schema[:properties][:body]["description"] == "Post content"
     end
 
     test "description not added when not present" do
@@ -1020,8 +1037,8 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
 
-      # title has no description
-      refute Map.has_key?(schema["properties"]["title"], "description")
+      # title has no description - TypeMapper returns string keys
+      refute Map.has_key?(schema[:properties][:title], "description")
     end
   end
 
@@ -1031,32 +1048,32 @@ defmodule AshOaskit.SchemaBuilderTest do
     test "aggregate_kind_to_schema handles :list kind" do
       agg = %{kind: :list, type: :string}
       schema = PropertyBuilders.aggregate_kind_to_schema(:list, agg)
-      assert schema["type"] == "array"
-      assert schema["items"] == %{"type" => "string"}
+      assert schema[:type] == :array
+      assert schema[:items] == %{type: :string}
     end
 
     test "aggregate_kind_to_schema handles :first kind" do
       agg = %{kind: :first, type: :string}
       schema = PropertyBuilders.aggregate_kind_to_schema(:first, agg)
-      assert schema["type"] == "string"
+      assert schema[:type] == :string
     end
 
     test "aggregate_kind_to_schema handles :min kind" do
       agg = %{kind: :min, type: :integer}
       schema = PropertyBuilders.aggregate_kind_to_schema(:min, agg)
-      assert schema["type"] == "integer"
+      assert schema[:type] == :integer
     end
 
     test "aggregate_kind_to_schema handles :max kind with default type" do
       agg = %{kind: :max}
       schema = PropertyBuilders.aggregate_kind_to_schema(:max, agg)
-      assert schema["type"] == "number"
+      assert schema[:type] == :number
     end
 
     test "aggregate_kind_to_schema handles :custom kind" do
       agg = %{kind: :custom, type: :boolean}
       schema = PropertyBuilders.aggregate_kind_to_schema(:custom, agg)
-      assert schema["type"] == "boolean"
+      assert schema[:type] == :boolean
     end
 
     test "aggregate_kind_to_schema handles unknown kind" do
@@ -1072,7 +1089,7 @@ defmodule AshOaskit.SchemaBuilderTest do
     end
 
     test "type_to_schema handles non-atom non-tuple type" do
-      assert PropertyBuilders.type_to_schema("string") == %{"type" => "string"}
+      assert PropertyBuilders.type_to_schema("string") == %{type: :string}
     end
   end
 

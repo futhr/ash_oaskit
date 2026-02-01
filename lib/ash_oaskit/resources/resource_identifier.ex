@@ -73,12 +73,12 @@ defmodule AshOaskit.ResourceIdentifier do
 
       iex> AshOaskit.ResourceIdentifier.build_identifier_schema("posts")
       %{
-        "type" => "object",
-        "required" => ["type", "id"],
-        "properties" => %{
-          "type" => %{"type" => "string", "enum" => ["posts"]},
-          "id" => %{"type" => "string"},
-          "meta" => %{"type" => "object", "additionalProperties" => true}
+        type: :object,
+        required: ["type", "id"],
+        properties: %{
+          type: %{type: :string, enum: ["posts"]},
+          id: %{type: :string},
+          meta: %{type: :object, additionalProperties: true}
         }
       }
   """
@@ -88,33 +88,33 @@ defmodule AshOaskit.ResourceIdentifier do
     include_meta = Keyword.get(opts, :include_meta, true)
 
     properties = %{
-      "type" => %{
-        "type" => "string",
-        "enum" => [resource_type],
-        "description" => "Resource type"
+      type: %{
+        type: :string,
+        enum: [resource_type],
+        description: "Resource type"
       },
-      "id" => %{
-        "type" => "string",
-        "description" => "Resource identifier"
+      id: %{
+        type: :string,
+        description: "Resource identifier"
       }
     }
 
     properties =
       if include_meta do
-        Map.put(properties, "meta", %{
-          "type" => "object",
-          "additionalProperties" => true,
-          "description" => "Non-standard meta information about the resource identifier"
+        Map.put(properties, :meta, %{
+          type: :object,
+          additionalProperties: true,
+          description: "Non-standard meta information about the resource identifier"
         })
       else
         properties
       end
 
     %{
-      "type" => "object",
-      "required" => ["type", "id"],
-      "properties" => properties,
-      "description" => "Resource identifier for #{resource_type}"
+      type: :object,
+      required: ["type", "id"],
+      properties: properties,
+      description: "Resource identifier for #{resource_type}"
     }
   end
 
@@ -128,13 +128,13 @@ defmodule AshOaskit.ResourceIdentifier do
 
   ## Examples
 
-      iex> AshOaskit.ResourceIdentifier.build_nullable_identifier_schema("author", version: "3.1")
-      %{
-        "oneOf" => [
-          %{"type" => "null"},
-          %{"type" => "object", "required" => ["type", "id"], ...}
-        ]
-      }
+      iex> schema =
+      ...>   AshOaskit.ResourceIdentifier.build_nullable_identifier_schema("author", version: "3.1")
+      ...>
+      ...> Map.has_key?(schema, :oneOf)
+      true
+      iex> length(schema[:oneOf])
+      2
   """
   @spec build_nullable_identifier_schema(String.t(), keyword()) :: map()
   def build_nullable_identifier_schema(resource_type, opts \\ []) do
@@ -143,14 +143,14 @@ defmodule AshOaskit.ResourceIdentifier do
 
     if version == "3.1" do
       %{
-        "oneOf" => [
-          %{"type" => "null"},
+        oneOf: [
+          %{type: :null},
           identifier
         ],
-        "description" => "Resource identifier for #{resource_type} (nullable)"
+        description: "Resource identifier for #{resource_type} (nullable)"
       }
     else
-      Map.put(identifier, "nullable", true)
+      Map.put(identifier, :nullable, true)
     end
   end
 
@@ -170,8 +170,8 @@ defmodule AshOaskit.ResourceIdentifier do
 
       AshOaskit.ResourceIdentifier.build_to_one_linkage_schema("author")
       # => %{
-      #      "oneOf" => [
-      #        %{"type" => "null"},
+      #      oneOf: [
+      #        %{type: :null},
       #        %{...resource_identifier...}
       #      ]
       #    }
@@ -201,8 +201,8 @@ defmodule AshOaskit.ResourceIdentifier do
 
       AshOaskit.ResourceIdentifier.build_to_many_linkage_schema("comments")
       # => %{
-      #      "type" => "array",
-      #      "items" => %{...resource_identifier...}
+      #      type: :array,
+      #      items: %{...resource_identifier...}
       #    }
   """
   @spec build_to_many_linkage_schema(String.t(), keyword()) :: map()
@@ -210,9 +210,9 @@ defmodule AshOaskit.ResourceIdentifier do
     identifier = build_identifier_schema(resource_type, opts)
 
     %{
-      "type" => "array",
-      "items" => identifier,
-      "description" => "Array of #{resource_type} resource identifiers"
+      type: :array,
+      items: identifier,
+      description: "Array of #{resource_type} resource identifiers"
     }
   end
 
@@ -237,11 +237,11 @@ defmodule AshOaskit.ResourceIdentifier do
         cardinality: :to_one
       )
       # => %{
-      #      "type" => "object",
-      #      "properties" => %{
-      #        "data" => %{...to_one_linkage...},
-      #        "links" => %{...relationship_links...},
-      #        "meta" => %{...meta...}
+      #      type: :object,
+      #      properties: %{
+      #        data: %{...to_one_linkage...},
+      #        links: %{...relationship_links...},
+      #        meta: %{...meta...}
       #      }
       #    }
   """
@@ -259,31 +259,31 @@ defmodule AshOaskit.ResourceIdentifier do
       end
 
     properties = %{
-      "data" => data_schema
+      data: data_schema
     }
 
     properties =
       if include_links do
-        Map.put(properties, "links", build_relationship_links_schema(version))
+        Map.put(properties, :links, build_relationship_links_schema(version))
       else
         properties
       end
 
     properties =
       if include_meta do
-        Map.put(properties, "meta", %{
-          "type" => "object",
-          "additionalProperties" => true,
-          "description" => "Non-standard meta information about the relationship"
+        Map.put(properties, :meta, %{
+          type: :object,
+          additionalProperties: true,
+          description: "Non-standard meta information about the relationship"
         })
       else
         properties
       end
 
     %{
-      "type" => "object",
-      "properties" => properties,
-      "description" => "Relationship object for #{resource_type}"
+      type: :object,
+      properties: properties,
+      description: "Relationship object for #{resource_type}"
     }
   end
 
@@ -303,8 +303,8 @@ defmodule AshOaskit.ResourceIdentifier do
 
       AshOaskit.ResourceIdentifier.build_relationships_object_schema(relationships)
       # => %{
-      #      "type" => "object",
-      #      "properties" => %{
+      #      type: :object,
+      #      properties: %{
       #        "author" => %{...to_one_relationship...},
       #        "comments" => %{...to_many_relationship...}
       #      }
@@ -321,9 +321,9 @@ defmodule AshOaskit.ResourceIdentifier do
       |> Enum.into(%{})
 
     %{
-      "type" => "object",
-      "properties" => properties,
-      "description" => "Resource relationships"
+      type: :object,
+      properties: properties,
+      description: "Resource relationships"
     }
   end
 
@@ -339,14 +339,15 @@ defmodule AshOaskit.ResourceIdentifier do
 
   ## Examples
 
-      iex> AshOaskit.ResourceIdentifier.build_linkage_data_schema("comments", cardinality: :to_many)
-      %{
-        "type" => "object",
-        "required" => ["data"],
-        "properties" => %{
-          "data" => %{"type" => "array", ...}
-        }
-      }
+      iex> schema =
+      ...>   AshOaskit.ResourceIdentifier.build_linkage_data_schema("comments",
+      ...>     cardinality: :to_many
+      ...>   )
+      ...>
+      ...> schema[:type]
+      :object
+      iex> "data" in schema[:required]
+      true
   """
   @spec build_linkage_data_schema(String.t(), keyword()) :: map()
   def build_linkage_data_schema(resource_type, opts \\ []) do
@@ -359,12 +360,12 @@ defmodule AshOaskit.ResourceIdentifier do
       end
 
     %{
-      "type" => "object",
-      "required" => ["data"],
-      "properties" => %{
-        "data" => data_schema
+      type: :object,
+      required: ["data"],
+      properties: %{
+        data: data_schema
       },
-      "description" => "Relationship linkage data for #{resource_type}"
+      description: "Relationship linkage data for #{resource_type}"
     }
   end
 
@@ -414,12 +415,12 @@ defmodule AshOaskit.ResourceIdentifier do
 
       iex> AshOaskit.ResourceIdentifier.build_generic_identifier_schema()
       %{
-        "type" => "object",
-        "required" => ["type", "id"],
-        "properties" => %{
-          "type" => %{"type" => "string"},
-          "id" => %{"type" => "string"},
-          "meta" => %{...}
+        type: :object,
+        required: ["type", "id"],
+        properties: %{
+          type: %{type: :string},
+          id: %{type: :string},
+          meta: %{...}
         }
       }
   """
@@ -428,24 +429,24 @@ defmodule AshOaskit.ResourceIdentifier do
     _version = Keyword.get(opts, :version, "3.1")
 
     %{
-      "type" => "object",
-      "required" => ["type", "id"],
-      "properties" => %{
-        "type" => %{
-          "type" => "string",
-          "description" => "Resource type"
+      type: :object,
+      required: ["type", "id"],
+      properties: %{
+        type: %{
+          type: :string,
+          description: "Resource type"
         },
-        "id" => %{
-          "type" => "string",
-          "description" => "Resource identifier"
+        id: %{
+          type: :string,
+          description: "Resource identifier"
         },
-        "meta" => %{
-          "type" => "object",
-          "additionalProperties" => true,
-          "description" => "Non-standard meta information"
+        meta: %{
+          type: :object,
+          additionalProperties: true,
+          description: "Non-standard meta information"
         }
       },
-      "description" => "Generic resource identifier"
+      description: "Generic resource identifier"
     }
   end
 
@@ -457,11 +458,11 @@ defmodule AshOaskit.ResourceIdentifier do
 
       iex> AshOaskit.ResourceIdentifier.build_polymorphic_identifier_schema(["posts", "comments"])
       %{
-        "type" => "object",
-        "required" => ["type", "id"],
-        "properties" => %{
-          "type" => %{"type" => "string", "enum" => ["posts", "comments"]},
-          "id" => %{"type" => "string"}
+        type: :object,
+        required: ["type", "id"],
+        properties: %{
+          type: %{type: :string, enum: ["posts", "comments"]},
+          id: %{type: :string}
         }
       }
   """
@@ -470,64 +471,64 @@ defmodule AshOaskit.ResourceIdentifier do
     _version = Keyword.get(opts, :version, "3.1")
 
     %{
-      "type" => "object",
-      "required" => ["type", "id"],
-      "properties" => %{
-        "type" => %{
-          "type" => "string",
-          "enum" => resource_types,
-          "description" => "Resource type (one of: #{Enum.join(resource_types, ", ")})"
+      type: :object,
+      required: ["type", "id"],
+      properties: %{
+        type: %{
+          type: :string,
+          enum: resource_types,
+          description: "Resource type (one of: #{Enum.join(resource_types, ", ")})"
         },
-        "id" => %{
-          "type" => "string",
-          "description" => "Resource identifier"
+        id: %{
+          type: :string,
+          description: "Resource identifier"
         },
-        "meta" => %{
-          "type" => "object",
-          "additionalProperties" => true,
-          "description" => "Non-standard meta information"
+        meta: %{
+          type: :object,
+          additionalProperties: true,
+          description: "Non-standard meta information"
         }
       },
-      "description" => "Polymorphic resource identifier"
+      description: "Polymorphic resource identifier"
     }
   end
 
   @spec build_relationship_links_schema(String.t()) :: map()
   defp build_relationship_links_schema("3.1") do
     %{
-      "type" => "object",
-      "properties" => %{
-        "self" => %{
-          "type" => "string",
-          "format" => "uri",
-          "description" => "URL for the relationship itself"
+      type: :object,
+      properties: %{
+        self: %{
+          type: :string,
+          format: :uri,
+          description: "URL for the relationship itself"
         },
-        "related" => %{
-          "type" => "string",
-          "format" => "uri",
-          "description" => "URL for the related resource(s)"
+        related: %{
+          type: :string,
+          format: :uri,
+          description: "URL for the related resource(s)"
         }
       },
-      "description" => "Relationship navigation links"
+      description: "Relationship navigation links"
     }
   end
 
   defp build_relationship_links_schema(_version) do
     %{
-      "type" => "object",
-      "properties" => %{
-        "self" => %{
-          "type" => "string",
-          "format" => "uri",
-          "description" => "URL for the relationship itself"
+      type: :object,
+      properties: %{
+        self: %{
+          type: :string,
+          format: :uri,
+          description: "URL for the relationship itself"
         },
-        "related" => %{
-          "type" => "string",
-          "format" => "uri",
-          "description" => "URL for the related resource(s)"
+        related: %{
+          type: :string,
+          format: :uri,
+          description: "URL for the related resource(s)"
         }
       },
-      "description" => "Relationship navigation links"
+      description: "Relationship navigation links"
     }
   end
 end

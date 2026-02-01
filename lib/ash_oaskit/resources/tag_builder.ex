@@ -69,14 +69,14 @@ defmodule AshOaskit.TagBuilder do
 
       iex> AshOaskit.TagBuilder.build_tags([MyApp.Blog], group_by: :resource)
       [
-        %{"name" => "Post", "description" => "Operations on Post resources"},
-        %{"name" => "Comment", "description" => "Operations on Comment resources"}
+        %{name: "Post", description: "Operations on Post resources"},
+        %{name: "Comment", description: "Operations on Comment resources"}
       ]
 
       iex> AshOaskit.TagBuilder.build_tags([MyApp.Blog, MyApp.Shop], group_by: :domain)
       [
-        %{"name" => "Blog", "description" => "Blog domain operations"},
-        %{"name" => "Shop", "description" => "Shop domain operations"}
+        %{name: "Blog", description: "Blog domain operations"},
+        %{name: "Shop", description: "Shop domain operations"}
       ]
   """
   @spec build_tags(list(module()), keyword()) :: list(map())
@@ -99,7 +99,7 @@ defmodule AshOaskit.TagBuilder do
   ## Examples
 
       iex> AshOaskit.TagBuilder.build_resource_tags([MyApp.Blog])
-      [%{"name" => "Post"}, %{"name" => "Comment"}]
+      [%{name: "Post"}, %{name: "Comment"}]
   """
   @spec build_resource_tags(list(module()), boolean()) :: list(map())
   def build_resource_tags(domains, include_descriptions \\ true) do
@@ -109,8 +109,8 @@ defmodule AshOaskit.TagBuilder do
       name = resource_tag_name(resource)
       build_tag(name, resource_description(resource, include_descriptions))
     end)
-    |> Enum.uniq_by(& &1["name"])
-    |> Enum.sort_by(& &1["name"])
+    |> Enum.uniq_by(& &1[:name])
+    |> Enum.sort_by(& &1[:name])
   end
 
   @doc """
@@ -122,8 +122,8 @@ defmodule AshOaskit.TagBuilder do
 
       iex> AshOaskit.TagBuilder.build_domain_tags([MyApp.Blog, MyApp.Shop])
       [
-        %{"name" => "Blog", "description" => "Blog domain operations"},
-        %{"name" => "Shop", "description" => "Shop domain operations"}
+        %{name: "Blog", description: "Blog domain operations"},
+        %{name: "Shop", description: "Shop domain operations"}
       ]
   """
   @spec build_domain_tags(list(module()), boolean()) :: list(map())
@@ -134,8 +134,8 @@ defmodule AshOaskit.TagBuilder do
       description = domain_description(domain, include_descriptions)
       build_tag(name, description)
     end)
-    |> Enum.uniq_by(& &1["name"])
-    |> Enum.sort_by(& &1["name"])
+    |> Enum.uniq_by(& &1[:name])
+    |> Enum.sort_by(& &1[:name])
   end
 
   @doc """
@@ -147,7 +147,7 @@ defmodule AshOaskit.TagBuilder do
   ## Examples
 
       iex> AshOaskit.TagBuilder.build_custom_tags([MyApp.Blog])
-      [%{"name" => "Custom Tag Name"}]
+      [%{name: "Custom Tag Name"}]
   """
   @spec build_custom_tags(list(module()), boolean()) :: list(map())
   def build_custom_tags(domains, include_descriptions \\ true) do
@@ -157,8 +157,8 @@ defmodule AshOaskit.TagBuilder do
       description = domain_description(domain, include_descriptions)
       build_tag(name, description)
     end)
-    |> Enum.uniq_by(& &1["name"])
-    |> Enum.sort_by(& &1["name"])
+    |> Enum.uniq_by(& &1[:name])
+    |> Enum.sort_by(& &1[:name])
   end
 
   @doc """
@@ -214,20 +214,20 @@ defmodule AshOaskit.TagBuilder do
   ## Examples
 
       iex> AshOaskit.TagBuilder.build_tag("Posts", "Operations for blog posts")
-      %{"name" => "Posts", "description" => "Operations for blog posts"}
+      %{name: "Posts", description: "Operations for blog posts"}
 
       iex> AshOaskit.TagBuilder.build_tag("Posts", nil,
-      ...>   external_docs: %{"url" => "https://docs.example.com"}
+      ...>   external_docs: %{url: "https://docs.example.com"}
       ...> )
-      %{"name" => "Posts", "externalDocs" => %{"url" => "https://docs.example.com"}}
+      %{name: "Posts", externalDocs: %{url: "https://docs.example.com"}}
   """
   @spec build_tag(String.t(), String.t() | nil, keyword()) :: map()
   def build_tag(name, description \\ nil, opts \\ []) do
     external_docs = Keyword.get(opts, :external_docs)
 
-    tag = %{"name" => name}
-    tag = if description, do: Map.put(tag, "description", description), else: tag
-    tag = if external_docs, do: Map.put(tag, "externalDocs", external_docs), else: tag
+    tag = %{name: name}
+    tag = if description, do: Map.put(tag, :description, description), else: tag
+    tag = if external_docs, do: Map.put(tag, :externalDocs, external_docs), else: tag
     tag
   end
 
@@ -292,25 +292,25 @@ defmodule AshOaskit.TagBuilder do
 
   ## Examples
 
-      iex> generated = [%{"name" => "Posts"}, %{"name" => "Comments"}]
-      ...> custom = [%{"name" => "Posts", "description" => "Custom description"}]
+      iex> generated = [%{name: "Posts"}, %{name: "Comments"}]
+      ...> custom = [%{name: "Posts", description: "Custom description"}]
       ...> AshOaskit.TagBuilder.merge_tags(generated, custom)
-      [%{"name" => "Posts", "description" => "Custom description"}, %{"name" => "Comments"}]
+      [%{name: "Posts", description: "Custom description"}, %{name: "Comments"}]
   """
   @spec merge_tags(list(map()), list(map())) :: list(map())
   def merge_tags(generated_tags, custom_tags) do
-    custom_by_name = Map.new(custom_tags, &{&1["name"], &1})
+    custom_by_name = Map.new(custom_tags, &{&1[:name], &1})
 
     generated_tags
     |> Enum.map(fn tag ->
-      Map.get(custom_by_name, tag["name"], tag)
+      Map.get(custom_by_name, tag[:name], tag)
     end)
     |> Enum.concat(
       Enum.reject(custom_tags, fn custom ->
-        Enum.any?(generated_tags, &(&1["name"] == custom["name"]))
+        Enum.any?(generated_tags, &(&1[:name] == custom[:name]))
       end)
     )
-    |> Enum.sort_by(& &1["name"])
+    |> Enum.sort_by(& &1[:name])
   end
 
   @doc """
@@ -328,9 +328,9 @@ defmodule AshOaskit.TagBuilder do
       ...> )
       [
         %{
-          "name" => "Post",
-          "description" => "Operations on Post resources",
-          "externalDocs" => %{"url" => "https://docs.example.com/post"}
+          name: "Post",
+          description: "Operations on Post resources",
+          externalDocs: %{url: "https://docs.example.com/post"}
         }
       ]
   """
@@ -343,9 +343,9 @@ defmodule AshOaskit.TagBuilder do
 
     if base_url do
       Enum.map(tags, fn tag ->
-        slug = tag["name"] |> String.downcase() |> String.replace(" ", "-")
-        external_docs = %{"url" => "#{base_url}/#{slug}"}
-        Map.put(tag, "externalDocs", external_docs)
+        slug = tag[:name] |> String.downcase() |> String.replace(" ", "-")
+        external_docs = %{url: "#{base_url}/#{slug}"}
+        Map.put(tag, :externalDocs, external_docs)
       end)
     else
       tags

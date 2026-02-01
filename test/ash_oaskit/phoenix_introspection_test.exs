@@ -33,24 +33,24 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
     def openapi_operations do
       %{
         index: %{
-          "summary" => "Health check",
-          "tags" => ["Infrastructure"],
-          "responses" => %{
-            "200" => %{"description" => "Healthy"}
+          summary: "Health check",
+          tags: ["Infrastructure"],
+          responses: %{
+            "200" => %{description: "Healthy"}
           }
         },
         show: %{
-          "summary" => "Detailed health",
-          "parameters" => [
+          summary: "Detailed health",
+          parameters: [
             %{
-              "name" => "id",
-              "in" => "path",
-              "required" => true,
-              "schema" => %{"type" => "string"}
+              name: "id",
+              in: :path,
+              required: true,
+              schema: %{type: :string}
             }
           ],
-          "responses" => %{
-            "200" => %{"description" => "Success"}
+          responses: %{
+            "200" => %{description: "Success"}
           }
         }
       }
@@ -58,7 +58,7 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
 
     @impl true
     def openapi_tag do
-      %{"name" => "Infrastructure", "description" => "System health endpoints"}
+      %{name: "Infrastructure", description: "System health endpoints"}
     end
   end
 
@@ -70,8 +70,8 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
     def openapi_operations do
       %{
         index: %{
-          "summary" => "List items",
-          "responses" => %{"200" => %{"description" => "Success"}}
+          summary: "List items",
+          responses: %{"200" => %{description: "Success"}}
         }
       }
     end
@@ -90,8 +90,8 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
     def openapi_operations do
       %{
         index: %{
-          "summary" => "List users",
-          "responses" => %{"200" => %{"description" => "Success"}}
+          summary: "List users",
+          responses: %{"200" => %{description: "Success"}}
         }
       }
     end
@@ -111,8 +111,8 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
     def openapi_operations do
       %{
         index: %{
-          "summary" => "Atom tag test",
-          "responses" => %{"200" => %{"description" => "OK"}}
+          summary: "Atom tag test",
+          responses: %{"200" => %{description: "OK"}}
         }
       }
     end
@@ -231,8 +231,8 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
       assert health_route.verb == :get
       assert health_route.controller == TestHealthController
       assert health_route.action == :index
-      assert health_route.operation["summary"] == "Health check"
-      assert health_route.operation["operationId"] == "test_health_index"
+      assert health_route.operation[:summary] == "Health check"
+      assert health_route.operation[:operationId] == "test_health_index"
     end
 
     test "converts path params from Phoenix to OpenAPI format" do
@@ -248,8 +248,8 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
       show_route = Enum.find(routes, &(&1.action == :show))
 
       # show already has "id" parameter defined - should not duplicate
-      params = show_route.operation["parameters"]
-      id_params = Enum.filter(params, &(&1["name"] == "id"))
+      params = show_route.operation[:parameters]
+      id_params = Enum.filter(params, &(&1[:name] == "id"))
       assert length(id_params) == 1
     end
 
@@ -257,9 +257,9 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
       routes = PhoenixIntrospection.extract_routes(RouterWithUnknownAction)
       liveness_route = Enum.find(routes, &(&1.action == :liveness))
 
-      assert liveness_route.operation["summary"] =~ "Liveness"
-      assert liveness_route.operation["tags"] == ["TestHealth"]
-      assert liveness_route.operation["responses"]["200"]
+      assert liveness_route.operation[:summary] =~ "Liveness"
+      assert liveness_route.operation[:tags] == ["TestHealth"]
+      assert liveness_route.operation[:responses]["200"]
     end
 
     test "returns empty list for non-existent router" do
@@ -286,7 +286,7 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
 
       assert Map.has_key?(paths, "/api/health")
       assert Map.has_key?(paths["/api/health"], "get")
-      assert paths["/api/health"]["get"]["summary"] == "Health check"
+      assert paths["/api/health"]["get"][:summary] == "Health check"
     end
 
     test "converts verb atoms to lowercase strings" do
@@ -308,7 +308,7 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
   describe "extract_tags/1" do
     test "extracts tags from controllers with openapi_tag/0" do
       tags = PhoenixIntrospection.extract_tags(TestRouter)
-      tag_names = Enum.map(tags, & &1["name"])
+      tag_names = Enum.map(tags, & &1[:name])
 
       assert "Infrastructure" in tag_names
       assert "Items" in tag_names
@@ -316,29 +316,29 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
 
     test "normalizes string tags to map format" do
       tags = PhoenixIntrospection.extract_tags(TestRouter)
-      items_tag = Enum.find(tags, &(&1["name"] == "Items"))
+      items_tag = Enum.find(tags, &(&1[:name] == "Items"))
 
-      assert items_tag == %{"name" => "Items"}
+      assert items_tag == %{name: "Items"}
     end
 
     test "normalizes map tags with description" do
       tags = PhoenixIntrospection.extract_tags(TestRouter)
-      infra_tag = Enum.find(tags, &(&1["name"] == "Infrastructure"))
+      infra_tag = Enum.find(tags, &(&1[:name] == "Infrastructure"))
 
-      assert infra_tag["description"] == "System health endpoints"
+      assert infra_tag[:description] == "System health endpoints"
     end
 
     test "normalizes tags with atom keys" do
       tags = PhoenixIntrospection.extract_tags(TestRouter)
-      atom_tag = Enum.find(tags, &(&1["name"] == "AtomTag"))
+      atom_tag = Enum.find(tags, &(&1[:name] == "AtomTag"))
 
-      assert atom_tag["name"] == "AtomTag"
-      assert atom_tag["description"] == "Tag with atom keys"
+      assert atom_tag[:name] == "AtomTag"
+      assert atom_tag[:description] == "Tag with atom keys"
     end
 
     test "uses controller name as fallback tag" do
       tags = PhoenixIntrospection.extract_tags(TestRouter)
-      tag_names = Enum.map(tags, & &1["name"])
+      tag_names = Enum.map(tags, & &1[:name])
 
       # TestUsersController has no openapi_tag, so uses "TestUsers"
       assert "TestUsers" in tag_names
@@ -346,7 +346,7 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
 
     test "deduplicates tags by name" do
       tags = PhoenixIntrospection.extract_tags(TestRouter)
-      tag_names = Enum.map(tags, & &1["name"])
+      tag_names = Enum.map(tags, & &1[:name])
 
       assert length(tag_names) == length(Enum.uniq(tag_names))
     end
@@ -368,8 +368,8 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
       def openapi_operations do
         %{
           show: %{
-            "summary" => "Show item",
-            "responses" => %{"200" => %{"description" => "OK"}}
+            summary: "Show item",
+            responses: %{"200" => %{description: "OK"}}
           }
         }
       end
@@ -392,13 +392,13 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
     test "auto-adds missing path parameters from multi-segment route path" do
       routes = PhoenixIntrospection.extract_routes(CoverageTestRouter)
       route = hd(routes)
-      params = route.operation["parameters"]
-      names = Enum.map(params, & &1["name"])
+      params = route.operation[:parameters]
+      names = Enum.map(params, & &1[:name])
 
       assert "item_id" in names
       assert "sub_id" in names
-      assert Enum.all?(params, &(&1["in"] == "path"))
-      assert Enum.all?(params, &(&1["required"] == true))
+      assert Enum.all?(params, &(&1[:in] == :path))
+      assert Enum.all?(params, &(&1[:required] == true))
     end
 
     test "converts multi-segment route to OpenAPI path format" do

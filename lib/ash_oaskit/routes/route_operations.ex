@@ -48,12 +48,12 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
   @spec build_operation(map(), keyword()) :: map()
   def build_operation(route, opts \\ []) do
     %{
-      "operationId" => build_operation_id(route),
-      "summary" => build_summary(route),
-      "description" => build_description(route),
-      "tags" => build_tags(route),
-      "parameters" => build_parameters(route),
-      "responses" => build_responses(route, opts)
+      operationId: build_operation_id(route),
+      summary: build_summary(route),
+      description: build_description(route),
+      tags: build_tags(route),
+      parameters: build_parameters(route),
+      responses: build_responses(route, opts)
     }
     |> maybe_add_request_body(route, opts)
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
@@ -210,11 +210,11 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
       |> extract_path_params()
       |> Enum.map(fn param ->
         %{
-          "name" => param,
-          "in" => "path",
-          "required" => true,
-          "schema" => %{"type" => "string"},
-          "description" => "The #{param} of the resource"
+          name: param,
+          in: :path,
+          required: true,
+          schema: %{type: :string},
+          description: "The #{param} of the resource"
         }
       end)
 
@@ -222,18 +222,18 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
       path_params ++
         [
           %{
-            "name" => "page",
-            "in" => "query",
-            "required" => false,
-            "style" => "deepObject",
-            "schema" => %{
-              "type" => "object",
-              "properties" => %{
-                "offset" => %{"type" => "integer"},
-                "limit" => %{"type" => "integer"}
+            name: "page",
+            in: :query,
+            required: false,
+            style: "deepObject",
+            schema: %{
+              type: :object,
+              properties: %{
+                "offset" => %{type: :integer},
+                "limit" => %{type: :integer}
               }
             },
-            "description" => "Pagination parameters"
+            description: "Pagination parameters"
           }
         ]
     else
@@ -260,7 +260,7 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
         RouteResponses.build_delete_relationship_responses()
 
       _ ->
-        %{"200" => %{"description" => "Successful response"}}
+        %{"200" => %{description: "Successful response"}}
     end
   end
 
@@ -271,7 +271,7 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
 
       if relationship do
         request_body = RouteResponses.build_request_body(relationship, opts)
-        Map.put(operation, "requestBody", request_body)
+        Map.put(operation, :requestBody, request_body)
       else
         operation
       end
