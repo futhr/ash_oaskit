@@ -360,6 +360,93 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
     end
   end
 
+  describe "normalize_tag with string-keyed maps" do
+    defmodule StringKeyTagController do
+      @behaviour AshOaskit.OpenApiController
+
+      @impl true
+      def openapi_operations do
+        %{
+          index: %{
+            summary: "String key tag test",
+            responses: %{"200" => %{description: "OK"}}
+          }
+        }
+      end
+
+      @impl true
+      def openapi_tag do
+        # Return a map with string keys to test normalization to atom keys
+        %{"name" => "StringKeyTag", "description" => "Tag with string keys"}
+      end
+    end
+
+    defmodule StringKeyTagRouter do
+      @spec __routes__() :: [map()]
+      def __routes__ do
+        [
+          %{
+            path: "/api/string-key-items",
+            verb: :get,
+            plug: StringKeyTagController,
+            plug_opts: :index
+          }
+        ]
+      end
+    end
+
+    test "normalizes tag with string keys to atom keys" do
+      tags = PhoenixIntrospection.extract_tags(StringKeyTagRouter)
+      tag = Enum.find(tags, &(&1[:name] == "StringKeyTag"))
+
+      assert tag
+      assert tag[:name] == "StringKeyTag"
+      assert tag[:description] == "Tag with string keys"
+    end
+
+    test "normalize_tag handles map with only string name key" do
+      defmodule StringNameOnlyController do
+        @behaviour AshOaskit.OpenApiController
+
+        @impl true
+        def openapi_operations do
+          %{
+            index: %{
+              summary: "Name only",
+              responses: %{"200" => %{description: "OK"}}
+            }
+          }
+        end
+
+        @impl true
+        def openapi_tag do
+          %{"name" => "NameOnly"}
+        end
+      end
+
+      defmodule StringNameOnlyRouter do
+        @spec __routes__() :: [map()]
+        def __routes__ do
+          [
+            %{
+              path: "/api/name-only",
+              verb: :get,
+              plug: StringNameOnlyController,
+              plug_opts: :index
+            }
+          ]
+        end
+      end
+
+      tags = PhoenixIntrospection.extract_tags(StringNameOnlyRouter)
+      tag = Enum.find(tags, &(&1[:name] == "NameOnly"))
+
+      assert tag
+      assert tag[:name] == "NameOnly"
+      refute Map.has_key?(tag, :description)
+    end
+  end
+
   describe "multi-segment path parameter injection" do
     defmodule CoverageTestController do
       @behaviour AshOaskit.OpenApiController

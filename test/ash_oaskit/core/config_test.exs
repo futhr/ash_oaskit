@@ -403,6 +403,13 @@ defmodule AshOaskit.ConfigTest do
 
       assert type == "no-type-resource"
     end
+
+    test "resource_type falls back to underscored module name when type is nil" do
+      # NilTypeResource has AshJsonApi.Resource but no type set in json_api block
+      type = Config.resource_type(AshOaskit.Test.NilTypeResource)
+
+      assert type == "nil_type_resource"
+    end
   end
 
   describe "domain prefix edge cases" do

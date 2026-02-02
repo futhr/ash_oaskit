@@ -40,5 +40,11 @@ defmodule AshOaskitTest do
       result = AshOaskit.spec_31(domains: [@test_domain])
       assert result["openapi"] == "3.1.0"
     end
+
+    test "validate! returns validated spec" do
+      spec = AshOaskit.spec(domains: [@test_domain], title: "Test")
+      result = AshOaskit.validate!(spec)
+      assert result
+    end
   end
 end

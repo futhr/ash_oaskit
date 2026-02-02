@@ -469,4 +469,29 @@ defmodule AshOaskit.FilterBuilderTest do
       assert direct != nil
     end
   end
+
+  describe "has_any operator schema" do
+    test "has_any operator produces array schema wrapping the base schema" do
+      attr = %{name: :tags, type: {:array, :string}}
+      schema = FilterBuilder.build_attribute_filter_schema(attr)
+      operator_obj = Enum.find(schema.oneOf, &(&1.type == :object))
+
+      has_any = operator_obj.properties["has_any"]
+      assert has_any.type == :array
+      # Base schema for {:array, :string} is %{type: :array, items: ...}
+      assert has_any.items.type == :array
+      assert has_any.items.items.type == :string
+    end
+
+    test "has_all operator produces array schema wrapping the base schema" do
+      attr = %{name: :tags, type: {:array, :integer}}
+      schema = FilterBuilder.build_attribute_filter_schema(attr)
+      operator_obj = Enum.find(schema.oneOf, &(&1.type == :object))
+
+      has_all = operator_obj.properties["has_all"]
+      assert has_all.type == :array
+      assert has_all.items.type == :array
+      assert has_all.items.items.type == :integer
+    end
+  end
 end

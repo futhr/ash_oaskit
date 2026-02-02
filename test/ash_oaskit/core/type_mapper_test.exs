@@ -862,10 +862,7 @@ defmodule AshOaskit.TypeMapperTest do
   end
 
   describe "complex_type_schema fallback" do
-    # Test to cover the unknown complex type fallback (line 191)
-
     test "unknown tuple type falls back to string" do
-      # A tuple that is not :array, :union, :struct, or :custom
       attr = %{type: {:unknown_complex, "some_data"}, allow_nil?: false}
       result = TypeMapper.to_json_schema_31(attr)
       assert result["type"] == "string"
@@ -875,6 +872,22 @@ defmodule AshOaskit.TypeMapperTest do
       attr = %{type: {:foo, :bar, :baz}, allow_nil?: false}
       result = TypeMapper.to_json_schema_31(attr)
       assert result["type"] == "string"
+    end
+
+    test "custom type with json_schema/1 callback uses the returned schema" do
+      # Types with a json_schema/1 callback go through normalize_complex_type
+      # which wraps them as {:custom, schema} for complex_type_schema
+      attr = %{type: AshOaskit.Test.PhoneType, allow_nil?: false}
+      result = TypeMapper.to_json_schema_31(attr)
+      assert result["type"] == "string"
+      assert result["format"] == "phone"
+    end
+
+    test "custom type with json_schema/1 callback and nullable" do
+      attr = %{type: AshOaskit.Test.PhoneType, allow_nil?: true}
+      result = TypeMapper.to_json_schema_31(attr)
+      assert result["type"] == ["string", "null"]
+      assert result["format"] == "phone"
     end
   end
 

@@ -258,6 +258,38 @@ defmodule AshOaskit.Generators.PathBuilderTest do
     end
   end
 
+  describe "extract_path_prefix and pluralize" do
+    test "singular resource name at start of path produces no prefix" do
+      route = %{
+        type: :get,
+        resource: AshOaskit.Test.Post,
+        action: :read,
+        name: :read,
+        route: "/post/:id",
+        relationship: nil
+      }
+
+      operation = PathBuilder.build_operation(route, version: "3.1")
+      # When path starts with the singular resource name, there is no prefix
+      refute String.starts_with?(operation[:operationId], "get_post_post")
+      assert String.starts_with?(operation[:operationId], "get_post_")
+    end
+
+    test "nested route with hyphenated parent segment normalizes hyphens to underscores" do
+      route = %{
+        type: :get,
+        resource: AshOaskit.Test.Post,
+        action: :read,
+        name: :read,
+        route: "/user-groups/:user_group_id/posts/:id",
+        relationship: nil
+      }
+
+      operation = PathBuilder.build_operation(route, version: "3.1")
+      assert operation[:operationId] =~ "user_groups"
+    end
+  end
+
   describe "path generation for different domains" do
     test "Publishing domain produces relationship paths" do
       paths = PathBuilder.build_paths([Publishing], version: "3.1")

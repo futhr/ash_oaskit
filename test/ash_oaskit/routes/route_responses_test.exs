@@ -202,4 +202,41 @@ defmodule AshOaskit.RouteResponsesTest do
       assert responses["200"][:description] == "Successful response"
     end
   end
+
+  describe "get_related_type nil branch and default_type_name" do
+    test "falls back to default_type_name when AshJsonApi type is nil" do
+      # ArticleTag has no AshJsonApi.Resource extension, so type/1 returns nil
+      rel = %{type: :has_many, destination: AshOaskit.Test.ArticleTag}
+
+      schema =
+        RouteResponses.build_relationship_linkage_schema(rel,
+          version: "3.1"
+        )
+
+      assert schema[:type] == :array
+      # default_type_name produces underscored module name: "article_tag"
+      assert schema[:items][:properties]["type"][:enum] == ["article_tag"]
+    end
+
+    test "default_type_name produces underscored module name for resource without json_api type" do
+      rel = %{type: :belongs_to, destination: AshOaskit.Test.ArticleTag}
+
+      schema =
+        RouteResponses.build_relationship_linkage_schema(rel,
+          version: "3.1"
+        )
+
+      # belongs_to produces nullable oneOf schema
+      assert Map.has_key?(schema, :oneOf)
+      non_null = Enum.find(schema[:oneOf], &(&1[:type] != :null))
+      assert non_null[:properties]["type"][:enum] == ["article_tag"]
+    end
+
+    test "resource identifier schema uses default type name for non-json-api resource" do
+      schema = RouteResponses.build_resource_identifier_schema("article_tag")
+
+      assert schema[:properties]["type"][:enum] == ["article_tag"]
+      assert schema[:required] == ["type", "id"]
+    end
+  end
 end

@@ -269,6 +269,52 @@ defmodule Mix.Tasks.AshOaskit.GenerateTest do
       # YAML should start with --- or have YAML-like structure
       assert String.contains?(content, "openapi:")
     end
+
+    test "YAML output contains valid spec structure", %{tmp_dir: tmp_dir} do
+      output_file = Path.join(tmp_dir, "openapi-yaml-structure.yaml")
+
+      output =
+        capture_io(fn ->
+          Generate.run([
+            "-d",
+            "AshOaskit.Test.SimpleDomain",
+            "-f",
+            "yaml",
+            "-o",
+            output_file
+          ])
+        end)
+
+      assert output =~ "Generating OpenAPI"
+      assert output =~ "Generated"
+      assert File.exists?(output_file)
+
+      content = File.read!(output_file)
+      assert content =~ "openapi:"
+      assert content =~ "info:"
+      assert content =~ "paths:"
+    end
+
+    test "YAML output with version 3.0", %{tmp_dir: tmp_dir} do
+      output_file = Path.join(tmp_dir, "openapi-3.0.yaml")
+
+      capture_io(fn ->
+        Generate.run([
+          "--domains",
+          "AshOaskit.Test.SimpleDomain",
+          "--format",
+          "yaml",
+          "--version",
+          "3.0",
+          "--output",
+          output_file
+        ])
+      end)
+
+      assert File.exists?(output_file)
+      content = File.read!(output_file)
+      assert content =~ "openapi:"
+    end
   end
 
   describe "unsupported format" do

@@ -374,6 +374,86 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
     end
   end
 
+  describe "embedded_resource? and maybe_add_embedded_schema edge cases" do
+    alias AshOaskit.SchemaBuilder.EmbeddedSchemas
+
+    test "embedded_resource? returns false for non-resource modules" do
+      refute EmbeddedSchemas.embedded_resource?(String)
+    end
+
+    test "embedded_resource? returns false for non-atom types" do
+      refute EmbeddedSchemas.embedded_resource?("not_an_atom")
+    end
+
+    test "embedded_resource? returns false for module without spark_is" do
+      refute EmbeddedSchemas.embedded_resource?(Enum)
+    end
+
+    test "embedded_resource? returns true for actual embedded resource" do
+      assert EmbeddedSchemas.embedded_resource?(AshOaskit.Test.Address)
+    end
+
+    test "maybe_add_embedded_schema passes through non-atom non-array types" do
+      builder = %{schemas: %{}, version: "3.1"}
+
+      result =
+        EmbeddedSchemas.maybe_add_embedded_schema(
+          builder,
+          "string_type",
+          fn b, _t -> b end
+        )
+
+      assert result == builder
+    end
+
+    test "maybe_add_embedded_schema passes through tuple types that are not :array" do
+      builder = %{schemas: %{}, version: "3.1"}
+
+      result =
+        EmbeddedSchemas.maybe_add_embedded_schema(
+          builder,
+          {:map, :string, :integer},
+          fn b, _t -> b end
+        )
+
+      assert result == builder
+    end
+
+    test "maybe_add_embedded_schema handles {:array, inner} by unwrapping" do
+      builder = %{schemas: %{}, version: "3.1"}
+      called = :atomics.new(1, [])
+
+      result =
+        EmbeddedSchemas.maybe_add_embedded_schema(
+          builder,
+          {:array, AshOaskit.Test.Address},
+          fn b, _t ->
+            :atomics.add(called, 1, 1)
+            b
+          end
+        )
+
+      # The add_fn should have been called for the inner embedded type
+      assert :atomics.get(called, 1) == 1
+      assert result == builder
+    end
+
+    test "maybe_add_embedded_schema returns builder for non-embedded atom" do
+      builder = %{schemas: %{}, version: "3.1"}
+
+      result =
+        EmbeddedSchemas.maybe_add_embedded_schema(
+          builder,
+          :string,
+          fn b, _t -> Map.put(b, :called, true) end
+        )
+
+      # add_fn should NOT have been called since :string is not an embedded resource
+      refute Map.has_key?(result, :called)
+      assert result == builder
+    end
+  end
+
   describe "edge cases" do
     # Tests for edge cases in embedded resource handling.
 

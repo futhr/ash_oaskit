@@ -568,6 +568,34 @@ defmodule AshOaskit.TagBuilderTest do
     end
   end
 
+  describe "get_resource_domain_tag with nil domain" do
+    defmodule NoDomainResource do
+      @moduledoc false
+      use Ash.Resource,
+        data_layer: :embedded
+
+      attributes do
+        attribute(:name, :string)
+      end
+    end
+
+    test "operation_tag with :domain grouping falls back to resource name when domain is nil" do
+      route = %{resource: NoDomainResource}
+
+      tag = TagBuilder.operation_tag(route, group_by: :domain)
+
+      assert tag == "NoDomainResource"
+    end
+
+    test "operation_tags returns list with fallback tag when domain is nil" do
+      route = %{resource: NoDomainResource}
+
+      tags = TagBuilder.operation_tags(route, group_by: :domain)
+
+      assert tags == ["NoDomainResource"]
+    end
+  end
+
   describe "resource grouping with Blog domain" do
     test "resource grouping creates one tag per resource" do
       tags = TagBuilder.build_tags([AshOaskit.Test.Blog], group_by: :resource)

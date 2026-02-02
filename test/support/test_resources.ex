@@ -123,6 +123,48 @@ defmodule AshOaskit.Test.NoTypeResource do
   end
 end
 
+defmodule AshOaskit.Test.PhoneType do
+  @moduledoc """
+  Custom type module that implements `json_schema/1`.
+
+  Used to test the `normalize_complex_type` path in `TypeMapper` where atom types
+  with a `json_schema/1` callback get wrapped as `{:custom, schema}`.
+  """
+
+  def json_schema(_opts) do
+    %{"type" => "string", "format" => "phone"}
+  end
+end
+
+defmodule AshOaskit.Test.NilTypeResource do
+  @moduledoc """
+  Test resource with AshJsonApi extension but no explicit type set in the json_api block.
+
+  When `AshJsonApi.Resource.Info.type/1` returns nil, the system falls back to
+  `Macro.underscore/1` of the module name. This resource exercises that fallback
+  path across several modules:
+
+  - `Config.resource_type/1` — produces `"nil_type_resource"`
+  - `FilterBuilder` — `derive_filter?/1` returns nil, defaults to true
+  - `SortBuilder` — `derive_sort?/1` returns nil, defaults to true
+  """
+  use Ash.Resource,
+    domain: AshOaskit.Test.EdgeCaseDomain,
+    extensions: [AshJsonApi.Resource]
+
+  json_api do
+  end
+
+  attributes do
+    uuid_primary_key(:id)
+    attribute(:label, :string)
+  end
+
+  actions do
+    defaults([:read])
+  end
+end
+
 # Domain for edge case testing
 defmodule AshOaskit.Test.EdgeCaseDomain do
   @moduledoc false
@@ -132,6 +174,7 @@ defmodule AshOaskit.Test.EdgeCaseDomain do
 
   resources do
     resource(AshOaskit.Test.NoTypeResource)
+    resource(AshOaskit.Test.NilTypeResource)
   end
 
   json_api do

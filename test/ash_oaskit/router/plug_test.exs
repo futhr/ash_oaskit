@@ -80,21 +80,20 @@ defmodule AshOaskit.Router.PlugTest do
     end
 
     test "serves YAML when Ymlr is available" do
-      if Code.ensure_loaded?(Ymlr) do
-        conn =
-          :get
-          |> Plug.Test.conn("/openapi")
-          |> Plug.Conn.put_private(:ash_oaskit, %{
-            domains: [Blog],
-            openapi_version: "3.1",
-            format: :yaml
-          })
-          |> RouterPlug.call([])
+      conn =
+        :get
+        |> Plug.Test.conn("/openapi")
+        |> Plug.Conn.put_private(:ash_oaskit, %{
+          domains: [Blog],
+          openapi_version: "3.1",
+          format: :yaml
+        })
+        |> RouterPlug.call([])
 
-        assert conn.status == 200
-        [content_type] = Plug.Conn.get_resp_header(conn, "content-type")
-        assert content_type =~ "yaml"
-      end
+      assert conn.status == 200
+      [content_type] = Plug.Conn.get_resp_header(conn, "content-type")
+      assert content_type =~ "yaml"
+      assert conn.resp_body =~ "openapi"
     end
 
     test "generate_spec uses default spec builder" do

@@ -435,6 +435,64 @@ defmodule AshOaskit.IncludedResourcesTest do
     end
   end
 
+  describe "deep include paths" do
+    test "get_resources_from_paths resolves dotted nested path like 'reviews.article'" do
+      result =
+        IncludedResources.get_resources_from_paths(
+          AshOaskit.Test.Article,
+          ["reviews.article"]
+        )
+
+      assert is_list(result)
+      # reviews -> Review, then article -> Article
+      assert "Review" in result
+      assert "Article" in result
+    end
+
+    test "get_resources_from_paths resolves multi-level path 'author.articles'" do
+      result =
+        IncludedResources.get_resources_from_paths(
+          AshOaskit.Test.Article,
+          ["author.articles"]
+        )
+
+      assert is_list(result)
+      assert "Author" in result
+      assert "Article" in result
+    end
+
+    test "get_includable_resources with depth 3 traverses deeper than depth 1" do
+      shallow =
+        IncludedResources.get_includable_resources(
+          AshOaskit.Test.Article,
+          max_depth: 1
+        )
+
+      deep =
+        IncludedResources.get_includable_resources(
+          AshOaskit.Test.Article,
+          max_depth: 3
+        )
+
+      # Deeper traversal should find at least as many resources
+      assert length(deep) >= length(shallow)
+    end
+
+    test "get_resources_from_paths with three-level dotted path" do
+      # Article -> author -> articles -> reviews
+      result =
+        IncludedResources.get_resources_from_paths(
+          AshOaskit.Test.Article,
+          ["author.articles.reviews"]
+        )
+
+      assert is_list(result)
+      assert "Author" in result
+      assert "Article" in result
+      assert "Review" in result
+    end
+  end
+
   describe "self-referential and depth-based traversal" do
     test "handles self-referential Category without infinite recursion" do
       resources = IncludedResources.get_includable_resources(AshOaskit.Test.Category)

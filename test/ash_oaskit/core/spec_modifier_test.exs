@@ -491,6 +491,22 @@ defmodule AshOaskit.SpecModifierTest do
 
       assert result == spec
     end
+
+    test "returns spec unchanged when intermediate path key is missing" do
+      spec = %{"info" => %{"title" => "API"}}
+
+      result = SpecModifier.add_schema_examples(spec, "Post", [%{"id" => "1"}])
+
+      assert result == spec
+    end
+
+    test "returns spec unchanged when schemas key is missing" do
+      spec = %{"components" => %{}}
+
+      result = SpecModifier.add_schema_examples(spec, "Post", [%{"id" => "1"}])
+
+      assert result == spec
+    end
   end
 
   describe "add_operation_example/4" do
