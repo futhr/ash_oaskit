@@ -61,6 +61,8 @@ defmodule AshOaskit.MultipartSupport do
       schema = MultipartSupport.build_multipart_schema(action, opts)
   """
 
+  import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
+
   @doc """
   Checks if an action has any file upload arguments.
 
@@ -161,9 +163,7 @@ defmodule AshOaskit.MultipartSupport do
           type: :object,
           properties: %{
             type: %{type: :string},
-            attributes: %{
-              "$ref" => "#/components/schemas/#{schema_name}Attributes"
-            }
+            attributes: schema_ref("#{schema_name}Attributes")
           }
         }
       }
@@ -224,19 +224,15 @@ defmodule AshOaskit.MultipartSupport do
 
     # Build properties for file arguments
     file_properties =
-      file_args
-      |> Enum.map(fn arg ->
+      Map.new(file_args, fn arg ->
         {arg.name, build_file_property(arg)}
       end)
-      |> Enum.into(%{})
 
     # Build properties for non-file arguments as JSON data
     data_properties =
-      non_file_args
-      |> Enum.map(fn arg ->
+      Map.new(non_file_args, fn arg ->
         {arg.name, %{type: :string}}
       end)
-      |> Enum.into(%{})
 
     # Combine with standard JSON:API data envelope
     properties =
@@ -295,11 +291,9 @@ defmodule AshOaskit.MultipartSupport do
     file_args = file_arguments(action)
 
     file_encodings =
-      file_args
-      |> Enum.map(fn arg ->
+      Map.new(file_args, fn arg ->
         {to_string(arg.name), %{contentType: "application/octet-stream"}}
       end)
-      |> Enum.into(%{})
 
     # Add encoding for JSON data
     Map.put(file_encodings, "data", %{contentType: "application/json"})

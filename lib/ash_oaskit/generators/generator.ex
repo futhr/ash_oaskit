@@ -47,10 +47,14 @@ defmodule AshOaskit.Generators.Generator do
   | `:modify_open_api` | function or MFA | Post-processing hook for spec customization |
   """
 
+  import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
+
   alias AshOaskit.Generators.InfoBuilder
   alias AshOaskit.Generators.PathBuilder
   alias AshOaskit.PhoenixIntrospection
   alias AshOaskit.TypeMapper
+
+  require Logger
 
   @type opts :: keyword()
 
@@ -163,7 +167,8 @@ defmodule AshOaskit.Generators.Generator do
       fun when is_function(fun, 1) ->
         fun.(spec)
 
-      _ ->
+      other ->
+        Logger.warning("AshOaskit: ignoring invalid modify_open_api hook: #{inspect(other)}")
         spec
     end
   end
@@ -195,7 +200,7 @@ defmodule AshOaskit.Generators.Generator do
           properties: %{
             id: %{type: :string},
             type: %{type: :string},
-            attributes: %{"$ref" => "#/components/schemas/#{schema_name}Attributes"}
+            attributes: schema_ref("#{schema_name}Attributes")
           }
         }
       }

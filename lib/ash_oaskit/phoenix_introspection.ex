@@ -47,6 +47,8 @@ defmodule AshOaskit.PhoenixIntrospection do
       }
   """
 
+  import AshOaskit.Core.PathUtils
+
   @doc """
   Extracts routes from a Phoenix router that implement OpenApiController.
 
@@ -190,11 +192,6 @@ defmodule AshOaskit.PhoenixIntrospection do
     }
   end
 
-  # Converts Phoenix-style path params (:id) to OpenAPI format ({id})
-  defp convert_path_params(path) do
-    Regex.replace(~r/:([a-zA-Z_]+)/, path, "{\\1}")
-  end
-
   # Converts HTTP verb atom to lowercase string
   defp verb_to_string(verb) when is_atom(verb) do
     verb |> to_string() |> String.downcase()
@@ -258,13 +255,6 @@ defmodule AshOaskit.PhoenixIntrospection do
     end
   end
 
-  # Extracts path parameter names from a route path
-  defp extract_path_params(path) do
-    ~r/:([a-zA-Z_]+)/
-    |> Regex.scan(path)
-    |> Enum.map(fn [_, name] -> name end)
-  end
-
   # Gets the tag for a controller
   defp get_controller_tag(controller) do
     if function_exported?(controller, :openapi_tag, 0) do
@@ -301,13 +291,5 @@ defmodule AshOaskit.PhoenixIntrospection do
 
     result = %{name: name}
     if desc, do: Map.put(result, :description, desc), else: result
-  end
-
-  # Humanizes an underscore-separated string
-  defp humanize(string) do
-    string
-    |> String.replace("_", " ")
-    |> String.split(" ")
-    |> Enum.map_join(" ", &String.capitalize/1)
   end
 end

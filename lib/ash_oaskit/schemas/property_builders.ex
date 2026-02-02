@@ -126,8 +126,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   """
   @spec build_attribute_properties(map(), [map()]) :: map()
   def build_attribute_properties(builder, attributes) do
-    attributes
-    |> Enum.map(fn attr ->
+    Map.new(attributes, fn attr ->
       schema =
         if builder.version == "3.1" do
           TypeMapper.to_json_schema_31(attr)
@@ -137,7 +136,6 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
 
       {attr.name, schema}
     end)
-    |> Enum.into(%{})
   end
 
   @doc """
@@ -192,12 +190,10 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   """
   @spec build_calculation_properties(map(), [map()]) :: map()
   def build_calculation_properties(builder, calculations) do
-    calculations
-    |> Enum.map(fn calc ->
+    Map.new(calculations, fn calc ->
       schema = calculation_to_schema(builder, calc)
       {calc.name, schema}
     end)
-    |> Enum.into(%{})
   end
 
   @doc """
@@ -242,12 +238,10 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   """
   @spec build_aggregate_properties(map(), [map()]) :: map()
   def build_aggregate_properties(builder, aggregates) do
-    aggregates
-    |> Enum.map(fn agg ->
+    Map.new(aggregates, fn agg ->
       schema = aggregate_to_schema(builder, agg)
       {agg.name, schema}
     end)
-    |> Enum.into(%{})
   end
 
   @doc """
@@ -355,31 +349,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   @spec normalize_type(atom()) :: atom()
   def normalize_type(type), do: Map.get(@ash_type_to_atom, type, type)
 
-  @doc """
-  Makes a schema nullable based on OpenAPI version.
-
-  For OpenAPI 3.0, adds `"nullable": true`.
-  For OpenAPI 3.1, uses type array syntax `["string", "null"]`.
-
-  ## Parameters
-
-  - `schema` - The base schema map
-  - `version` - OpenAPI version ("3.0" or "3.1")
-
-  ## Returns
-
-  The schema modified to allow null values.
-  """
-  @spec make_nullable(map(), String.t()) :: map()
-  def make_nullable(schema, "3.1"), do: make_nullable_31(schema)
-  def make_nullable(schema, _version), do: Map.put(schema, :nullable, true)
-
-  # Makes a schema nullable for OpenAPI 3.1 (type array)
-  defp make_nullable_31(%{type: type} = schema) when is_atom(type) do
-    Map.put(schema, :type, [type, :null])
-  end
-
-  defp make_nullable_31(schema), do: schema
+  defdelegate make_nullable(schema, version), to: AshOaskit.Schemas.Nullable
 
   @doc """
   Adds description to schema if present in the source map.

@@ -61,6 +61,8 @@ defmodule AshOaskit.ResourceIdentifier do
       AshOaskit.ResourceIdentifier.build_to_many_linkage_schema("comments")
   """
 
+  import AshOaskit.Schemas.Nullable, only: [make_nullable_oneof: 2]
+
   @doc """
   Builds a resource identifier object schema.
 
@@ -84,7 +86,6 @@ defmodule AshOaskit.ResourceIdentifier do
   """
   @spec build_identifier_schema(String.t(), keyword()) :: map()
   def build_identifier_schema(resource_type, opts \\ []) do
-    _version = Keyword.get(opts, :version, "3.1")
     include_meta = Keyword.get(opts, :include_meta, true)
 
     properties = %{
@@ -141,16 +142,12 @@ defmodule AshOaskit.ResourceIdentifier do
     version = Keyword.get(opts, :version, "3.1")
     identifier = build_identifier_schema(resource_type, opts)
 
+    schema = make_nullable_oneof(identifier, version)
+
     if version == "3.1" do
-      %{
-        oneOf: [
-          %{type: :null},
-          identifier
-        ],
-        description: "Resource identifier for #{resource_type} (nullable)"
-      }
+      Map.put(schema, :description, "Resource identifier for #{resource_type} (nullable)")
     else
-      Map.put(identifier, :nullable, true)
+      schema
     end
   end
 
@@ -313,12 +310,10 @@ defmodule AshOaskit.ResourceIdentifier do
   @spec build_relationships_object_schema(list({String.t(), atom()}), keyword()) :: map()
   def build_relationships_object_schema(relationships, opts \\ []) do
     properties =
-      relationships
-      |> Enum.map(fn {name, cardinality} ->
+      Map.new(relationships, fn {name, cardinality} ->
         {name,
          build_relationship_object_schema(name, Keyword.put(opts, :cardinality, cardinality))}
       end)
-      |> Enum.into(%{})
 
     %{
       type: :object,
@@ -425,9 +420,7 @@ defmodule AshOaskit.ResourceIdentifier do
       }
   """
   @spec build_generic_identifier_schema(keyword()) :: map()
-  def build_generic_identifier_schema(opts \\ []) do
-    _version = Keyword.get(opts, :version, "3.1")
-
+  def build_generic_identifier_schema(_opts \\ []) do
     %{
       type: :object,
       required: ["type", "id"],
@@ -467,9 +460,7 @@ defmodule AshOaskit.ResourceIdentifier do
       }
   """
   @spec build_polymorphic_identifier_schema(list(String.t()), keyword()) :: map()
-  def build_polymorphic_identifier_schema(resource_types, opts \\ []) do
-    _version = Keyword.get(opts, :version, "3.1")
-
+  def build_polymorphic_identifier_schema(resource_types, _opts \\ []) do
     %{
       type: :object,
       required: ["type", "id"],
@@ -494,25 +485,6 @@ defmodule AshOaskit.ResourceIdentifier do
   end
 
   @spec build_relationship_links_schema(String.t()) :: map()
-  defp build_relationship_links_schema("3.1") do
-    %{
-      type: :object,
-      properties: %{
-        self: %{
-          type: :string,
-          format: :uri,
-          description: "URL for the relationship itself"
-        },
-        related: %{
-          type: :string,
-          format: :uri,
-          description: "URL for the related resource(s)"
-        }
-      },
-      description: "Relationship navigation links"
-    }
-  end
-
   defp build_relationship_links_schema(_version) do
     %{
       type: :object,

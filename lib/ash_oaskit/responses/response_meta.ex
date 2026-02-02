@@ -62,6 +62,8 @@ defmodule AshOaskit.ResponseMeta do
   ```
   """
 
+  import AshOaskit.Schemas.Nullable, only: [make_nullable: 2]
+
   @doc """
   Builds a meta schema for paginated collection responses.
 
@@ -160,8 +162,8 @@ defmodule AshOaskit.ResponseMeta do
     %{
       type: :object,
       properties: %{
-        after: nullable_string_schema(version, "Cursor for next page"),
-        before: nullable_string_schema(version, "Cursor for previous page"),
+        after: make_nullable(%{type: :string, description: "Cursor for next page"}, version),
+        before: make_nullable(%{type: :string, description: "Cursor for previous page"}, version),
         limit: %{
           type: :integer,
           minimum: 1,
@@ -214,9 +216,7 @@ defmodule AshOaskit.ResponseMeta do
       }
   """
   @spec build_resource_meta_schema(keyword()) :: map()
-  def build_resource_meta_schema(opts \\ []) do
-    _version = Keyword.get(opts, :version, "3.1")
-
+  def build_resource_meta_schema(_opts \\ []) do
     %{
       type: :object,
       additionalProperties: true,
@@ -246,7 +246,6 @@ defmodule AshOaskit.ResponseMeta do
   """
   @spec build_jsonapi_object_schema(keyword()) :: map()
   def build_jsonapi_object_schema(opts \\ []) do
-    _version = Keyword.get(opts, :version, "3.1")
     supported_versions = Keyword.get(opts, :supported_versions, ["1.0", "1.1"])
 
     %{
@@ -542,22 +541,6 @@ defmodule AshOaskit.ResponseMeta do
       properties: properties,
       additionalProperties: true,
       description: "Response meta information including pagination details"
-    }
-  end
-
-  @spec nullable_string_schema(String.t(), String.t()) :: map()
-  defp nullable_string_schema("3.1", description) do
-    %{
-      type: [:string, :null],
-      description: description
-    }
-  end
-
-  defp nullable_string_schema(_version, description) do
-    %{
-      type: :string,
-      nullable: true,
-      description: description
     }
   end
 end

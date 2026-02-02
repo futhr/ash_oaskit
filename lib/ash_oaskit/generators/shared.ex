@@ -24,8 +24,6 @@ defmodule AshOaskit.Generators.Shared do
   """
 
   alias AshOaskit.Generators.Generator
-  alias AshOaskit.Generators.InfoBuilder
-  alias AshOaskit.Generators.PathBuilder
 
   @type version :: String.t()
   @type opts :: keyword()
@@ -50,52 +48,4 @@ defmodule AshOaskit.Generators.Shared do
   """
   @spec generate(list(module()), opts()) :: map()
   defdelegate generate(domains, opts), to: Generator
-
-  @doc """
-  Builds the Info object for the OpenAPI spec.
-
-  Delegates to `AshOaskit.Generators.InfoBuilder.build_info/1`.
-  """
-  @spec build_info(opts()) :: map()
-  defdelegate build_info(opts), to: InfoBuilder
-
-  @doc """
-  Builds servers array from options.
-
-  Delegates to `AshOaskit.Generators.InfoBuilder.build_servers/1`.
-  """
-  @spec build_servers(opts()) :: list(map())
-  defdelegate build_servers(opts), to: InfoBuilder
-
-  @doc """
-  Builds paths from domains.
-
-  Delegates to `AshOaskit.Generators.PathBuilder.build_paths/2`.
-  """
-  @spec build_paths(list(module()), opts()) :: map()
-  defdelegate build_paths(domains, opts), to: PathBuilder
-
-  @doc """
-  Builds components (schemas) from domains.
-
-  Delegates to `AshOaskit.Generators.Generator.build_components/2`.
-  """
-  @spec build_components(list(module()), opts()) :: map()
-  defdelegate build_components(domains, opts), to: Generator
-
-  @doc """
-  Builds tags from domain resources.
-
-  Delegates to `AshOaskit.Generators.InfoBuilder.build_tags/1`.
-  """
-  @spec build_tags(list(module())) :: list(map())
-  defdelegate build_tags(domains), to: InfoBuilder
-
-  @doc """
-  Humanizes an underscore-separated string.
-
-  Delegates to `AshOaskit.Generators.PathBuilder.humanize/1`.
-  """
-  @spec humanize(String.t()) :: String.t()
-  defdelegate humanize(string), to: PathBuilder
 end

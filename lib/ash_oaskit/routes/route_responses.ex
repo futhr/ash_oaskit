@@ -41,6 +41,10 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
       response = RouteResponses.build_related_response_schema(relationship, version: "3.1")
   """
 
+  import AshOaskit.Schemas.Nullable, only: [make_nullable_oneof: 2]
+
+  import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
+
   @to_one_relationships [:belongs_to, :has_one]
 
   @doc """
@@ -104,7 +108,7 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
 
     case relationship_cardinality(relationship) do
       :one ->
-        nullable_schema(identifier_schema, version)
+        make_nullable_oneof(identifier_schema, version)
 
       :many ->
         %{
@@ -180,15 +184,15 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
     data_schema =
       case relationship_cardinality(relationship) do
         :one ->
-          nullable_schema(
-            %{"$ref" => "#/components/schemas/#{schema_name}Response"},
+          make_nullable_oneof(
+            schema_ref("#{schema_name}Response"),
             version
           )
 
         :many ->
           %{
             type: :array,
-            items: %{"$ref" => "#/components/schemas/#{schema_name}Response"}
+            items: schema_ref("#{schema_name}Response")
           }
       end
 
@@ -423,14 +427,5 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
     |> Module.split()
     |> List.last()
     |> Macro.underscore()
-  end
-
-  # Makes schema nullable based on OpenAPI version
-  defp nullable_schema(schema, "3.1") do
-    Map.update(schema, :type, [:object, "null"], fn type -> [type, "null"] end)
-  end
-
-  defp nullable_schema(schema, _version) do
-    Map.put(schema, :nullable, true)
   end
 end

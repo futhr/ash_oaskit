@@ -361,8 +361,9 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      # In 3.1, nullable is expressed as type array
-      assert "null" in schema[:type] or schema[:type] == [:object, "null"]
+      # In 3.1, nullable is expressed as oneOf with %{type: :null}
+      assert Map.has_key?(schema, :oneOf)
+      assert %{type: :null} in schema[:oneOf]
     end
 
     test "has_one relationship generates nullable object schema (3.1)" do
@@ -372,7 +373,8 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      assert "null" in schema[:type] or schema[:type] == [:object, "null"]
+      assert Map.has_key?(schema, :oneOf)
+      assert %{type: :null} in schema[:oneOf]
     end
 
     test "belongs_to relationship uses nullable: true for 3.0" do
@@ -392,8 +394,9 @@ defmodule AshOaskit.RelationshipRoutesTest do
           []
         )
 
-      # 3.1 uses type array for nullable
-      assert "null" in schema[:type] or schema[:type] == [:object, "null"]
+      # 3.1 uses oneOf for nullable
+      assert Map.has_key?(schema, :oneOf)
+      assert %{type: :null} in schema[:oneOf]
     end
   end
 

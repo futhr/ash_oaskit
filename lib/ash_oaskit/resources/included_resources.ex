@@ -53,6 +53,8 @@ defmodule AshOaskit.IncludedResources do
       AshOaskit.IncludedResources.get_includable_resources(Post)
   """
 
+  import AshOaskit.Core.SchemaRef, only: [schema_ref: 1, schema_ref_path: 1]
+
   alias AshOaskit.Config
 
   @doc """
@@ -119,7 +121,6 @@ defmodule AshOaskit.IncludedResources do
   def build_included_schema_for_types([], _opts), do: build_empty_included_schema()
 
   def build_included_schema_for_types(resource_types, opts) do
-    _version = Keyword.get(opts, :version, "3.1")
     prefix = Keyword.get(opts, :schema_prefix, "")
     suffix = Keyword.get(opts, :schema_suffix, "Resource")
 
@@ -128,7 +129,7 @@ defmodule AshOaskit.IncludedResources do
       |> Enum.uniq()
       |> Enum.sort()
       |> Enum.map(fn type ->
-        %{"$ref" => "#/components/schemas/#{prefix}#{type}#{suffix}"}
+        schema_ref("#{prefix}#{type}#{suffix}")
       end)
 
     if length(refs) == 1 do
@@ -254,18 +255,17 @@ defmodule AshOaskit.IncludedResources do
   @spec build_included_schema_with_discriminator(list({String.t(), String.t()}), keyword()) ::
           map()
   def build_included_schema_with_discriminator(type_mappings, opts \\ []) do
-    _version = Keyword.get(opts, :version, "3.1")
     prefix = Keyword.get(opts, :schema_prefix, "")
     suffix = Keyword.get(opts, :schema_suffix, "Resource")
 
     {refs, mapping} =
       Enum.reduce(type_mappings, {[], %{}}, fn {json_api_type, schema_name},
                                                {refs_acc, mapping_acc} ->
-        ref = "#/components/schemas/#{prefix}#{schema_name}#{suffix}"
+        ref_path = schema_ref_path("#{prefix}#{schema_name}#{suffix}")
 
         {
-          [%{"$ref" => ref} | refs_acc],
-          Map.put(mapping_acc, json_api_type, ref)
+          [schema_ref("#{prefix}#{schema_name}#{suffix}") | refs_acc],
+          Map.put(mapping_acc, json_api_type, ref_path)
         }
       end)
 
@@ -446,10 +446,7 @@ defmodule AshOaskit.IncludedResources do
 
   @spec find_relationship(list(map()), String.t()) :: map() | nil
   defp find_relationship(relationships, name) do
-    name_atom = String.to_existing_atom(name)
-    Enum.find(relationships, fn rel -> rel.name == name_atom end)
-  rescue
-    ArgumentError -> nil
+    Enum.find(relationships, fn rel -> to_string(rel.name) == name end)
   end
 
   @spec resource_name(module()) :: String.t()

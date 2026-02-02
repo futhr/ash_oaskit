@@ -219,9 +219,7 @@ defmodule AshOaskit.TypeMapper do
         fields = module.__struct__() |> Map.keys() |> Enum.reject(&(&1 == :__struct__))
 
         properties =
-          fields
-          |> Enum.map(fn field -> {to_string(field), %{"type" => "string"}} end)
-          |> Enum.into(%{})
+          Map.new(fields, fn field -> {to_string(field), %{"type" => "string"}} end)
 
         %{
           "type" => "object",

@@ -91,6 +91,8 @@ defmodule AshOaskit.RelationshipRoutes do
   alias AshOaskit.RelationshipRoutes.RouteOperations
   alias AshOaskit.RelationshipRoutes.RouteResponses
 
+  require Logger
+
   @relationship_route_types [
     :related,
     :relationship,
@@ -178,12 +180,27 @@ defmodule AshOaskit.RelationshipRoutes do
   @spec route_method(map()) :: String.t()
   def route_method(route) do
     case route.type do
-      :related -> "get"
-      :relationship -> "get"
-      :post_to_relationship -> "post"
-      :patch_relationship -> "patch"
-      :delete_from_relationship -> "delete"
-      _ -> "get"
+      :related ->
+        "get"
+
+      :relationship ->
+        "get"
+
+      :post_to_relationship ->
+        "post"
+
+      :patch_relationship ->
+        "patch"
+
+      :delete_from_relationship ->
+        "delete"
+
+      other ->
+        Logger.warning(
+          "AshOaskit: unknown relationship route type: #{inspect(other)}, defaulting to GET"
+        )
+
+        "get"
     end
   end
 

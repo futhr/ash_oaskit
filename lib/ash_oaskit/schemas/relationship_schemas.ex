@@ -46,6 +46,8 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemas do
       builder = RelationshipSchemas.add_relationships_schema(builder, resource, "Post")
   """
 
+  import AshOaskit.Schemas.Nullable, only: [make_nullable_oneof: 2]
+
   @doc """
   Adds the relationships schema for a resource if it has any.
 
@@ -157,18 +159,7 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemas do
           }
 
         :one ->
-          case builder.version do
-            "3.1" ->
-              %{
-                oneOf: [
-                  identifier_schema,
-                  %{type: :null}
-                ]
-              }
-
-            _ ->
-              Map.put(identifier_schema, :nullable, true)
-          end
+          make_nullable_oneof(identifier_schema, builder.version)
       end
 
     # Relationship object with data and links
@@ -195,32 +186,6 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemas do
       end
 
     {rel_schema, builder}
-  end
-
-  @doc """
-  Ensures destination resource schemas exist.
-
-  Called during relationship schema building to trigger schema generation
-  for related resources that haven't been processed yet.
-
-  ## Parameters
-
-  - `builder` - The SchemaBuilder accumulator
-  - `rel_resource` - The destination resource module
-  - `seen_fn` - Function to check if resource is seen
-  - `add_schemas_fn` - Function to add resource schemas
-
-  ## Returns
-
-  Updated builder with destination resource schemas added if needed.
-  """
-  @spec ensure_destination_schemas(map(), module(), function(), function()) :: map()
-  def ensure_destination_schemas(builder, rel_resource, seen_fn, add_schemas_fn) do
-    if seen_fn.(builder, rel_resource) do
-      builder
-    else
-      add_schemas_fn.(builder, rel_resource)
-    end
   end
 
   @doc """

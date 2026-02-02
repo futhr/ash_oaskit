@@ -52,6 +52,9 @@ defmodule AshOaskit.Generators.PathBuilder do
       paths = PathBuilder.build_paths([MyApp.Domain], version: "3.1", router: MyAppWeb.Router)
   """
 
+  import AshOaskit.Core.PathUtils
+  import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
+
   alias AshOaskit.FilterBuilder
   alias AshOaskit.PhoenixIntrospection
   alias AshOaskit.RelationshipRoutes
@@ -138,30 +141,6 @@ defmodule AshOaskit.Generators.PathBuilder do
         requestBody: build_request_body(route)
       })
     end
-  end
-
-  @doc """
-  Humanizes an underscore-separated string.
-
-  ## Parameters
-
-  - `string` - The underscore-separated string to humanize
-
-  ## Returns
-
-  A title-cased, space-separated string.
-
-  ## Examples
-
-      iex> PathBuilder.humanize("create_user")
-      "Create User"
-  """
-  @spec humanize(String.t()) :: String.t()
-  def humanize(string) do
-    string
-    |> String.replace("_", " ")
-    |> String.split(" ")
-    |> Enum.map_join(" ", &String.capitalize/1)
   end
 
   # Builds paths from Ash domain routes
@@ -327,18 +306,6 @@ defmodule AshOaskit.Generators.PathBuilder do
     end
   end
 
-  # Extracts path parameter names from a route path
-  defp extract_path_params(path) do
-    ~r/:([a-zA-Z_]+)/
-    |> Regex.scan(path)
-    |> Enum.map(fn [_, name] -> name end)
-  end
-
-  # Converts Phoenix-style path params (:id) to OpenAPI format ({id})
-  defp convert_path_params(path) do
-    Regex.replace(~r/:([a-zA-Z_]+)/, path, "{\\1}")
-  end
-
   # Builds query parameters for GET operations
   defp build_query_parameters(route, version) do
     resource = route.resource
@@ -396,9 +363,7 @@ defmodule AshOaskit.Generators.PathBuilder do
                   type: :object,
                   properties: %{
                     type: %{type: :string},
-                    attributes: %{
-                      "$ref" => "#/components/schemas/#{schema_name}Attributes"
-                    }
+                    attributes: schema_ref("#{schema_name}Attributes")
                   }
                 }
               }
@@ -433,9 +398,7 @@ defmodule AshOaskit.Generators.PathBuilder do
           description: "Successful response",
           content: %{
             "application/vnd.api+json" => %{
-              schema: %{
-                "$ref" => "#/components/schemas/#{schema_name}Response"
-              }
+              schema: schema_ref("#{schema_name}Response")
             }
           }
         }

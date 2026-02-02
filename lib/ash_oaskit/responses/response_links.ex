@@ -65,6 +65,8 @@ defmodule AshOaskit.ResponseLinks do
   ```
   """
 
+  import AshOaskit.Schemas.Nullable, only: [make_nullable: 2, make_nullable_oneof: 2]
+
   @doc """
   Builds a complete links schema for resource responses.
 
@@ -86,9 +88,7 @@ defmodule AshOaskit.ResponseLinks do
       }
   """
   @spec build_resource_links_schema(keyword()) :: map()
-  def build_resource_links_schema(opts \\ []) do
-    _version = Keyword.get(opts, :version, "3.1")
-
+  def build_resource_links_schema(_opts \\ []) do
     %{
       type: :object,
       properties: %{
@@ -132,8 +132,8 @@ defmodule AshOaskit.ResponseLinks do
         self: uri_schema(),
         first: uri_schema(),
         last: uri_schema(),
-        prev: nullable_uri_schema(version),
-        next: nullable_uri_schema(version)
+        prev: make_nullable(%{type: :string, format: :uri}, version),
+        next: make_nullable(%{type: :string, format: :uri}, version)
       },
       additionalProperties: false
     }
@@ -170,8 +170,8 @@ defmodule AshOaskit.ResponseLinks do
       properties: %{
         first: uri_schema(),
         last: uri_schema(),
-        prev: nullable_uri_schema(version),
-        next: nullable_uri_schema(version)
+        prev: make_nullable(%{type: :string, format: :uri}, version),
+        next: make_nullable(%{type: :string, format: :uri}, version)
       },
       description: "Pagination navigation links"
     }
@@ -200,9 +200,7 @@ defmodule AshOaskit.ResponseLinks do
       }
   """
   @spec build_relationship_links_schema(keyword()) :: map()
-  def build_relationship_links_schema(opts \\ []) do
-    _version = Keyword.get(opts, :version, "3.1")
-
+  def build_relationship_links_schema(_opts \\ []) do
     %{
       type: :object,
       properties: %{
@@ -252,8 +250,8 @@ defmodule AshOaskit.ResponseLinks do
         Map.merge(base_properties, %{
           first: uri_schema(),
           last: uri_schema(),
-          prev: nullable_uri_schema(version),
-          next: nullable_uri_schema(version)
+          prev: make_nullable(%{type: :string, format: :uri}, version),
+          next: make_nullable(%{type: :string, format: :uri}, version)
         })
       else
         base_properties
@@ -302,8 +300,8 @@ defmodule AshOaskit.ResponseLinks do
         related: uri_schema(),
         first: uri_schema(),
         last: uri_schema(),
-        prev: nullable_uri_schema(version),
-        next: nullable_uri_schema(version)
+        prev: make_nullable(%{type: :string, format: :uri}, version),
+        next: make_nullable(%{type: :string, format: :uri}, version)
       },
       additionalProperties: uri_schema(),
       description: "Links object for HATEOAS navigation"
@@ -426,9 +424,7 @@ defmodule AshOaskit.ResponseLinks do
       }
   """
   @spec build_link_object_schema(keyword()) :: map()
-  def build_link_object_schema(opts \\ []) do
-    _version = Keyword.get(opts, :version, "3.1")
-
+  def build_link_object_schema(_opts \\ []) do
     %{
       oneOf: [
         uri_schema(),
@@ -475,13 +471,7 @@ defmodule AshOaskit.ResponseLinks do
 
     link_object_schema = build_link_object_schema(opts)
 
-    if version == "3.1" do
-      Map.update!(link_object_schema, :oneOf, fn schemas ->
-        [%{type: :null} | schemas]
-      end)
-    else
-      Map.put(link_object_schema, :nullable, true)
-    end
+    make_nullable_oneof(link_object_schema, version)
   end
 
   # Private helper functions
@@ -491,22 +481,6 @@ defmodule AshOaskit.ResponseLinks do
     %{
       type: :string,
       format: :uri
-    }
-  end
-
-  @spec nullable_uri_schema(String.t()) :: map()
-  defp nullable_uri_schema("3.1") do
-    %{
-      type: [:string, :null],
-      format: :uri
-    }
-  end
-
-  defp nullable_uri_schema(_version) do
-    %{
-      type: :string,
-      format: :uri,
-      nullable: true
     }
   end
 end

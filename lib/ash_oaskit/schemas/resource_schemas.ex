@@ -48,6 +48,8 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
       builder = ResourceSchemas.add_resource_schemas(builder, MyApp.Post)
   """
 
+  import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
+
   alias Ash.Resource.Info, as: ResourceInfo
   alias AshOaskit.SchemaBuilder.EmbeddedSchemas
   alias AshOaskit.SchemaBuilder.PropertyBuilders
@@ -227,7 +229,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
       properties: %{
         id: %{type: :string},
         type: %{type: :string, enum: [json_api_type]},
-        attributes: %{"$ref" => "#/components/schemas/#{schema_name}Attributes"}
+        attributes: schema_ref("#{schema_name}Attributes")
       },
       required: ["id", "type"]
     }
@@ -235,9 +237,11 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
     # Add relationships reference if resource has relationships
     data_schema =
       if RelationshipSchemas.has_relationships?(resource) do
-        put_in(data_schema, [:properties, :relationships], %{
-          "$ref" => "#/components/schemas/#{schema_name}Relationships"
-        })
+        put_in(
+          data_schema,
+          [:properties, :relationships],
+          schema_ref("#{schema_name}Relationships")
+        )
       else
         data_schema
       end

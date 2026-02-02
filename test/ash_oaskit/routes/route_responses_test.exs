@@ -62,7 +62,8 @@ defmodule AshOaskit.RouteResponsesTest do
           version: "3.1"
         )
 
-      assert schema[:type] == [:object, "null"]
+      assert Map.has_key?(schema, :oneOf)
+      assert %{type: :null} in schema[:oneOf]
     end
 
     test "to-one relationship linkage is nullable in 3.0" do
@@ -108,7 +109,9 @@ defmodule AshOaskit.RouteResponsesTest do
           version: "3.1"
         )
 
-      assert schema[:properties]["data"][:type] == [:object, "null"]
+      data_schema = schema[:properties]["data"]
+      assert Map.has_key?(data_schema, :oneOf)
+      assert %{type: :null} in data_schema[:oneOf]
     end
 
     test "builds request body for relationship modification" do

@@ -56,6 +56,8 @@ defmodule AshOaskit.ErrorSchemas do
       components = ErrorSchemas.add_error_components(existing_components)
   """
 
+  import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
+
   @doc """
   Returns the standard JSON:API error object schema.
 
@@ -216,9 +218,7 @@ defmodule AshOaskit.ErrorSchemas do
       description: error_description(status_code),
       content: %{
         "application/vnd.api+json" => %{
-          schema: %{
-            "$ref" => "#/components/schemas/JsonApiError"
-          }
+          schema: schema_ref("JsonApiError")
         }
       }
     }
@@ -246,9 +246,7 @@ defmodule AshOaskit.ErrorSchemas do
   """
   @spec error_responses([String.t()]) :: map()
   def error_responses(status_codes) do
-    status_codes
-    |> Enum.map(fn code -> {code, error_response(code)} end)
-    |> Enum.into(%{})
+    Map.new(status_codes, fn code -> {code, error_response(code)} end)
   end
 
   @doc """

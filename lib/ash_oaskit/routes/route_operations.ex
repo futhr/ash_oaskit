@@ -28,6 +28,8 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
       operation = RouteOperations.build_operation(route, version: "3.1")
   """
 
+  import AshOaskit.Core.PathUtils, only: [humanize: 1, extract_path_params: 1]
+
   alias AshOaskit.RelationshipRoutes.RouteResponses
 
   @doc """
@@ -57,7 +59,7 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
     }
     |> maybe_add_request_body(route, opts)
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
-    |> Enum.into(%{})
+    |> Map.new()
   end
 
   @doc """
@@ -278,20 +280,5 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
     else
       operation
     end
-  end
-
-  # Extracts path parameter names from a route path
-  defp extract_path_params(path) do
-    ~r/:([a-zA-Z_]+)/
-    |> Regex.scan(path)
-    |> Enum.map(fn [_, name] -> name end)
-  end
-
-  # Humanizes an underscore-separated string
-  defp humanize(string) do
-    string
-    |> String.replace("_", " ")
-    |> String.split(" ")
-    |> Enum.map_join(" ", &String.capitalize/1)
   end
 end

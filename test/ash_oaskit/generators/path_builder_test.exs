@@ -258,21 +258,6 @@ defmodule AshOaskit.Generators.PathBuilderTest do
     end
   end
 
-  describe "humanize/1" do
-    test "capitalizes single word" do
-      assert PathBuilder.humanize("hello") == "Hello"
-    end
-
-    test "capitalizes and joins underscore-separated words" do
-      assert PathBuilder.humanize("create_user") == "Create User"
-      assert PathBuilder.humanize("foo_bar_baz") == "Foo Bar Baz"
-    end
-
-    test "handles already-capitalized input" do
-      assert PathBuilder.humanize("Hello") == "Hello"
-    end
-  end
-
   describe "path generation for different domains" do
     test "Publishing domain produces relationship paths" do
       paths = PathBuilder.build_paths([Publishing], version: "3.1")

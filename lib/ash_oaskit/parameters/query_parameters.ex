@@ -149,15 +149,13 @@ defmodule AshOaskit.QueryParameters do
   @spec build_fields_parameter([String.t()], keyword()) :: map()
   def build_fields_parameter(resource_types, _opts \\ []) do
     properties =
-      resource_types
-      |> Enum.map(fn type ->
+      Map.new(resource_types, fn type ->
         {type,
          %{
            type: :string,
            description: "Comma-separated list of #{type} fields to include"
          }}
       end)
-      |> Enum.into(%{})
 
     %{
       name: "fields",

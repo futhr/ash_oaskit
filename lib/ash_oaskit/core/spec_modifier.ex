@@ -52,6 +52,8 @@ defmodule AshOaskit.SpecModifier do
   - Adding examples to schemas
   """
 
+  require Logger
+
   @doc """
   Applies modifications to an OpenAPI specification.
 
@@ -95,7 +97,8 @@ defmodule AshOaskit.SpecModifier do
     Enum.reduce(modifiers, spec, &apply_modifier(&2, &1))
   end
 
-  def apply_modifier(spec, _invalid) do
+  def apply_modifier(spec, invalid) do
+    Logger.warning("AshOaskit: ignoring invalid spec modifier: #{inspect(invalid)}")
     spec
   end
 

@@ -176,10 +176,9 @@ defmodule AshOaskit.FilterBuilder do
   def build_attribute_filters(resource) do
     resource
     |> get_filterable_attributes()
-    |> Enum.map(fn attr ->
+    |> Map.new(fn attr ->
       {to_string(attr.name), build_attribute_filter_schema(attr)}
     end)
-    |> Enum.into(%{})
   end
 
   @doc """
@@ -201,9 +200,7 @@ defmodule AshOaskit.FilterBuilder do
     operators = operators_for_type(attr.type)
 
     operator_properties =
-      operators
-      |> Enum.map(fn op -> {to_string(op), operator_schema(op, base_type_schema)} end)
-      |> Enum.into(%{})
+      Map.new(operators, fn op -> {to_string(op), operator_schema(op, base_type_schema)} end)
 
     # Allow either direct value or operator object
     %{
