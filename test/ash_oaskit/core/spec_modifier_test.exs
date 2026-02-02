@@ -18,6 +18,8 @@ defmodule AshOaskit.SpecModifierTest do
 
   use ExUnit.Case, async: true
 
+  import ExUnit.CaptureLog
+
   alias AshOaskit.SpecModifier
 
   describe "apply_modifier/2" do
@@ -65,9 +67,13 @@ defmodule AshOaskit.SpecModifierTest do
     test "returns spec unchanged for invalid modifier" do
       spec = %{"info" => %{"title" => "API"}}
 
-      result = SpecModifier.apply_modifier(spec, "invalid")
+      log =
+        capture_log(fn ->
+          result = SpecModifier.apply_modifier(spec, "invalid")
+          assert result == spec
+        end)
 
-      assert result == spec
+      assert log =~ "ignoring invalid spec modifier"
     end
 
     test "handles empty list of modifiers" do
@@ -697,9 +703,16 @@ defmodule AshOaskit.SpecModifierTest do
     test "returns spec unchanged for invalid modifier types" do
       spec = %{"info" => %{"title" => "API"}}
 
-      assert SpecModifier.apply_modifier(spec, :invalid_atom) == spec
-      assert SpecModifier.apply_modifier(spec, 42) == spec
-      assert SpecModifier.apply_modifier(spec, "string") == spec
+      log =
+        capture_log(fn ->
+          assert SpecModifier.apply_modifier(spec, :invalid_atom) == spec
+          assert SpecModifier.apply_modifier(spec, 42) == spec
+          assert SpecModifier.apply_modifier(spec, "string") == spec
+        end)
+
+      assert log =~ "ignoring invalid spec modifier: :invalid_atom"
+      assert log =~ "ignoring invalid spec modifier: 42"
+      assert log =~ ~s(ignoring invalid spec modifier: "string")
     end
   end
 

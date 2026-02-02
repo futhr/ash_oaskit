@@ -21,6 +21,8 @@ defmodule AshOaskit.Generators.GeneratorTest do
 
   use ExUnit.Case, async: true
 
+  import ExUnit.CaptureLog
+
   alias AshOaskit.Generators.Generator
 
   describe "generate/2 with modify_open_api hook" do
@@ -47,14 +49,19 @@ defmodule AshOaskit.Generators.GeneratorTest do
     end
 
     test "ignores invalid hook values" do
-      spec =
-        Generator.generate([AshOaskit.Test.Blog],
-          version: "3.1",
-          title: "Test",
-          modify_open_api: :invalid
-        )
+      log =
+        capture_log(fn ->
+          spec =
+            Generator.generate([AshOaskit.Test.Blog],
+              version: "3.1",
+              title: "Test",
+              modify_open_api: :invalid
+            )
 
-      assert spec[:openapi] =~ "3.1"
+          assert spec[:openapi] =~ "3.1"
+        end)
+
+      assert log =~ "ignoring invalid modify_open_api hook"
     end
 
     test "generates without hook" do

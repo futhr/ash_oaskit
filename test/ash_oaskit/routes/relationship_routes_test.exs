@@ -37,6 +37,8 @@ defmodule AshOaskit.RelationshipRoutesTest do
 
   use ExUnit.Case, async: true
 
+  import ExUnit.CaptureLog
+
   alias AshOaskit.RelationshipRoutes
 
   # Mock route structs for testing
@@ -175,7 +177,13 @@ defmodule AshOaskit.RelationshipRoutesTest do
 
     test "unknown route types default to GET" do
       route = %{type: :unknown}
-      assert RelationshipRoutes.route_method(route) == "get"
+
+      log =
+        capture_log(fn ->
+          assert RelationshipRoutes.route_method(route) == "get"
+        end)
+
+      assert log =~ "unknown relationship route type: :unknown"
     end
   end
 
