@@ -1,7 +1,21 @@
 defmodule AshOaskit.Schemas.NullableTest do
+  @moduledoc """
+  Tests for the `AshOaskit.Schemas.Nullable` module.
+
+  Verifies version-aware nullable schema construction for both OpenAPI 3.0
+  and 3.1. Includes doctests to validate the inline examples in the module
+  documentation.
+
+  ## Test categories
+
+    - `make_nullable/2` — Simple type nullability (`type` atom key)
+    - `make_nullable_oneof/2` — Complex type nullability (`oneOf` wrapper)
+  """
   use ExUnit.Case, async: true
 
   alias AshOaskit.Schemas.Nullable
+
+  doctest AshOaskit.Schemas.Nullable
 
   describe "make_nullable/2" do
     test "3.0: adds nullable true" do

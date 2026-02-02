@@ -1,7 +1,22 @@
 defmodule AshOaskit.Core.PathUtilsTest do
+  @moduledoc """
+  Tests for the `AshOaskit.Core.PathUtils` module.
+
+  Verifies path and route string utilities used across the generator
+  pipeline. Includes doctests to validate the inline examples in the
+  module documentation.
+
+  ## Test categories
+
+    - `humanize/1` — Converts underscore identifiers to title case
+    - `extract_path_params/1` — Extracts `:param` names from routes
+    - `convert_path_params/1` — Converts `:param` to `{param}` format
+  """
   use ExUnit.Case, async: true
 
   alias AshOaskit.Core.PathUtils
+
+  doctest AshOaskit.Core.PathUtils
 
   describe "humanize/1" do
     test "converts underscored string to title case" do
