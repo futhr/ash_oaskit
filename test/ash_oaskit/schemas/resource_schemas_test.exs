@@ -47,7 +47,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemasTest do
       attrs = ResourceSchemas.get_public_attributes(AshOaskit.Test.Post)
       attr_names = Enum.map(attrs, & &1.name)
 
-      assert :title in attr_names or :name in attr_names or length(attr_names) > 0
+      assert :title in attr_names or :name in attr_names or attr_names != []
     end
   end
 

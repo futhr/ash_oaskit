@@ -129,19 +129,59 @@ end
 ## Module Structure
 
 ```
-lib/ash_oaskit.ex                    # Main API
+lib/ash_oaskit.ex                              # Main API (spec, validate)
 lib/ash_oaskit/
-  open_api.ex                        # Core generation
-  controller.ex                      # Phoenix controller
-  type_mapper.ex                     # Type conversion
-  schema_builder.ex                  # Schema construction
-  filter_builder.ex                  # Filter parameters
-  sort_builder.ex                    # Sort parameters
-  query_parameters.ex                # Query param schemas
-  generators/{v30,v31}.ex            # Version generators
+  open_api.ex                                  # Version routing
+  open_api_controller.ex                       # Controller behaviour
+  phoenix_introspection.ex                     # Phoenix router extraction
+  router.ex                                    # Router macro
+  spec_builder.ex                              # SpecBuilder behaviour
+  spec_builder/default.ex                      # Default SpecBuilder
+  core/
+    config.ex                                  # AshJsonApi DSL reader
+    path_utils.ex                              # Path param conversion
+    schema_ref.ex                              # $ref object builder
+    spec_modifier.ex                           # Post-generation hooks
+    type_mapper.ex                             # Ash → JSON Schema types
+  generators/
+    generator.ex                               # Main orchestrator
+    info_builder.ex                            # Info, servers, tags
+    path_builder.ex                            # Paths and operations
+    shared.ex                                  # Entry point (both versions)
+    v30.ex                                     # OpenAPI 3.0 entry
+    v31.ex                                     # OpenAPI 3.1 entry
+  parameters/
+    filter_builder.ex                          # Filter query params
+    query_parameters.ex                        # page, fields, include, sort
+    sort_builder.ex                            # Sort param schemas
+  resources/
+    included_resources.ex                      # Included array schemas
+    resource_identifier.ex                     # Type+id linkage
+    tag_builder.ex                             # Operation grouping tags
+  responses/
+    error_schemas.ex                           # JSON:API error responses
+    response_links.ex                          # Self, related, pagination links
+    response_meta.ex                           # Pagination meta schemas
+  routes/
+    relationship_routes.ex                     # Relationship endpoints
+    route_operations.ex                        # Operation object builder
+    route_responses.ex                         # Response schema builder
+  schemas/
+    embedded_schemas.ex                        # Embedded resource detection
+    nullable.ex                                # Version-aware nullable
+    property_builders.ex                       # Attrs/calcs/aggregates → schema
+    relationship_schemas.ex                    # Relationship linkage schemas
+    resource_schemas.ex                        # Resource schema generation
+    schema_builder.ex                          # Accumulator + cycle detection
+  support/
+    controller.ex                              # Phoenix controller
+    multipart_support.ex                       # File upload schemas
+    security.ex                                # Security schemes
+  router/
+    plug.ex                                    # Plug for serving specs
 mix/tasks/
-  ash_oaskit.generate.ex             # CLI task
-  ash_oaskit.install.ex              # Igniter installer
+  ash_oaskit.generate.ex                       # CLI: mix ash_oaskit.generate
+  ash_oaskit.install.ex                        # CLI: mix ash_oaskit.install
 ```
 
 ## Configuration
@@ -167,5 +207,5 @@ end
 ## Development
 
 ```bash
-mix deps.get && mix test && mix check
+mix deps.get && mix test && mix check   # 1590+ tests, 58+ doctests, 10 quality tools
 ```
