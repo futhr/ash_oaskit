@@ -1,4 +1,4 @@
-defmodule AshOaskit.RelationshipsTest do
+defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
   @moduledoc """
   Comprehensive tests for relationship schema generation.
 

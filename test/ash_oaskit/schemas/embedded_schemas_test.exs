@@ -1,4 +1,4 @@
-defmodule AshOaskit.EmbeddedResourcesTest do
+defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
   @moduledoc """
   Comprehensive tests for embedded resource schema generation.
 

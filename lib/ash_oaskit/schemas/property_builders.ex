@@ -120,7 +120,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
 
   ## Examples
 
-      iex> attrs = [%{name: :title, type: :string}]
+      iex> attrs = [%{name: :title, type: :string, allow_nil?: false, constraints: []}]
       ...> PropertyBuilders.build_attribute_properties(%{version: "3.1"}, attrs)
       %{title: %{"type" => "string"}}
   """
