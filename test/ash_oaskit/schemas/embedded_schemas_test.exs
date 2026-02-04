@@ -167,12 +167,13 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
       # address attribute value comes from TypeMapper (string keys)
       address = schema[:properties][:address]
 
-      # Check for $ref (may be wrapped) - TypeMapper uses string keys
+      # Check for $ref (may be wrapped in allOf or oneOf for nullable) - TypeMapper uses string keys
       has_ref =
         cond do
           is_nil(address) -> false
           Map.has_key?(address, "$ref") -> true
           Map.has_key?(address, "allOf") -> Enum.any?(address["allOf"], &Map.has_key?(&1, "$ref"))
+          Map.has_key?(address, "oneOf") -> Enum.any?(address["oneOf"], &Map.has_key?(&1, "$ref"))
           true -> false
         end
 

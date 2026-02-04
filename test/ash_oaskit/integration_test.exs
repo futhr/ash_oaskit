@@ -114,27 +114,30 @@ defmodule AshOaskit.IntegrationTest do
       spec_30 = AshOaskit.spec_30(domains: [AshOaskit.Test.SimpleDomain])
       spec_31 = AshOaskit.spec_31(domains: [AshOaskit.Test.SimpleDomain])
 
-      assert spec_30["openapi"] == "3.0.0"
+      assert spec_30["openapi"] == "3.0.3"
       assert spec_31["openapi"] == "3.1.0"
 
       # Get a nullable field from each spec
       post_attrs_30 = spec_30["components"]["schemas"]["PostAttributes"]["properties"]
       post_attrs_31 = spec_31["components"]["schemas"]["PostAttributes"]["properties"]
 
-      # body is nullable (allow_nil? not set to false)
+      # body is nullable (allow_nil? defaults to true)
       body_30 = post_attrs_30["body"]
       body_31 = post_attrs_31["body"]
 
-      # 3.0 style: nullable flag
-      if body_30["nullable"] do
-        assert body_30["nullable"] == true
-        assert is_binary(body_30["type"])
-      end
+      # 3.0 style: nullable flag — must be unconditional
+      assert body_30["nullable"] == true,
+             "Expected 3.0 nullable field to have \"nullable\": true, got: #{inspect(body_30)}"
 
-      # 3.1 style: type array
-      if is_list(body_31["type"]) do
-        assert "null" in body_31["type"]
-      end
+      assert is_binary(body_30["type"]),
+             "Expected 3.0 type to be a string, got: #{inspect(body_30["type"])}"
+
+      # 3.1 style: type array — must be unconditional
+      assert is_list(body_31["type"]),
+             "Expected 3.1 nullable type to be an array, got: #{inspect(body_31["type"])}"
+
+      assert "null" in body_31["type"],
+             "Expected 3.1 type array to include \"null\", got: #{inspect(body_31["type"])}"
     end
 
     test "both versions have identical top-level structure" do
@@ -146,6 +149,16 @@ defmodule AshOaskit.IntegrationTest do
       keys_31 = Enum.sort(Map.keys(spec_31))
 
       assert keys_30 == keys_31
+    end
+
+    test "both versions generate the same schema names" do
+      spec_30 = AshOaskit.spec_30(domains: [AshOaskit.Test.SimpleDomain])
+      spec_31 = AshOaskit.spec_31(domains: [AshOaskit.Test.SimpleDomain])
+
+      schemas_30 = Map.keys(spec_30["components"]["schemas"] || %{})
+      schemas_31 = Map.keys(spec_31["components"]["schemas"] || %{})
+
+      assert Enum.sort(schemas_30) == Enum.sort(schemas_31)
     end
   end
 
@@ -220,6 +233,29 @@ defmodule AshOaskit.IntegrationTest do
         )
 
       assert {:ok, %Oaskit.Spec.OpenAPI{}} = AshOaskit.validate(spec)
+    end
+  end
+
+  describe "negative validation tests" do
+    test "spec missing openapi key fails validation" do
+      spec = AshOaskit.spec(domains: [AshOaskit.Test.Blog])
+      bad_spec = Map.delete(spec, "openapi")
+
+      assert {:error, _} = AshOaskit.validate(bad_spec)
+    end
+
+    test "spec with non-string openapi version fails validation" do
+      spec = AshOaskit.spec(domains: [AshOaskit.Test.Blog])
+      bad_spec = Map.put(spec, "openapi", 3.1)
+
+      assert {:error, _} = AshOaskit.validate(bad_spec)
+    end
+
+    test "spec with invalid paths type fails validation" do
+      spec = AshOaskit.spec(domains: [AshOaskit.Test.Blog])
+      bad_spec = Map.put(spec, "paths", "not a map")
+
+      assert {:error, _} = AshOaskit.validate(bad_spec)
     end
   end
 

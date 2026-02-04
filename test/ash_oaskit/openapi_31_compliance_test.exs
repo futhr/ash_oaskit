@@ -654,28 +654,4 @@ defmodule AshOaskit.OpenAPI31ComplianceTest do
       assert schema["type"] == "string"
     end
   end
-
-  describe "version consistency" do
-    test "3.0 and 3.1 produce structurally similar specs" do
-      spec_30 = AshOaskit.spec_30(domains: [AshOaskit.Test.SimpleDomain])
-      spec_31 = AshOaskit.spec_31(domains: [AshOaskit.Test.SimpleDomain])
-
-      assert Map.has_key?(spec_30, "openapi")
-      assert Map.has_key?(spec_31, "openapi")
-      assert Map.has_key?(spec_30, "info")
-      assert Map.has_key?(spec_31, "info")
-      assert Map.has_key?(spec_30, "components")
-      assert Map.has_key?(spec_31, "components")
-    end
-
-    test "both versions generate the same schema names" do
-      spec_30 = AshOaskit.spec_30(domains: [AshOaskit.Test.SimpleDomain])
-      spec_31 = AshOaskit.spec_31(domains: [AshOaskit.Test.SimpleDomain])
-
-      schemas_30 = Map.keys(spec_30["components"]["schemas"] || %{})
-      schemas_31 = Map.keys(spec_31["components"]["schemas"] || %{})
-
-      assert Enum.sort(schemas_30) == Enum.sort(schemas_31)
-    end
-  end
 end

@@ -40,65 +40,75 @@ defmodule AshOaskit.Test.Post do
     extensions: [AshJsonApi.Resource]
 
   json_api do
-    type("post")
+    type "post"
   end
 
   attributes do
-    uuid_primary_key(:id)
+    uuid_primary_key :id
 
     attribute :title, :string do
       allow_nil? false
-      constraints(min_length: 1, max_length: 255)
+      constraints min_length: 1, max_length: 255
     end
 
     attribute :body, :string do
-      description("Post content")
+      description "Post content"
     end
 
     attribute :status, :atom do
-      constraints(one_of: [:draft, :published])
+      constraints one_of: [:draft, :published]
     end
 
     attribute :view_count, :integer do
-      constraints(min: 0)
+      constraints min: 0
     end
 
     attribute :rating, :float do
-      constraints(min: 0.0, max: 5.0)
+      constraints min: 0.0, max: 5.0
     end
 
-    attribute(:published_at, :utc_datetime)
-    attribute(:tags, {:array, :string})
-    attribute(:metadata, :map)
-    attribute(:slug, :ci_string)
-    attribute(:duration, :time)
-    attribute(:local_time, :naive_datetime)
-    attribute(:attachment, :binary)
-    attribute(:config, :term)
-    attribute(:score, :decimal)
+    attribute :published_at, :utc_datetime
+    attribute :tags, {:array, :string}
+    attribute :metadata, :map
+    attribute :slug, :ci_string
+    attribute :duration, :time
+    attribute :local_time, :naive_datetime
+    attribute :attachment, :binary
+    attribute :config, :term
+    attribute :score, :decimal
 
     attribute :is_featured, :boolean do
-      default(false)
+      default false
     end
 
     attribute :email, :string do
-      constraints(match: ~r/^[^\s]+@[^\s]+$/)
+      constraints match: ~r/^[^\s]+@[^\s]+$/
     end
 
-    create_timestamp(:inserted_at)
-    update_timestamp(:updated_at)
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
   end
 
   actions do
-    defaults([:read, :destroy])
+    defaults [:read, :destroy]
 
     create :create do
-      accept([:title, :body, :status, :tags, :is_featured])
+      accept [:title, :body, :status, :tags, :is_featured]
     end
 
     update :update do
-      accept([:title, :body, :status, :tags, :is_featured])
+      accept [:title, :body, :status, :tags, :is_featured]
     end
+  end
+end
+
+defmodule AshOaskit.Test.NoDomainResource do
+  @moduledoc false
+  use Ash.Resource,
+    data_layer: :embedded
+
+  attributes do
+    attribute :name, :string
   end
 end
 
@@ -114,12 +124,12 @@ defmodule AshOaskit.Test.NoTypeResource do
   end
 
   attributes do
-    uuid_primary_key(:id)
-    attribute(:name, :string)
+    uuid_primary_key :id
+    attribute :name, :string
   end
 
   actions do
-    defaults([:read])
+    defaults [:read]
   end
 end
 
@@ -156,12 +166,12 @@ defmodule AshOaskit.Test.NilTypeResource do
   end
 
   attributes do
-    uuid_primary_key(:id)
-    attribute(:label, :string)
+    uuid_primary_key :id
+    attribute :label, :string
   end
 
   actions do
-    defaults([:read])
+    defaults [:read]
   end
 end
 
@@ -173,16 +183,16 @@ defmodule AshOaskit.Test.EdgeCaseDomain do
     extensions: [AshJsonApi.Domain]
 
   resources do
-    resource(AshOaskit.Test.NoTypeResource)
-    resource(AshOaskit.Test.NilTypeResource)
+    resource AshOaskit.Test.NoTypeResource
+    resource AshOaskit.Test.NilTypeResource
   end
 
   json_api do
-    prefix("/edge")
+    prefix "/edge"
 
     routes do
       base_route "/no-type", AshOaskit.Test.NoTypeResource do
-        index(:read)
+        index :read
       end
     end
   end
@@ -195,21 +205,21 @@ defmodule AshOaskit.Test.Comment do
     extensions: [AshJsonApi.Resource]
 
   json_api do
-    type("comment")
+    type "comment"
   end
 
   attributes do
-    uuid_primary_key(:id)
-    attribute(:content, :string, allow_nil?: false)
-    create_timestamp(:inserted_at)
-    update_timestamp(:updated_at)
+    uuid_primary_key :id
+    attribute :content, :string, allow_nil?: false
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
   end
 
   actions do
-    defaults([:read, :destroy])
+    defaults [:read, :destroy]
 
     create :create do
-      accept([:content])
+      accept [:content]
     end
   end
 end
@@ -220,8 +230,8 @@ defmodule AshOaskit.Test.SimpleDomain do
   use Ash.Domain, validate_config_inclusion?: false
 
   resources do
-    resource(AshOaskit.Test.Post)
-    resource(AshOaskit.Test.Comment)
+    resource AshOaskit.Test.Post
+    resource AshOaskit.Test.Comment
   end
 end
 
@@ -233,25 +243,25 @@ defmodule AshOaskit.Test.Blog do
     extensions: [AshJsonApi.Domain]
 
   resources do
-    resource(AshOaskit.Test.Post)
-    resource(AshOaskit.Test.Comment)
+    resource AshOaskit.Test.Post
+    resource AshOaskit.Test.Comment
   end
 
   json_api do
     routes do
       base_route "/posts", AshOaskit.Test.Post do
-        get(:read)
-        index(:read)
-        post(:create)
-        patch(:update)
-        delete(:destroy)
+        get :read
+        index :read
+        post :create
+        patch :update
+        delete :destroy
       end
 
       base_route "/comments", AshOaskit.Test.Comment do
-        get(:read)
-        index(:read)
-        post(:create)
-        delete(:destroy)
+        get :read
+        index :read
+        post :create
+        delete :destroy
       end
     end
   end

@@ -23,7 +23,7 @@ defmodule AshOaskit.Generators.V30Test do
     test "returns valid OpenAPI 3.0 structure" do
       result = V30.generate([AshOaskit.Test.SimpleDomain], [])
 
-      assert result[:openapi] == "3.0.0"
+      assert result[:openapi] == "3.0.3"
       assert is_map(result[:info])
       assert is_list(result[:servers])
       assert is_map(result[:paths])
@@ -176,18 +176,22 @@ defmodule AshOaskit.Generators.V30Test do
 
       schemas = result[:components][:schemas]
 
-      # Check that nullable fields use "nullable": true instead of type arrays
-      Enum.each(schemas, fn {name, schema} ->
-        if String.ends_with?(name, "Attributes") do
-          Enum.each(schema[:properties] || %{}, fn {_field, field_schema} ->
-            # If nullable, should have "nullable" key, not type array
-            if field_schema[:nullable] do
-              assert field_schema[:nullable] == true
-              refute is_list(field_schema[:type])
-            end
-          end)
-        end
-      end)
+      # Directly test a known nullable field — body is allow_nil? true by default
+      post_attrs = schemas["PostAttributes"]
+      assert post_attrs, "PostAttributes schema must exist"
+
+      body_schema = post_attrs[:properties][:body]
+      assert body_schema, "body property must exist in PostAttributes"
+
+      # String keys from TypeMapper in property values
+      assert body_schema["nullable"] == true,
+             "Expected 3.0 nullable field to have \"nullable\": true, got: #{inspect(body_schema)}"
+
+      assert is_binary(body_schema["type"]),
+             "Expected 3.0 type to be a string, not array, got: #{inspect(body_schema["type"])}"
+
+      refute is_list(body_schema["type"]),
+             "3.0 must not use type arrays"
     end
   end
 
@@ -201,7 +205,7 @@ defmodule AshOaskit.Generators.V30Test do
     test "handles empty domains list" do
       result = V30.generate([], [])
 
-      assert result[:openapi] == "3.0.0"
+      assert result[:openapi] == "3.0.3"
       assert result[:paths] == %{}
       assert result[:components][:schemas] == %{}
     end
@@ -209,7 +213,7 @@ defmodule AshOaskit.Generators.V30Test do
     test "handles multiple domains" do
       result = V30.generate([AshOaskit.Test.SimpleDomain, AshOaskit.Test.Blog], [])
 
-      assert result[:openapi] == "3.0.0"
+      assert result[:openapi] == "3.0.3"
       assert is_map(result[:components][:schemas])
     end
   end
@@ -217,11 +221,11 @@ defmodule AshOaskit.Generators.V30Test do
   describe "version comparison with V31" do
     alias AshOaskit.Generators.V31
 
-    test "V30 outputs 3.0.0, V31 outputs 3.1.0" do
+    test "V30 outputs 3.0.3, V31 outputs 3.1.0" do
       result_30 = V30.generate([AshOaskit.Test.SimpleDomain], [])
       result_31 = V31.generate([AshOaskit.Test.SimpleDomain], [])
 
-      assert result_30[:openapi] == "3.0.0"
+      assert result_30[:openapi] == "3.0.3"
       assert result_31[:openapi] == "3.1.0"
     end
 
