@@ -74,7 +74,7 @@ defmodule Mix.Tasks.AshOaskit.GenerateTest do
       assert File.exists?(output_file)
       content = File.read!(output_file)
       spec = Jason.decode!(content)
-      assert spec["openapi"] == "3.0.0"
+      assert spec["openapi"] == "3.0.3"
     end
 
     test "writes to specified output file", %{tmp_dir: tmp_dir} do
@@ -368,7 +368,7 @@ defmodule Mix.Tasks.AshOaskit.GenerateTest do
 
       content = File.read!(output_file)
       spec = Jason.decode!(content)
-      assert spec["openapi"] == "3.0.0"
+      assert spec["openapi"] == "3.0.3"
     end
 
     test "supports -o alias for --output", %{tmp_dir: tmp_dir} do

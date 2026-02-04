@@ -32,7 +32,7 @@ defmodule AshOaskit.OpenApi do
 
   Both versions produce a map with this structure:
 
-  - `openapi` - Version string ("3.0.0" or "3.1.0")
+  - `openapi` - Version string ("3.0.3" or "3.1.0")
   - `info` - Title, version, description, contact, license
   - `servers` - List of server objects
   - `paths` - API endpoints from AshJsonApi routes
@@ -91,7 +91,7 @@ defmodule AshOaskit.OpenApi do
 
       iex> spec = AshOaskit.OpenApi.spec(domains: [AshOaskit.Test.Blog], version: "3.0")
       ...> spec["openapi"]
-      "3.0.0"
+      "3.0.3"
 
       iex> spec = AshOaskit.OpenApi.spec(domains: [AshOaskit.Test.Blog], title: "Test API")
       ...> spec["info"]["title"]
@@ -112,7 +112,7 @@ defmodule AshOaskit.OpenApi do
         v when v in ["3.1", "3.1.0"] ->
           V31.generate(domains, opts)
 
-        v when v in ["3.0", "3.0.0"] ->
+        v when v in ["3.0", "3.0.0", "3.0.3"] ->
           V30.generate(domains, opts)
 
         other ->
@@ -120,7 +120,7 @@ defmodule AshOaskit.OpenApi do
           Unsupported OpenAPI version: #{inspect(other)}
 
           Supported versions:
-            - "3.0" or "3.0.0" for OpenAPI 3.0
+            - "3.0", "3.0.0", or "3.0.3" for OpenAPI 3.0
             - "3.1" or "3.1.0" for OpenAPI 3.1 (default)
 
           Example:

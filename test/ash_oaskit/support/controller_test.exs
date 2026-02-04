@@ -87,7 +87,7 @@ defmodule AshOaskit.ControllerTest do
       result = Controller.spec_30(conn, %{})
       body = Jason.decode!(result.resp_body)
 
-      assert body["openapi"] == "3.0.0"
+      assert body["openapi"] == "3.0.3"
     end
 
     test "overrides version from route options" do
@@ -101,7 +101,7 @@ defmodule AshOaskit.ControllerTest do
       body = Jason.decode!(result.resp_body)
 
       # Should still be 3.0 because spec_30 forces it
-      assert body["openapi"] == "3.0.0"
+      assert body["openapi"] == "3.0.3"
     end
 
     test "returns 200 status" do

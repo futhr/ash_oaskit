@@ -242,7 +242,7 @@ defmodule AshOaskit do
 
       iex> spec = AshOaskit.spec(domains: [AshOaskit.Test.Blog], version: "3.0")
       ...> spec["openapi"]
-      "3.0.0"
+      "3.0.3"
 
       iex> spec = AshOaskit.spec(domains: [AshOaskit.Test.Blog], title: "My API")
       ...> spec["info"]["title"]
@@ -267,7 +267,7 @@ defmodule AshOaskit do
 
       iex> spec = AshOaskit.spec_30(domains: [AshOaskit.Test.Blog])
       ...> spec["openapi"]
-      "3.0.0"
+      "3.0.3"
 
   See `spec/1` for full options documentation.
   """

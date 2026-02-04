@@ -33,7 +33,7 @@ defmodule AshOaskitTest do
 
     test "spec_30/1 delegates to OpenApi" do
       result = AshOaskit.spec_30(domains: [@test_domain])
-      assert result["openapi"] == "3.0.0"
+      assert result["openapi"] == "3.0.3"
     end
 
     test "spec_31/1 delegates to OpenApi" do

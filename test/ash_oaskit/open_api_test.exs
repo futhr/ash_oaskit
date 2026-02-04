@@ -41,12 +41,17 @@ defmodule AshOaskit.OpenApiTest do
 
     test "accepts 3.0 version string" do
       result = OpenApi.spec(domains: [@test_domain], version: "3.0")
-      assert result["openapi"] == "3.0.0"
+      assert result["openapi"] == "3.0.3"
     end
 
     test "accepts 3.0.0 version string" do
       result = OpenApi.spec(domains: [@test_domain], version: "3.0.0")
-      assert result["openapi"] == "3.0.0"
+      assert result["openapi"] == "3.0.3"
+    end
+
+    test "accepts 3.0.3 version string" do
+      result = OpenApi.spec(domains: [@test_domain], version: "3.0.3")
+      assert result["openapi"] == "3.0.3"
     end
 
     test "accepts 3.1 version string" do
@@ -94,7 +99,7 @@ defmodule AshOaskit.OpenApiTest do
   describe "spec_30/1" do
     test "generates OpenAPI 3.0 spec" do
       result = OpenApi.spec_30(domains: [@test_domain])
-      assert result["openapi"] == "3.0.0"
+      assert result["openapi"] == "3.0.3"
     end
   end
 
