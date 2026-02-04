@@ -103,7 +103,7 @@ end
 | `:boolean` | `boolean` | - |
 | `:date` | `string` | `date` |
 | `:time` | `string` | `time` |
-| `:datetime`, `:utc_datetime`, `:naive_datetime` | `string` | `date-time` |
+| `:datetime`, `:utc_datetime`, `:utc_datetime_usec`, `:naive_datetime` | `string` | `date-time` |
 | `:uuid` | `string` | `uuid` |
 | `:binary` | `string` | `binary` |
 | `:map` | `object` | - |
@@ -207,5 +207,5 @@ end
 ## Development
 
 ```bash
-mix deps.get && mix test && mix check   # 1590+ tests, 58+ doctests, 10 quality tools
+mix deps.get && mix test && mix check
 ```

@@ -8,7 +8,9 @@ defmodule AshOaskit.Generators.V31 do
 
   - **Nullable types via type arrays** — `"type": ["string", "null"]` instead of `"nullable": true`
   - **`$schema` keyword** — explicit JSON Schema dialect declaration
+    (not currently generated; reserved for future use)
   - **`const` keyword** — for single-value enumerations
+    (not currently generated; Ash does not expose const constraints)
   - **Webhooks** — top-level `webhooks` object (not yet generated, but structurally valid)
 
   ## Relationship to Other Modules

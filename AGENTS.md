@@ -104,9 +104,15 @@ Tests mirror the lib/ directory structure 1:1. Each source module has a correspo
 - `components_test.exs` — Full components object
 - `format_strings_test.exs` — JSON Schema format strings
 - `integration_test.exs` — End-to-end spec generation
-- `openapi_31_compliance_test.exs` — Spec compliance checks
+- `cross_version_contamination_test.exs` — Cross-version feature leakage checks
+- `open_api_test.exs` — Core OpenApi module tests
+- `openapi_30_compliance_test.exs` — OpenAPI 3.0 spec compliance checks
+- `openapi_31_compliance_test.exs` — OpenAPI 3.1 spec compliance checks
 - `parameter_styles_test.exs` — Parameter serialization
+- `phoenix_introspection_test.exs` — Phoenix router extraction
 - `response_codes_test.exs` — HTTP response codes
+- `router_test.exs` — Router macro tests
+- `spec_builder_test.exs` — SpecBuilder behaviour tests
 - `webhooks_test.exs` — OpenAPI 3.1 webhooks
 
 ## Key Patterns
@@ -203,7 +209,7 @@ All type conversions go through `TypeMapper`. When adding new types:
 All code must pass:
 
 ```bash
-mix check    # Runs all 10 tools:
+mix check # Runs all 10 tools:
 ```
 
 - `mix compile --warnings-as-errors`
@@ -214,7 +220,7 @@ mix check    # Runs all 10 tools:
 - `mix hex.audit`
 - `mix deps.audit`
 - `mix sobelow`
-- `mix test` (1590+ tests, 58+ doctests)
+- `mix test`
 - `mix deps.unlock --check-unused`
 
 ## Guidelines

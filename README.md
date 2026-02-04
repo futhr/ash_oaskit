@@ -82,7 +82,7 @@ spec = AshOaskit.spec(domains: [MyApp.Blog], title: "My API")
 
 # OpenAPI 3.0
 spec = AshOaskit.spec_30(domains: [MyApp.Blog])
-#=> %{"openapi" => "3.0.0", ...}
+#=> %{"openapi" => "3.0.3", ...}
 ```
 
 ### CLI Generation
@@ -155,17 +155,18 @@ validated = AshOaskit.validate!(spec)
 
 | Ash Type | JSON Schema | Format |
 |----------|-------------|--------|
-| `:string` | `string` | - |
+| `:string`, `:ci_string`, `:atom` | `string` | - |
 | `:integer` | `integer` | - |
 | `:float` | `number` | `float` |
 | `:decimal` | `number` | `double` |
 | `:boolean` | `boolean` | - |
 | `:date` | `string` | `date` |
 | `:time` | `string` | `time` |
-| `:datetime`, `:utc_datetime` | `string` | `date-time` |
+| `:datetime`, `:utc_datetime`, `:utc_datetime_usec`, `:naive_datetime` | `string` | `date-time` |
 | `:uuid` | `string` | `uuid` |
 | `:binary` | `string` | `binary` |
 | `:map` | `object` | - |
+| `:term` | `{}` (any) | - |
 | `{:array, type}` | `array` | items: nested |
 
 ### Constraint Mapping

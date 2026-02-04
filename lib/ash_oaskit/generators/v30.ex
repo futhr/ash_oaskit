@@ -9,7 +9,9 @@ defmodule AshOaskit.Generators.V30 do
   - **Nullable fields** — uses `"nullable": true` instead of type arrays
   - **No `$schema` keyword** — JSON Schema draft-07 subset, not 2020-12
   - **`exclusiveMinimum` / `exclusiveMaximum`** — boolean form, not numeric
+    (not currently generated; Ash does not expose exclusive constraints)
   - **No `const` keyword** — single-value enums use `"enum": ["value"]`
+    (not currently generated; Ash does not expose const constraints)
 
   ## When to Use 3.0
 
@@ -28,7 +30,7 @@ defmodule AshOaskit.Generators.V30 do
   ## Usage
 
       spec = AshOaskit.Generators.V30.generate([MyApp.Blog], title: "Blog API")
-      spec["openapi"]
+      spec[:openapi]
       #=> "3.0.3"
 
   In practice you rarely call this module directly. Use the high-level API instead:
