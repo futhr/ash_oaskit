@@ -91,7 +91,7 @@ defmodule AshOaskit.TypeMapper do
   """
   @spec to_json_schema_31(map()) :: map()
   def to_json_schema_31(attr) do
-    base_schema = ash_type_to_base_schema(attr.type)
+    base_schema = ash_type_to_base_schema(resolve_type(attr))
 
     schema =
       if allow_nil?(attr) do
@@ -125,7 +125,7 @@ defmodule AshOaskit.TypeMapper do
   """
   @spec to_json_schema_30(map()) :: map()
   def to_json_schema_30(attr) do
-    base_schema = ash_type_to_base_schema(attr.type)
+    base_schema = ash_type_to_base_schema(resolve_type(attr))
 
     schema =
       if allow_nil?(attr) do
@@ -138,6 +138,33 @@ defmodule AshOaskit.TypeMapper do
     |> maybe_add_constraints(attr)
     |> maybe_add_description(attr)
     |> maybe_add_default(attr)
+  end
+
+  # Resolve the effective type for an attribute.
+  # For Ash.Type.NewType subtypes of Ash.Type.Union, the actual union variant
+  # types are in the attribute's constraints[:types], not discoverable from
+  # the type module's constraints/0 (which returns constraint definitions).
+  defp resolve_type(%{type: type, constraints: constraints})
+       when is_atom(type) and is_list(constraints) do
+    if union_newtype?(type) do
+      case Keyword.get(constraints, :types) do
+        types when is_list(types) and types != [] -> {:union, types}
+        _ -> type
+      end
+    else
+      type
+    end
+  end
+
+  defp resolve_type(%{type: type}), do: type
+
+  # Check if a type module is a NewType subtype of Ash.Type.Union
+  defp union_newtype?(type) do
+    Code.ensure_loaded?(type) and
+      function_exported?(type, :subtype_of, 0) and
+      type.subtype_of() == Ash.Type.Union
+  rescue
+    _ -> false
   end
 
   # Map of simple types to their JSON Schema representation
@@ -199,11 +226,13 @@ defmodule AshOaskit.TypeMapper do
         {name, type_config} when is_list(type_config) ->
           inner_type = Keyword.get(type_config, :type, :string)
           schema = ash_type_to_base_schema(inner_type)
-          # Add discriminator hint
           Map.put(schema, "title", to_string(name))
 
         type when is_atom(type) ->
           ash_type_to_base_schema(type)
+
+        _other ->
+          %{"type" => "string"}
       end)
 
     %{"anyOf" => any_of}
@@ -274,6 +303,9 @@ defmodule AshOaskit.TypeMapper do
 
   # Handle struct types
   defp normalize_type({:struct, module}), do: {:struct, module}
+
+  # Handle embedded types (produced by recursive normalization)
+  defp normalize_type({:embedded, module}), do: {:embedded, module}
 
   # Handle array types
   defp normalize_type({:array, inner}), do: {:array, normalize_type(inner)}
@@ -373,6 +405,17 @@ defmodule AshOaskit.TypeMapper do
     Map.put(schema, "type", [type, "null"])
   end
 
+  # For $ref schemas, wrap in oneOf with null type
+  defp make_nullable_31(%{"$ref" => _} = schema) do
+    %{"oneOf" => [%{"type" => "null"}, schema]}
+  end
+
+  # For anyOf schemas, prepend null type to existing list
+  defp make_nullable_31(%{"anyOf" => schemas}) do
+    %{"anyOf" => [%{"type" => "null"} | schemas]}
+  end
+
+  # Empty schema (e.g. :term) already accepts any value including null
   defp make_nullable_31(schema), do: schema
 
   # Make nullable for OpenAPI 3.0 (nullable flag)

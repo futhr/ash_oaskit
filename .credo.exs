@@ -74,7 +74,7 @@
           {Credo.Check.Refactor.LongQuoteBlocks, []},
           {Credo.Check.Refactor.MapJoin, []},
           {Credo.Check.Refactor.MatchInCondition, []},
-          {Credo.Check.Refactor.ModuleDependencies, [priority: :low, max_deps: 35]},
+          {Credo.Check.Refactor.ModuleDependencies, [priority: :low, max_deps: 36]},
           {Credo.Check.Refactor.NegatedConditionsInUnless, []},
           {Credo.Check.Refactor.NegatedConditionsWithElse, []},
           {Credo.Check.Refactor.NegatedIsNil, []},

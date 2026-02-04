@@ -9,7 +9,7 @@ defmodule AshOaskit.Generators.Generator do
 
   The generator produces a complete OpenAPI document with:
 
-  - **openapi** - Version string ("3.0.0" or "3.1.0")
+  - **openapi** - Version string ("3.0.3" or "3.1.0")
   - **info** - API metadata (title, version, description)
   - **servers** - Server URLs for the API
   - **paths** - All operations organized by path
@@ -47,12 +47,10 @@ defmodule AshOaskit.Generators.Generator do
   | `:modify_open_api` | function or MFA | Post-processing hook for spec customization |
   """
 
-  import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
-
   alias AshOaskit.Generators.InfoBuilder
   alias AshOaskit.Generators.PathBuilder
   alias AshOaskit.PhoenixIntrospection
-  alias AshOaskit.TypeMapper
+  alias AshOaskit.SchemaBuilder
 
   require Logger
 
@@ -94,7 +92,7 @@ defmodule AshOaskit.Generators.Generator do
   @spec generate(list(module()), opts()) :: map()
   def generate(domains, opts) do
     version = Keyword.fetch!(opts, :version)
-    openapi_version = if version == "3.0", do: "3.0.0", else: "3.1.0"
+    openapi_version = if version == "3.0", do: "3.0.3", else: "3.1.0"
 
     %{
       openapi: openapi_version,
@@ -128,13 +126,14 @@ defmodule AshOaskit.Generators.Generator do
   def build_components(domains, opts) do
     version = Keyword.fetch!(opts, :version)
 
-    schemas =
+    builder =
       domains
       |> Enum.flat_map(&get_domain_resources/1)
-      |> Enum.flat_map(&build_resource_schemas(&1, version))
-      |> Map.new()
+      |> Enum.reduce(SchemaBuilder.new(version: version), fn resource, builder ->
+        SchemaBuilder.add_resource_schemas(builder, resource)
+      end)
 
-    %{schemas: schemas}
+    %{schemas: builder.schemas}
   end
 
   # Builds all tags from domains and optionally from router
@@ -176,63 +175,6 @@ defmodule AshOaskit.Generators.Generator do
   # Gets all resources from a domain
   defp get_domain_resources(domain) do
     Ash.Domain.Info.resources(domain)
-  end
-
-  # Builds attribute and response schemas for a resource
-  defp build_resource_schemas(resource, version) do
-    schema_name =
-      resource
-      |> Module.split()
-      |> List.last()
-
-    attributes = get_resource_attributes(resource)
-
-    attributes_schema = %{
-      type: :object,
-      properties: build_attribute_properties(attributes, version)
-    }
-
-    response_schema = %{
-      type: :object,
-      properties: %{
-        data: %{
-          type: :object,
-          properties: %{
-            id: %{type: :string},
-            type: %{type: :string},
-            attributes: schema_ref("#{schema_name}Attributes")
-          }
-        }
-      }
-    }
-
-    [
-      {"#{schema_name}Attributes", attributes_schema},
-      {"#{schema_name}Response", response_schema}
-    ]
-  end
-
-  # Gets attributes from a resource
-  defp get_resource_attributes(resource) do
-    Ash.Resource.Info.attributes(resource)
-  end
-
-  # Builds attribute properties using the appropriate type mapper
-  defp build_attribute_properties(attributes, version) do
-    type_mapper_fn =
-      if version == "3.0",
-        do: &TypeMapper.to_json_schema_30/1,
-        else: &TypeMapper.to_json_schema_31/1
-
-    attributes
-    |> Enum.reject(fn attr ->
-      attr.name in [:id, :inserted_at, :updated_at] or
-        Map.get(attr, :private?, false)
-    end)
-    |> Enum.map(fn attr ->
-      {to_string(attr.name), type_mapper_fn.(attr)}
-    end)
-    |> Map.new()
   end
 
   # Removes nil values from a map
