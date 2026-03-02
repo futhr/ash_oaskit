@@ -373,19 +373,26 @@ defmodule AshOaskit.ErrorSchemas do
     A map of status codes to response objects.
 
   """
+  @operation_response_group %{
+    read: :read,
+    index: :read,
+    get: :read,
+    create: :create,
+    post: :create,
+    update: :update,
+    patch: :update,
+    delete: :delete,
+    destroy: :delete
+  }
+
   @spec responses_for_operation(atom()) :: map()
   def responses_for_operation(operation_type) do
-    case operation_type do
+    case Map.get(@operation_response_group, operation_type) do
       :read -> read_error_responses()
-      :index -> read_error_responses()
-      :get -> read_error_responses()
       :create -> create_error_responses()
-      :post -> create_error_responses()
       :update -> update_error_responses()
-      :patch -> update_error_responses()
       :delete -> delete_error_responses()
-      :destroy -> delete_error_responses()
-      _ -> all_error_responses()
+      nil -> all_error_responses()
     end
   end
 
