@@ -6,7 +6,7 @@
 [![Hex Docs](https://img.shields.io/badge/hex-docs-blue.svg)](https://hexdocs.pm/ash_oaskit)
 [![CI](https://github.com/futhr/ash_oaskit/actions/workflows/ci.yml/badge.svg)](https://github.com/futhr/ash_oaskit/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/futhr/ash_oaskit/branch/main/graph/badge.svg)](https://codecov.io/gh/futhr/ash_oaskit)
-[![License](https://img.shields.io/hexpm/l/ash_oaskit.svg)](LICENSE.md)
+[![License](https://img.shields.io/github/license/futhr/ash_oaskit.svg)](LICENSE.md)
 
 **Dual-version OpenAPI specification generator for [Ash Framework](https://ash-hq.org/)**
 
