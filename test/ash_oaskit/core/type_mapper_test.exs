@@ -47,6 +47,8 @@ defmodule AshOaskit.TypeMapperTest do
   """
 
   use ExUnit.Case, async: true
+
+  import ExUnit.CaptureLog
   doctest AshOaskit.TypeMapper
 
   alias AshOaskit.TypeMapper
@@ -723,9 +725,15 @@ defmodule AshOaskit.TypeMapperTest do
 
     test "maps custom type with failing json_schema callback to string" do
       attr = %{type: CustomTypeWithFailingJsonSchema, allow_nil?: false}
-      result = TypeMapper.to_json_schema_31(attr)
+
+      {result, log} =
+        with_log(fn ->
+          TypeMapper.to_json_schema_31(attr)
+        end)
+
       # Should fall back to string when json_schema raises
       assert result["type"] == "string"
+      assert log =~ "Failed to get json_schema"
     end
   end
 
@@ -774,11 +782,12 @@ defmodule AshOaskit.TypeMapperTest do
       assert result["type"] == "string"
     end
 
-    test "handles module with failing constraints gracefully" do
+    test "raises when module constraints callback fails" do
       attr = %{type: FailingConstraintsModule, allow_nil?: false}
-      result = TypeMapper.to_json_schema_31(attr)
-      # Should fall back to string
-      assert result["type"] == "string"
+
+      assert_raise RuntimeError, "intentional error", fn ->
+        TypeMapper.to_json_schema_31(attr)
+      end
     end
   end
 
@@ -994,9 +1003,12 @@ defmodule AshOaskit.TypeMapperTest do
       def __struct__, do: raise("boom")
     end
 
-    test "falls back to generic object schema when struct introspection fails" do
+    test "raises when struct introspection fails" do
       attr = %{type: {:struct, BrokenStruct}, allow_nil?: false}
-      assert TypeMapper.to_json_schema_31(attr) == %{"type" => "object"}
+
+      assert_raise RuntimeError, "boom", fn ->
+        TypeMapper.to_json_schema_31(attr)
+      end
     end
   end
 end
