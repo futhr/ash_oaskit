@@ -196,9 +196,9 @@ defmodule AshOaskit.RelationshipRoutes do
         "delete"
 
       other ->
-        Logger.warning(
+        Logger.warning(fn ->
           "AshOaskit: unknown relationship route type: #{inspect(other)}, defaulting to GET"
-        )
+        end)
 
         "get"
     end

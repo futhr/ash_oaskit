@@ -98,7 +98,7 @@ defmodule AshOaskit.SpecModifier do
   end
 
   def apply_modifier(spec, invalid) do
-    Logger.warning("AshOaskit: ignoring invalid spec modifier: #{inspect(invalid)}")
+    Logger.warning(fn -> "AshOaskit: ignoring invalid spec modifier: #{inspect(invalid)}" end)
     spec
   end
 
@@ -116,7 +116,7 @@ defmodule AshOaskit.SpecModifier do
   @spec add_extension(map(), list(String.t()), String.t(), any()) :: map()
   def add_extension(spec, path, extension_name, value) do
     full_path = path ++ [extension_name]
-    put_in_path(spec, full_path, value)
+    put_in(spec, Enum.map(full_path, &Access.key(&1, %{})), value)
   end
 
   @doc """
@@ -373,15 +373,20 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_schema_examples(map(), String.t(), list(map())) :: map()
   def add_schema_examples(spec, schema_name, examples) do
-    path = ["components", "schemas", schema_name]
+    access_path = Enum.map(["components", "schemas", schema_name], &Access.key/1)
 
-    case get_in_path(spec, path) do
+    case get_in(spec, access_path) do
       nil ->
         spec
 
       schema ->
         updated_schema = Map.put(schema, "examples", examples)
-        put_in_path(spec, path, updated_schema)
+
+        put_in(
+          spec,
+          Enum.map(["components", "schemas", schema_name], &Access.key(&1, %{})),
+          updated_schema
+        )
     end
   end
 
@@ -523,27 +528,5 @@ defmodule AshOaskit.SpecModifier do
       end)
 
     Map.put(spec, "paths", updated_paths)
-  end
-
-  @spec put_in_path(map(), list(String.t()), any()) :: map()
-  defp put_in_path(map, [key], value) do
-    Map.put(map, key, value)
-  end
-
-  defp put_in_path(map, [key | rest], value) do
-    nested = Map.get(map, key, %{})
-    Map.put(map, key, put_in_path(nested, rest, value))
-  end
-
-  @spec get_in_path(map(), list(String.t())) :: any()
-  defp get_in_path(map, [key]) do
-    Map.get(map, key)
-  end
-
-  defp get_in_path(map, [key | rest]) do
-    case Map.get(map, key) do
-      nil -> nil
-      nested -> get_in_path(nested, rest)
-    end
   end
 end

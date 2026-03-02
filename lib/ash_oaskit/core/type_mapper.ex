@@ -163,8 +163,6 @@ defmodule AshOaskit.TypeMapper do
     Code.ensure_loaded?(type) and
       function_exported?(type, :subtype_of, 0) and
       type.subtype_of() == Ash.Type.Union
-  rescue
-    _ -> false
   end
 
   # Map of simple types to their JSON Schema representation
@@ -242,27 +240,17 @@ defmodule AshOaskit.TypeMapper do
 
   # Build struct type schema
   defp build_struct_schema(module) when is_atom(module) do
-    if Code.ensure_loaded?(module) do
-      # Try to get struct fields
-      try do
-        fields = module.__struct__() |> Map.keys() |> Enum.reject(&(&1 == :__struct__))
+    if Code.ensure_loaded?(module) and function_exported?(module, :__struct__, 0) do
+      fields = module.__struct__() |> Map.keys() |> Enum.reject(&(&1 == :__struct__))
 
-        properties =
-          Map.new(fields, fn field -> {to_string(field), %{"type" => "string"}} end)
+      properties =
+        Map.new(fields, fn field -> {to_string(field), %{"type" => "string"}} end)
 
-        %{
-          "type" => "object",
-          "properties" => properties,
-          "description" => "Struct of type #{inspect(module)}"
-        }
-      rescue
-        e ->
-          Logger.debug(
-            "Failed to build struct schema for #{inspect(module)}: #{Exception.message(e)}"
-          )
-
-          %{"type" => "object"}
-      end
+      %{
+        "type" => "object",
+        "properties" => properties,
+        "description" => "Struct of type #{inspect(module)}"
+      }
     else
       %{"type" => "object"}
     end
@@ -355,7 +343,10 @@ defmodule AshOaskit.TypeMapper do
     type.json_schema([])
   rescue
     e ->
-      Logger.debug("Failed to get json_schema for #{inspect(type)}: #{Exception.message(e)}")
+      Logger.warning(fn ->
+        "Failed to get json_schema for #{inspect(type)}: #{Exception.message(e)}"
+      end)
+
       %{"type" => "string"}
   end
 
@@ -363,18 +354,12 @@ defmodule AshOaskit.TypeMapper do
   # Only called from normalize_complex_type which guarantees type is an atom
   defp get_union_types(type) do
     if Code.ensure_loaded?(type) and function_exported?(type, :constraints, 0) do
-      try do
-        constraints = type.constraints()
+      constraints = type.constraints()
 
-        if Keyword.has_key?(constraints, :types) do
-          {:union, Keyword.get(constraints, :types, [])}
-        else
-          false
-        end
-      rescue
-        e ->
-          Logger.debug("Failed to get union types for #{inspect(type)}: #{Exception.message(e)}")
-          false
+      if Keyword.has_key?(constraints, :types) do
+        {:union, Keyword.get(constraints, :types, [])}
+      else
+        false
       end
     else
       false

@@ -167,7 +167,10 @@ defmodule AshOaskit.Generators.Generator do
         fun.(spec)
 
       other ->
-        Logger.warning("AshOaskit: ignoring invalid modify_open_api hook: #{inspect(other)}")
+        Logger.warning(fn ->
+          "AshOaskit: ignoring invalid modify_open_api hook: #{inspect(other)}"
+        end)
+
         spec
     end
   end
