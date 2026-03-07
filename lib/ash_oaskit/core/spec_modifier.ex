@@ -179,9 +179,10 @@ defmodule AshOaskit.SpecModifier do
     description = Keyword.get(opts, :description)
     variables = Keyword.get(opts, :variables)
 
-    server = %{"url" => url}
-    server = if description, do: Map.put(server, "description", description), else: server
-    server = if variables, do: Map.put(server, "variables", variables), else: server
+    server =
+      %{"url" => url}
+      |> maybe_put("description", description)
+      |> maybe_put("variables", variables)
 
     servers = Map.get(spec, "servers", [])
     Map.put(spec, "servers", servers ++ [server])
@@ -225,9 +226,10 @@ defmodule AshOaskit.SpecModifier do
     description = Keyword.get(opts, :description)
     external_docs = Keyword.get(opts, :external_docs)
 
-    tag = %{"name" => name}
-    tag = if description, do: Map.put(tag, "description", description), else: tag
-    tag = if external_docs, do: Map.put(tag, "externalDocs", external_docs), else: tag
+    tag =
+      %{"name" => name}
+      |> maybe_put("description", description)
+      |> maybe_put("externalDocs", external_docs)
 
     tags = Map.get(spec, "tags", [])
     Map.put(spec, "tags", tags ++ [tag])
@@ -255,10 +257,7 @@ defmodule AshOaskit.SpecModifier do
   def add_external_docs(spec, url, opts \\ []) do
     description = Keyword.get(opts, :description)
 
-    external_docs = %{"url" => url}
-
-    external_docs =
-      if description, do: Map.put(external_docs, "description", description), else: external_docs
+    external_docs = maybe_put(%{"url" => url}, "description", description)
 
     Map.put(spec, "externalDocs", external_docs)
   end
@@ -507,26 +506,30 @@ defmodule AshOaskit.SpecModifier do
     paths = Map.get(spec, "paths", %{})
 
     updated_paths =
-      Enum.reduce(paths, %{}, fn {path, methods}, acc ->
-        updated_methods =
-          Enum.reduce(methods, %{}, fn {method, operation}, method_acc ->
-            should_update =
-              is_nil(operation_ids) or
-                Map.get(operation, "operationId") in operation_ids
-
-            updated_operation =
-              if should_update and is_map(operation) do
-                update_fn.(operation)
-              else
-                operation
-              end
-
-            Map.put(method_acc, method, updated_operation)
-          end)
-
-        Map.put(acc, path, updated_methods)
+      Map.new(paths, fn {path, methods} ->
+        {path, update_methods(methods, operation_ids, update_fn)}
       end)
 
     Map.put(spec, "paths", updated_paths)
   end
+
+  defp update_methods(methods, operation_ids, update_fn) do
+    Map.new(methods, fn {method, operation} ->
+      {method, maybe_update_operation(operation, operation_ids, update_fn)}
+    end)
+  end
+
+  defp maybe_update_operation(operation, operation_ids, update_fn)
+       when is_map(operation) do
+    if is_nil(operation_ids) or Map.get(operation, "operationId") in operation_ids do
+      update_fn.(operation)
+    else
+      operation
+    end
+  end
+
+  defp maybe_update_operation(operation, _operation_ids, _update_fn), do: operation
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end
