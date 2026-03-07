@@ -45,8 +45,15 @@ defmodule AshOaskit.Router.Plug do
 
   @doc false
   @impl Plug
-  def call(conn, _opts) do
-    config = conn.private[:ash_oaskit] || %{}
+  def call(conn, opts) do
+    # Config comes from either:
+    # 1. Phoenix Router: opts is the config map passed via Phoenix.Router.get/3
+    # 2. Plug.Router: config stored in conn.private[:ash_oaskit]
+    config =
+      case opts do
+        %{domains: _} -> opts
+        _ -> conn.private[:ash_oaskit] || %{}
+      end
 
     domains = Map.get(config, :domains, [])
 

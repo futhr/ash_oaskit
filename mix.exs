@@ -73,7 +73,7 @@ defmodule AshOaskit.MixProject do
       # Igniter for installation task (optional)
       {:igniter, "~> 0.5", optional: true},
 
-      # Phoenix integration (optional)
+      # Phoenix integration (optional for consumers, available in test)
       {:plug, "~> 1.14"},
       {:phoenix, "~> 1.7", optional: true},
 
