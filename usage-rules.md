@@ -32,15 +32,20 @@ mix ash_oaskit.generate -d MyApp.Blog,MyApp.Accounts -v 3.0 -o openapi.yaml -f y
 mix ash_oaskit.generate --domains MyApp.Blog --title "My API" --api-version 1.0.0
 ```
 
-## Phoenix Controller
+## Router Macro
 
 ```elixir
-# router.ex
-get "/openapi.json", AshOaskit.Controller, :spec,
-  private: %{ash_oaskit: [domains: [MyApp.Blog], title: "My API"]}
+# Phoenix Router
+use AshOaskit.Router,
+  domains: [MyApp.Blog],
+  open_api: "/openapi",
+  title: "My API"
 
-get "/openapi-3.0.json", AshOaskit.Controller, :spec_30,
-  private: %{ash_oaskit: [domains: [MyApp.Blog]]}
+# Plug.Router — same options, place before catch-all `match _`
+use AshOaskit.Router,
+  domains: [MyApp.Blog],
+  open_api: "/openapi",
+  title: "My API"
 ```
 
 ## Domain Setup

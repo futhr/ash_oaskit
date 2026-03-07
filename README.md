@@ -182,31 +182,49 @@ validated = AshOaskit.validate!(spec)
 | `:match` (Regex) | `pattern` |
 | `:one_of` | `enum` |
 
-## Phoenix Integration
+## Router Integration
 
-### Router Setup
+### Phoenix Router
 
 ```elixir
-# router.ex
-scope "/api" do
-  # Serve default version
-  get "/openapi.json", AshOaskit.Controller, :spec,
-    private: %{
-      ash_oaskit: [
-        domains: [MyApp.Blog, MyApp.Accounts],
-        title: "My API",
-        api_version: "1.0.0"
-      ]
-    }
+defmodule MyAppWeb.Router do
+  use MyAppWeb, :router
 
-  # Version-specific endpoints
-  get "/openapi-3.0.json", AshOaskit.Controller, :spec_30,
-    private: %{ash_oaskit: [domains: [MyApp.Blog]]}
+  use AshOaskit.Router,
+    domains: [MyApp.Blog, MyApp.Accounts],
+    open_api: "/docs/openapi",
+    title: "My API",
+    version: "1.0.0"
 
-  get "/openapi-3.1.json", AshOaskit.Controller, :spec_31,
-    private: %{ash_oaskit: [domains: [MyApp.Blog]]}
+  # Your other routes, pipelines, scopes, etc.
 end
 ```
+
+### Plug.Router
+
+```elixir
+defmodule MyApp.Router do
+  use Plug.Router
+
+  plug :match
+  plug :dispatch
+
+  use AshOaskit.Router,
+    domains: [MyApp.Blog],
+    open_api: "/openapi",
+    title: "My API"
+
+  match _ do
+    send_resp(conn, 404, "Not Found")
+  end
+end
+```
+
+This generates versioned endpoints automatically:
+
+- `GET /docs/openapi.json` — default version (3.1) spec
+- `GET /docs/openapi/3.0.json` — OpenAPI 3.0 spec
+- `GET /docs/openapi/3.1.json` — OpenAPI 3.1 spec
 
 ## AshJsonApi Integration
 
