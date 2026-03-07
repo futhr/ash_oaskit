@@ -27,6 +27,7 @@
           {Credo.Check.Consistency.SpaceAroundOperators, []},
           {Credo.Check.Consistency.SpaceInParentheses, []},
           {Credo.Check.Consistency.TabsOrSpaces, []},
+          {Credo.Check.Consistency.UnusedVariableNames, [force: :anonymous]},
 
           # Design
           {Credo.Check.Design.AliasUsage,
