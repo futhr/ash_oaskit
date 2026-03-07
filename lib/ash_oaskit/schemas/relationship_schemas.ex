@@ -211,13 +211,9 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemas do
       :one
   """
   @spec relationship_cardinality(map()) :: :one | :many
-  def relationship_cardinality(rel) do
-    case Map.get(rel, :cardinality) do
-      :many -> :many
-      :one -> :one
-      nil -> if Map.get(rel, :type) in [:has_many, :many_to_many], do: :many, else: :one
-    end
-  end
+  def relationship_cardinality(%{cardinality: c}) when c in [:one, :many], do: c
+  def relationship_cardinality(%{type: t}) when t in [:has_many, :many_to_many], do: :many
+  def relationship_cardinality(_), do: :one
 
   @doc """
   Gets public (non-private) relationships for a resource.

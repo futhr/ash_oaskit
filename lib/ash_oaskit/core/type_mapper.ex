@@ -146,13 +146,11 @@ defmodule AshOaskit.TypeMapper do
   # the type module's constraints/0 (which returns constraint definitions).
   defp resolve_type(%{type: type, constraints: constraints})
        when is_atom(type) and is_list(constraints) do
-    if union_newtype?(type) do
-      case Keyword.get(constraints, :types) do
-        types when is_list(types) and types != [] -> {:union, types}
-        _ -> type
-      end
+    with true <- union_newtype?(type),
+         types when is_list(types) and types != [] <- Keyword.get(constraints, :types) do
+      {:union, types}
     else
-      type
+      _ -> type
     end
   end
 
@@ -353,16 +351,12 @@ defmodule AshOaskit.TypeMapper do
   # Check if a type is a union type and return {:union, types} or false
   # Only called from normalize_complex_type which guarantees type is an atom
   defp get_union_types(type) do
-    if Code.ensure_loaded?(type) and function_exported?(type, :constraints, 0) do
-      constraints = type.constraints()
-
-      if Keyword.has_key?(constraints, :types) do
-        {:union, Keyword.get(constraints, :types, [])}
-      else
-        false
-      end
+    with true <- Code.ensure_loaded?(type),
+         true <- function_exported?(type, :constraints, 0),
+         types when is_list(types) <- Keyword.get(type.constraints(), :types) do
+      {:union, types}
     else
-      false
+      _ -> false
     end
   end
 

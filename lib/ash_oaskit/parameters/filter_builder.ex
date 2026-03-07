@@ -284,36 +284,33 @@ defmodule AshOaskit.FilterBuilder do
   defp normalize_type(_), do: :string
 
   # Returns available operators for a type
+  @base_ops [:eq, :ne, :in, :not_in, :is_nil]
+  @string_ops @base_ops ++
+                [:contains, :starts_with, :ends_with, :icontains, :istarts_with, :iends_with]
+  @comparable_ops @base_ops ++ [:gt, :gte, :lt, :lte]
+  @boolean_ops [:eq, :ne, :is_nil]
+  @array_ops [:eq, :ne, :is_nil, :contains, :has_any, :has_all]
+
+  @type_operators %{
+    string: @string_ops,
+    ci_string: @string_ops,
+    integer: @comparable_ops,
+    float: @comparable_ops,
+    decimal: @comparable_ops,
+    date: @comparable_ops,
+    time: @comparable_ops,
+    datetime: @comparable_ops,
+    utc_datetime: @comparable_ops,
+    utc_datetime_usec: @comparable_ops,
+    naive_datetime: @comparable_ops,
+    boolean: @boolean_ops
+  }
+
   @spec operators_for_type(atom() | tuple()) :: [atom()]
   defp operators_for_type(type) do
-    base_ops = [:eq, :ne, :in, :not_in, :is_nil]
-
     case normalize_type(type) do
-      t when t in [:string, :ci_string] ->
-        base_ops ++ [:contains, :starts_with, :ends_with, :icontains, :istarts_with, :iends_with]
-
-      t
-      when t in [
-             :integer,
-             :float,
-             :decimal,
-             :date,
-             :time,
-             :datetime,
-             :utc_datetime,
-             :utc_datetime_usec,
-             :naive_datetime
-           ] ->
-        base_ops ++ [:gt, :gte, :lt, :lte]
-
-      :boolean ->
-        [:eq, :ne, :is_nil]
-
-      {:array, _} ->
-        [:eq, :ne, :is_nil, :contains, :has_any, :has_all]
-
-      _ ->
-        base_ops
+      {:array, _} -> @array_ops
+      t -> Map.get(@type_operators, t, @base_ops)
     end
   end
 
