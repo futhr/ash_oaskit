@@ -161,7 +161,7 @@ All type conversions go through `TypeMapper`. When adding new types:
 
 ### Router Macro
 
-`AshOaskit.Router` provides a `use` macro for Phoenix routers that auto-generates versioned spec endpoints. Supports custom SpecBuilder, format selection (JSON/YAML), and Phoenix router introspection via `OpenApiController` behaviour.
+`AshOaskit.Router` provides a `use` macro for both Phoenix Router and Plug.Router that auto-generates versioned spec endpoints. Automatically detects the router type and generates appropriate routes inline. Supports custom SpecBuilder, format selection (JSON/YAML), and Phoenix router introspection.
 
 ## Testing
 
