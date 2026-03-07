@@ -528,8 +528,8 @@ defmodule AshOaskit.SpecModifier do
     end
   end
 
-  defp maybe_update_operation(operation, _operation_ids, _update_fn), do: operation
+  defp maybe_update_operation(operation, _, _), do: operation
 
-  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, _, nil), do: map
   defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end

@@ -218,7 +218,7 @@ defmodule AshOaskit.MultipartSupport do
 
   """
   @spec build_multipart_schema(map() | struct(), keyword()) :: map()
-  def build_multipart_schema(action, _opts) do
+  def build_multipart_schema(action, _) do
     file_args = file_arguments(action)
     non_file_args = non_file_arguments(action)
 

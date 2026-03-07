@@ -166,7 +166,7 @@ defmodule AshOaskit.ControllerTest do
       body = Jason.decode!(result.resp_body)
 
       # Info should not have nil values
-      Enum.each(body["info"], fn {_key, value} ->
+      Enum.each(body["info"], fn {_, value} ->
         refute is_nil(value)
       end)
     end

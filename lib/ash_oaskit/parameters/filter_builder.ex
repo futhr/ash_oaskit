@@ -148,7 +148,7 @@ defmodule AshOaskit.FilterBuilder do
   A map representing the JSON Schema for the filter object.
   """
   @spec build_filter_schema(module(), keyword()) :: map()
-  def build_filter_schema(resource, _opts \\ []) do
+  def build_filter_schema(resource, _ \\ []) do
     attribute_filters = build_attribute_filters(resource)
     boolean_filters = build_boolean_filters()
 
@@ -322,13 +322,13 @@ defmodule AshOaskit.FilterBuilder do
   defp operator_schema(:gte, base_schema), do: base_schema
   defp operator_schema(:lt, base_schema), do: base_schema
   defp operator_schema(:lte, base_schema), do: base_schema
-  defp operator_schema(:contains, _base_schema), do: %{type: :string}
-  defp operator_schema(:starts_with, _base_schema), do: %{type: :string}
-  defp operator_schema(:ends_with, _base_schema), do: %{type: :string}
-  defp operator_schema(:icontains, _base_schema), do: %{type: :string}
-  defp operator_schema(:istarts_with, _base_schema), do: %{type: :string}
-  defp operator_schema(:iends_with, _base_schema), do: %{type: :string}
-  defp operator_schema(:is_nil, _base_schema), do: %{type: :boolean}
+  defp operator_schema(:contains, _), do: %{type: :string}
+  defp operator_schema(:starts_with, _), do: %{type: :string}
+  defp operator_schema(:ends_with, _), do: %{type: :string}
+  defp operator_schema(:icontains, _), do: %{type: :string}
+  defp operator_schema(:istarts_with, _), do: %{type: :string}
+  defp operator_schema(:iends_with, _), do: %{type: :string}
+  defp operator_schema(:is_nil, _), do: %{type: :boolean}
   defp operator_schema(:in, base_schema), do: %{type: :array, items: base_schema}
   defp operator_schema(:not_in, base_schema), do: %{type: :array, items: base_schema}
   defp operator_schema(:has_any, base_schema), do: %{type: :array, items: base_schema}

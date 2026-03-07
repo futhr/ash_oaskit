@@ -528,7 +528,7 @@ defmodule AshOaskit.SecurityTest do
       ]
 
       for scheme <- schemes do
-        assert {:ok, _json} = Jason.encode(scheme)
+        assert {:ok, _} = Jason.encode(scheme)
       end
     end
 
@@ -541,14 +541,14 @@ defmodule AshOaskit.SecurityTest do
       ]
 
       for req <- requirements do
-        assert {:ok, _json} = Jason.encode(req)
+        assert {:ok, _} = Jason.encode(req)
       end
     end
 
     test "complete config can be serialized to JSON" do
       config = Security.build_complete_security_config(schemes: [:bearer, :api_key])
 
-      assert {:ok, _json} = Jason.encode(config)
+      assert {:ok, _} = Jason.encode(config)
     end
   end
 

@@ -420,7 +420,7 @@ defmodule AshOaskit.ResourceIdentifier do
       }
   """
   @spec build_generic_identifier_schema(keyword()) :: map()
-  def build_generic_identifier_schema(_opts \\ []) do
+  def build_generic_identifier_schema(_ \\ []) do
     %{
       type: :object,
       required: ["type", "id"],
@@ -460,7 +460,7 @@ defmodule AshOaskit.ResourceIdentifier do
       }
   """
   @spec build_polymorphic_identifier_schema(list(String.t()), keyword()) :: map()
-  def build_polymorphic_identifier_schema(resource_types, _opts \\ []) do
+  def build_polymorphic_identifier_schema(resource_types, _ \\ []) do
     %{
       type: :object,
       required: ["type", "id"],
@@ -485,7 +485,7 @@ defmodule AshOaskit.ResourceIdentifier do
   end
 
   @spec build_relationship_links_schema(String.t()) :: map()
-  defp build_relationship_links_schema(_version) do
+  defp build_relationship_links_schema(_) do
     %{
       type: :object,
       properties: %{

@@ -100,7 +100,7 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
   # Controller without the behaviour (should be excluded)
   defmodule TestPlainController do
     @spec index(any(), any()) :: :ok
-    def index(_conn, _params), do: :ok
+    def index(_, _), do: :ok
   end
 
   # Tag using atom keys
@@ -293,8 +293,8 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
       routes = PhoenixIntrospection.extract_routes(TestRouter)
       paths = PhoenixIntrospection.routes_to_paths(routes)
 
-      for {_path, operations} <- paths do
-        for {method, _op} <- operations do
+      for {_, operations} <- paths do
+        for {method, _} <- operations do
           assert method == String.downcase(method)
         end
       end

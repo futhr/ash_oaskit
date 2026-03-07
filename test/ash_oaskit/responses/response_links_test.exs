@@ -539,7 +539,7 @@ defmodule AshOaskit.ResponseLinksTest do
     test "all uri schemas have format: uri" do
       schema = ResponseLinks.build_collection_links_schema(version: "3.1")
 
-      for {_key, value} <- schema[:properties] do
+      for {_, value} <- schema[:properties] do
         assert value[:format] == :uri
       end
     end
@@ -547,7 +547,7 @@ defmodule AshOaskit.ResponseLinksTest do
     test "component schemas can be serialized to JSON" do
       schemas = ResponseLinks.build_links_component_schemas()
 
-      assert {:ok, _json} = Jason.encode(schemas)
+      assert {:ok, _} = Jason.encode(schemas)
     end
   end
 

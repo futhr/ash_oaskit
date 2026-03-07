@@ -130,7 +130,7 @@ defmodule AshOaskit.ResponseMeta do
   @spec build_page_info_schema(atom(), String.t()) :: map()
   def build_page_info_schema(strategy \\ :both, version \\ "3.1")
 
-  def build_page_info_schema(:offset, _version) do
+  def build_page_info_schema(:offset, _) do
     %{
       type: :object,
       properties: %{
@@ -193,7 +193,7 @@ defmodule AshOaskit.ResponseMeta do
     }
   end
 
-  def build_page_info_schema(_unknown, version) do
+  def build_page_info_schema(_, version) do
     build_page_info_schema(:both, version)
   end
 
@@ -216,7 +216,7 @@ defmodule AshOaskit.ResponseMeta do
       }
   """
   @spec build_resource_meta_schema(keyword()) :: map()
-  def build_resource_meta_schema(_opts \\ []) do
+  def build_resource_meta_schema(_ \\ []) do
     %{
       type: :object,
       additionalProperties: true,

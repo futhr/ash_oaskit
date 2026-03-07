@@ -25,7 +25,7 @@ if Code.ensure_loaded?(Igniter) do
 
     @impl Igniter.Mix.Task
     @spec info([String.t()], term()) :: Igniter.Mix.Task.Info.t()
-    def info(_argv, _parent) do
+    def info(_, _) do
       %Igniter.Mix.Task.Info{
         group: :ash_oaskit,
         adds_deps: [],
@@ -72,7 +72,7 @@ else
 
     @impl Mix.Task
     @spec run([String.t()]) :: no_return()
-    def run(_argv) do
+    def run(_) do
       Mix.shell().error("""
       The task 'ash_oaskit.install' requires igniter.
 

@@ -572,7 +572,7 @@ defmodule AshOaskit.ResponseMetaTest do
     test "component schemas can be serialized to JSON" do
       schemas = ResponseMeta.build_meta_component_schemas()
 
-      assert {:ok, _json} = Jason.encode(schemas)
+      assert {:ok, _} = Jason.encode(schemas)
     end
 
     test "integer properties have correct type" do

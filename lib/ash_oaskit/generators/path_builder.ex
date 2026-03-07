@@ -147,11 +147,11 @@ defmodule AshOaskit.Generators.PathBuilder do
   defp build_ash_paths(domains, opts) do
     domains
     |> Enum.flat_map(&get_domain_routes/1)
-    |> Enum.group_by(fn {path, _route} -> convert_path_params(path) end)
+    |> Enum.group_by(fn {path, _} -> convert_path_params(path) end)
     |> Enum.map(fn {path, routes} ->
       operations =
         routes
-        |> Enum.map(fn {_path, route} ->
+        |> Enum.map(fn {_, route} ->
           {route_to_method(route), build_operation(route, opts)}
         end)
         |> Map.new()
@@ -176,7 +176,7 @@ defmodule AshOaskit.Generators.PathBuilder do
 
   # Deep merges two path maps, combining operations for the same path
   defp deep_merge_paths(map1, map2) do
-    Map.merge(map1, map2, fn _path, ops1, ops2 ->
+    Map.merge(map1, map2, fn _, ops1, ops2 ->
       Map.merge(ops1, ops2)
     end)
   end
@@ -250,7 +250,7 @@ defmodule AshOaskit.Generators.PathBuilder do
       [^resource_plural | _] -> nil
       # Top-level route (singular)
       [^resource_name | _] -> nil
-      [parent | _rest] -> String.replace(parent, "-", "_")
+      [parent | _] -> String.replace(parent, "-", "_")
       _ -> nil
     end
   end
@@ -416,7 +416,7 @@ defmodule AshOaskit.Generators.PathBuilder do
   # Removes nil values from a map
   defp reject_nil_values(map) do
     map
-    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.reject(fn {_, v} -> is_nil(v) end)
     |> Map.new()
   end
 end

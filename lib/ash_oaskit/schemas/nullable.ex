@@ -86,7 +86,7 @@ defmodule AshOaskit.Schemas.Nullable do
   """
   @spec make_nullable(map(), String.t()) :: map()
   def make_nullable(schema, "3.1"), do: make_nullable_31(schema)
-  def make_nullable(schema, _version), do: Map.put(schema, :nullable, true)
+  def make_nullable(schema, _), do: Map.put(schema, :nullable, true)
 
   @doc ~S"""
   Makes a complex schema nullable using a `oneOf` wrapper.
@@ -126,7 +126,7 @@ defmodule AshOaskit.Schemas.Nullable do
   """
   @spec make_nullable_oneof(map(), String.t()) :: map()
   def make_nullable_oneof(schema, "3.1"), do: make_nullable_oneof_31(schema)
-  def make_nullable_oneof(schema, _version), do: Map.put(schema, :nullable, true)
+  def make_nullable_oneof(schema, _), do: Map.put(schema, :nullable, true)
 
   defp make_nullable_31(%{type: type} = schema) when is_atom(type) do
     Map.put(schema, :type, [type, :null])

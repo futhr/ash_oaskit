@@ -636,7 +636,7 @@ defmodule AshOaskit.SpecModifierTest do
       ]
 
       for result <- results do
-        assert {:ok, _json} = Jason.encode(result)
+        assert {:ok, _} = Jason.encode(result)
       end
     end
   end

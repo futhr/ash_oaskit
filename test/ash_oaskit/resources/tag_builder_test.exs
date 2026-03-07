@@ -420,7 +420,7 @@ defmodule AshOaskit.TagBuilderTest do
         TagBuilder.build_tag("Comments", nil, external_docs: %{url: "https://docs.example.com"})
       ]
 
-      assert {:ok, _json} = Jason.encode(tags)
+      assert {:ok, _} = Jason.encode(tags)
     end
   end
 

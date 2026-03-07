@@ -687,7 +687,7 @@ defmodule AshOaskit.TypeMapperTest do
     defmodule CustomTypeWithJsonSchema do
       @moduledoc false
       @spec json_schema(keyword()) :: map()
-      def json_schema(_opts) do
+      def json_schema(_) do
         %{"type" => "string", "format" => "custom-format", "x-custom" => true}
       end
     end
@@ -695,7 +695,7 @@ defmodule AshOaskit.TypeMapperTest do
     defmodule CustomTypeWithFailingJsonSchema do
       @moduledoc false
       @spec json_schema(keyword()) :: no_return()
-      def json_schema(_opts) do
+      def json_schema(_) do
         raise "intentional error"
       end
     end
@@ -703,7 +703,7 @@ defmodule AshOaskit.TypeMapperTest do
     defmodule CustomTypeWithObjectSchema do
       @moduledoc false
       @spec json_schema(keyword()) :: map()
-      def json_schema(_opts) do
+      def json_schema(_) do
         %{"type" => "object", "properties" => %{"key" => %{"type" => "string"}}}
       end
     end
@@ -985,7 +985,7 @@ defmodule AshOaskit.TypeMapperTest do
     defmodule EmailType do
       @moduledoc false
       @spec json_schema(keyword()) :: map()
-      def json_schema(_opts), do: %{"type" => "string", "format" => "email"}
+      def json_schema(_), do: %{"type" => "string", "format" => "email"}
     end
 
     test "resolves custom type via json_schema/1 in 3.0 mode with nullable" do

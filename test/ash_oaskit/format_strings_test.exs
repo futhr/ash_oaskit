@@ -299,7 +299,7 @@ defmodule AshOaskit.FormatStringsTest do
 
       # Check that at least some schemas have format fields
       all_properties =
-        Enum.flat_map(schemas, fn {_name, schema} ->
+        Enum.flat_map(schemas, fn {_, schema} ->
           Map.values(Map.get(schema, "properties", %{}))
         end)
 
@@ -316,10 +316,10 @@ defmodule AshOaskit.FormatStringsTest do
 
       # Find properties that should be UUIDs (like id fields)
       uuid_properties =
-        Enum.flat_map(schemas, fn {_name, schema} ->
+        Enum.flat_map(schemas, fn {_, schema} ->
           properties = Map.get(schema, "properties", %{})
 
-          Enum.filter(properties, fn {_key, prop} ->
+          Enum.filter(properties, fn {_, prop} ->
             prop["format"] == "uuid"
           end)
         end)

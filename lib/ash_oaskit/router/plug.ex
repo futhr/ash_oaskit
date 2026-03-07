@@ -114,7 +114,7 @@ defmodule AshOaskit.Router.Plug do
     end
   end
 
-  defp send_spec(conn, spec, _unknown) do
+  defp send_spec(conn, spec, _) do
     send_spec(conn, spec, :json)
   end
 end

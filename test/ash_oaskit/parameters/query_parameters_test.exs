@@ -151,7 +151,7 @@ defmodule AshOaskit.QueryParametersTest do
     test "each property is string type" do
       param = QueryParameters.build_fields_parameter(["post", "author"])
 
-      Enum.each(param.schema.properties, fn {_name, prop} ->
+      Enum.each(param.schema.properties, fn {_, prop} ->
         assert prop.type == :string
       end)
     end
@@ -404,7 +404,7 @@ defmodule AshOaskit.QueryParametersTest do
     test "pagination properties have descriptions" do
       param = QueryParameters.build_page_parameter([])
 
-      Enum.each(param.schema.properties, fn {_name, prop} ->
+      Enum.each(param.schema.properties, fn {_, prop} ->
         assert Map.has_key?(prop, :description)
       end)
     end
@@ -471,7 +471,7 @@ defmodule AshOaskit.QueryParametersTest do
 
       paths = spec["paths"] || %{}
 
-      Enum.each(paths, fn {_path, path_item} ->
+      Enum.each(paths, fn {_, path_item} ->
         Enum.each(path_item, fn
           {method, operation} when method in ~w(get post put patch delete) ->
             parameters = operation["parameters"] || []

@@ -47,7 +47,7 @@ defmodule AshOaskit.ParameterStylesTest do
       spec = AshOaskit.spec_31(domains: [AshOaskit.Test.Blog])
       paths = spec["paths"] || %{}
 
-      Enum.each(paths, fn {_path, path_item} ->
+      Enum.each(paths, fn {_, path_item} ->
         Enum.each(path_item, fn
           {method, operation} when method in ~w(get post patch put delete) ->
             parameters = operation["parameters"] || []
@@ -133,7 +133,7 @@ defmodule AshOaskit.ParameterStylesTest do
 
       # Collect all query parameters
       query_params =
-        Enum.flat_map(paths, fn {_path, path_item} ->
+        Enum.flat_map(paths, fn {_, path_item} ->
           Enum.flat_map(path_item, fn
             {method, operation} when method in ~w(get post patch put delete) ->
               parameters = operation["parameters"] || []
@@ -262,7 +262,7 @@ defmodule AshOaskit.ParameterStylesTest do
       spec = AshOaskit.spec_31(domains: [AshOaskit.Test.Blog])
       paths = spec["paths"] || %{}
 
-      Enum.each(paths, fn {_path, path_item} ->
+      Enum.each(paths, fn {_, path_item} ->
         Enum.each(path_item, fn
           {method, operation} when method in ~w(get post patch put delete) ->
             parameters = operation["parameters"] || []
@@ -286,7 +286,7 @@ defmodule AshOaskit.ParameterStylesTest do
       spec = AshOaskit.spec_31(domains: [AshOaskit.Test.Blog])
       paths = spec["paths"] || %{}
 
-      Enum.each(paths, fn {_path, path_item} ->
+      Enum.each(paths, fn {_, path_item} ->
         Enum.each(path_item, fn
           {method, operation} when method in ~w(get post patch put delete) ->
             parameters = operation["parameters"] || []
@@ -371,7 +371,7 @@ defmodule AshOaskit.ParameterStylesTest do
 
       valid_locations = ["query", "header", "path", "cookie"]
 
-      Enum.each(paths, fn {_path, path_item} ->
+      Enum.each(paths, fn {_, path_item} ->
         Enum.each(path_item, fn
           {method, operation} when method in ~w(get post patch put delete) ->
             parameters = operation["parameters"] || []

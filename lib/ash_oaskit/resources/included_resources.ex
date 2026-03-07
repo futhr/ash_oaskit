@@ -118,7 +118,7 @@ defmodule AshOaskit.IncludedResources do
   @spec build_included_schema_for_types(list(String.t()), keyword()) :: map()
   def build_included_schema_for_types(resource_types, opts \\ [])
 
-  def build_included_schema_for_types([], _opts), do: build_empty_included_schema()
+  def build_included_schema_for_types([], _), do: build_empty_included_schema()
 
   def build_included_schema_for_types(resource_types, opts) do
     prefix = Keyword.get(opts, :schema_prefix, "")
@@ -389,7 +389,7 @@ defmodule AshOaskit.IncludedResources do
   end
 
   @spec get_related_resources_recursive(module(), non_neg_integer(), map()) :: map()
-  defp get_related_resources_recursive(_resource, 0, seen), do: seen
+  defp get_related_resources_recursive(_, 0, seen), do: seen
 
   defp get_related_resources_recursive(resource, depth, seen) do
     relationships = get_relationships(resource)
@@ -408,7 +408,7 @@ defmodule AshOaskit.IncludedResources do
   end
 
   @spec resolve_path_to_resource(module(), list(String.t())) :: list(String.t())
-  defp resolve_path_to_resource(_resource, []), do: []
+  defp resolve_path_to_resource(_, []), do: []
 
   defp resolve_path_to_resource(resource, [rel_name | rest]) do
     relationships = get_relationships(resource)
