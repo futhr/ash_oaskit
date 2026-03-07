@@ -62,7 +62,7 @@ defmodule AshOaskit.KitchenSinkTest do
 
     test "3.0 uses anyOf with nullable flag", %{spec_30: spec} do
       content = get_attr(spec, "content")
-      assert %{"anyOf" => _variants} = content
+      assert %{"anyOf" => _} = content
       assert content["nullable"] == true
     end
   end
@@ -226,7 +226,7 @@ defmodule AshOaskit.KitchenSinkTest do
     end
 
     test "3.0 never uses type arrays", %{spec_30: spec} do
-      walk_schemas(spec, fn _path, schema ->
+      walk_schemas(spec, fn _, schema ->
         if is_map(schema) and Map.has_key?(schema, "type") do
           refute is_list(schema["type"]),
                  "3.0 must not use type arrays, found: #{inspect(schema["type"])}"
@@ -235,7 +235,7 @@ defmodule AshOaskit.KitchenSinkTest do
     end
 
     test "3.1 never uses nullable flag", %{spec_31: spec} do
-      walk_schemas(spec, fn _path, schema ->
+      walk_schemas(spec, fn _, schema ->
         if is_map(schema) do
           refute Map.has_key?(schema, "nullable"),
                  "3.1 must not use nullable flag, found in: #{inspect(schema)}"
@@ -272,5 +272,5 @@ defmodule AshOaskit.KitchenSinkTest do
     end)
   end
 
-  defp walk_value(_path, _value, _fun), do: :ok
+  defp walk_value(_, _, _), do: :ok
 end

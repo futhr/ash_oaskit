@@ -145,7 +145,7 @@ defmodule AshOaskit.SortBuilder do
 
   """
   @spec build_sort_schema([atom()], keyword()) :: map()
-  def build_sort_schema(sortable_fields, _opts) do
+  def build_sort_schema(sortable_fields, _) do
     field_list = Enum.map_join(sortable_fields, ", ", &to_string/1)
 
     %{
@@ -182,7 +182,7 @@ defmodule AshOaskit.SortBuilder do
 
   """
   @spec build_sort_enum_schema([atom()], keyword()) :: map()
-  def build_sort_enum_schema(sortable_fields, _opts) do
+  def build_sort_enum_schema(sortable_fields, _) do
     enum_values =
       Enum.flat_map(sortable_fields, fn field ->
         name = to_string(field)

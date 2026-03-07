@@ -401,7 +401,7 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
         EmbeddedSchemas.maybe_add_embedded_schema(
           builder,
           "string_type",
-          fn b, _t -> b end
+          fn b, _ -> b end
         )
 
       assert result == builder
@@ -414,7 +414,7 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
         EmbeddedSchemas.maybe_add_embedded_schema(
           builder,
           {:map, :string, :integer},
-          fn b, _t -> b end
+          fn b, _ -> b end
         )
 
       assert result == builder
@@ -428,7 +428,7 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
         EmbeddedSchemas.maybe_add_embedded_schema(
           builder,
           {:array, AshOaskit.Test.Address},
-          fn b, _t ->
+          fn b, _ ->
             :atomics.add(called, 1, 1)
             b
           end
@@ -446,7 +446,7 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
         EmbeddedSchemas.maybe_add_embedded_schema(
           builder,
           :string,
-          fn b, _t -> Map.put(b, :called, true) end
+          fn b, _ -> Map.put(b, :called, true) end
         )
 
       # add_fn should NOT have been called since :string is not an embedded resource

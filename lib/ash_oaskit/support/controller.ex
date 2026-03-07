@@ -54,7 +54,7 @@ defmodule AshOaskit.Controller do
   Serve the OpenAPI spec using the configured default version.
   """
   @spec spec(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def spec(conn, _params) do
+  def spec(conn, _) do
     opts = get_options(conn)
     spec = AshOaskit.spec(opts)
     json_response(conn, spec)
@@ -64,7 +64,7 @@ defmodule AshOaskit.Controller do
   Serve an OpenAPI 3.0 spec.
   """
   @spec spec_30(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def spec_30(conn, _params) do
+  def spec_30(conn, _) do
     opts = conn |> get_options() |> Keyword.put(:version, "3.0")
     spec = AshOaskit.spec(opts)
     json_response(conn, spec)
@@ -74,7 +74,7 @@ defmodule AshOaskit.Controller do
   Serve an OpenAPI 3.1 spec.
   """
   @spec spec_31(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def spec_31(conn, _params) do
+  def spec_31(conn, _) do
     opts = conn |> get_options() |> Keyword.put(:version, "3.1")
     spec = AshOaskit.spec(opts)
     json_response(conn, spec)
@@ -95,7 +95,7 @@ defmodule AshOaskit.Controller do
 
     default_opts
     |> Keyword.merge(route_opts)
-    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.reject(fn {_, v} -> is_nil(v) end)
   end
 
   defp json_response(conn, spec) do

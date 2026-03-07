@@ -41,7 +41,7 @@ defmodule AshOaskit.RouterKitchenSinkTest do
     def init(opts), do: opts
 
     @impl true
-    def call(conn, _opts) do
+    def call(conn, _) do
       conn
       |> Plug.Conn.put_resp_content_type("application/json")
       |> Plug.Conn.send_resp(200, Jason.encode!(%{status: "ok"}))

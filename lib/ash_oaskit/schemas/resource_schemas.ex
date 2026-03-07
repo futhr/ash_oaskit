@@ -446,7 +446,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
     Map.get(attr, :default) == nil
   end
 
-  def create_required_attribute?(_attr), do: false
+  def create_required_attribute?(_), do: false
 
   # Adds required field to schema if there are required properties
   @spec maybe_add_required(map(), [String.t()]) :: map()

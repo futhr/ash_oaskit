@@ -382,5 +382,5 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
     type_to_schema(Map.get(agg, :type, default_type))
   end
 
-  defp dynamic_aggregate_schema(_kind, _agg), do: %{}
+  defp dynamic_aggregate_schema(_, _), do: %{}
 end

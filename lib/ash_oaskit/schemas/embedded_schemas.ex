@@ -132,7 +132,7 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemas do
     end
   end
 
-  def maybe_add_embedded_schema(builder, _type, _add_fn), do: builder
+  def maybe_add_embedded_schema(builder, _, _), do: builder
 
   @doc """
   Adds schema for an embedded resource.
@@ -232,7 +232,7 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemas do
   """
   @spec required_attribute?(map()) :: boolean()
   def required_attribute?(%{allow_nil?: false}), do: true
-  def required_attribute?(_attr), do: false
+  def required_attribute?(_), do: false
 
   # Adds required field to schema if there are required properties
   @spec maybe_add_required(map(), [String.t()]) :: map()

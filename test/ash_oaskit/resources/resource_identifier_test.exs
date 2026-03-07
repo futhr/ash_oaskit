@@ -400,7 +400,7 @@ defmodule AshOaskit.ResourceIdentifierTest do
     test "all schemas can be serialized to JSON" do
       schemas = ResourceIdentifier.build_identifier_component_schemas("Post")
 
-      assert {:ok, _json} = Jason.encode(schemas)
+      assert {:ok, _} = Jason.encode(schemas)
     end
 
     test "identifier schemas have proper required fields" do

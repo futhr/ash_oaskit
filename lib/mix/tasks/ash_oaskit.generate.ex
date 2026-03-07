@@ -122,6 +122,6 @@ defmodule Mix.Tasks.AshOaskit.Generate do
     end
   end
 
-  defp maybe_add(opts, _key, nil), do: opts
+  defp maybe_add(opts, _, nil), do: opts
   defp maybe_add(opts, key, value), do: Keyword.put(opts, key, value)
 end

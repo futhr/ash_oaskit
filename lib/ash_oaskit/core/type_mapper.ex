@@ -213,7 +213,7 @@ defmodule AshOaskit.TypeMapper do
   defp complex_type_schema({:union, types}), do: build_union_schema(types)
   defp complex_type_schema({:struct, module}), do: build_struct_schema(module)
   defp complex_type_schema({:custom, custom_schema}), do: custom_schema
-  defp complex_type_schema(_unknown), do: %{"type" => "string"}
+  defp complex_type_schema(_), do: %{"type" => "string"}
 
   # Build union type schema using anyOf
   defp build_union_schema(types) when is_list(types) do
@@ -227,7 +227,7 @@ defmodule AshOaskit.TypeMapper do
         type when is_atom(type) ->
           ash_type_to_base_schema(type)
 
-        _other ->
+        _ ->
           %{"type" => "string"}
       end)
 
@@ -420,7 +420,7 @@ defmodule AshOaskit.TypeMapper do
       {:match, pattern}, acc when is_struct(pattern, Regex) ->
         Map.put(acc, "pattern", Regex.source(pattern))
 
-      {:match, {Spark.Regex, :cache, [pattern_string, _opts]}}, acc
+      {:match, {Spark.Regex, :cache, [pattern_string, _]}}, acc
       when is_binary(pattern_string) ->
         Map.put(acc, "pattern", pattern_string)
 

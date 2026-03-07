@@ -32,7 +32,7 @@ defmodule AshOaskit.ResponseCodesTest do
       paths = spec["paths"] || %{}
 
       # GET operations should have 200 response
-      Enum.each(paths, fn {_path, path_item} ->
+      Enum.each(paths, fn {_, path_item} ->
         if get_op = path_item["get"] do
           responses = get_op["responses"] || %{}
 
@@ -47,7 +47,7 @@ defmodule AshOaskit.ResponseCodesTest do
       paths = spec["paths"] || %{}
 
       # POST operations should have 201 or 200 response
-      Enum.each(paths, fn {_path, path_item} ->
+      Enum.each(paths, fn {_, path_item} ->
         if post_op = path_item["post"] do
           responses = post_op["responses"] || %{}
 
@@ -62,7 +62,7 @@ defmodule AshOaskit.ResponseCodesTest do
       paths = spec["paths"] || %{}
 
       # DELETE operations typically return 204 or 200
-      Enum.each(paths, fn {_path, path_item} ->
+      Enum.each(paths, fn {_, path_item} ->
         if delete_op = path_item["delete"] do
           responses = delete_op["responses"] || %{}
 
@@ -82,7 +82,7 @@ defmodule AshOaskit.ResponseCodesTest do
       paths = spec["paths"] || %{}
 
       # PATCH/PUT operations should have 200 response
-      Enum.each(paths, fn {_path, path_item} ->
+      Enum.each(paths, fn {_, path_item} ->
         if patch_op = path_item["patch"] do
           responses = patch_op["responses"] || %{}
 
@@ -99,7 +99,7 @@ defmodule AshOaskit.ResponseCodesTest do
       paths = spec["paths"] || %{}
 
       # Operations with request bodies should document 400
-      Enum.each(paths, fn {_path, path_item} ->
+      Enum.each(paths, fn {_, path_item} ->
         Enum.each(path_item, fn
           {method, operation} when method in ~w(post patch put) ->
             if Map.has_key?(operation, "requestBody") do
@@ -107,7 +107,7 @@ defmodule AshOaskit.ResponseCodesTest do
 
               # 400 should be documented for operations with request body
               # This is a recommendation, not a requirement
-              _has_400 = Map.has_key?(responses, "400")
+              _ = Map.has_key?(responses, "400")
             end
 
           _ ->
@@ -128,7 +128,7 @@ defmodule AshOaskit.ResponseCodesTest do
             {method, operation} when method in ~w(get patch put delete) ->
               responses = operation["responses"] || %{}
               # 404 should be documented for resource-specific operations
-              _has_404 = Map.has_key?(responses, "404")
+              _ = Map.has_key?(responses, "404")
 
             _ ->
               :ok
@@ -153,12 +153,12 @@ defmodule AshOaskit.ResponseCodesTest do
       paths = spec["paths"] || %{}
 
       # Operations with request bodies may document 422
-      Enum.each(paths, fn {_path, path_item} ->
+      Enum.each(paths, fn {_, path_item} ->
         Enum.each(path_item, fn
           {method, operation} when method in ~w(post patch put) ->
             responses = operation["responses"] || %{}
             # 422 is commonly used for validation errors
-            _has_422 = Map.has_key?(responses, "422")
+            _ = Map.has_key?(responses, "422")
 
           _ ->
             :ok
@@ -172,7 +172,7 @@ defmodule AshOaskit.ResponseCodesTest do
       spec = AshOaskit.spec_31(domains: [AshOaskit.Test.Blog])
       paths = spec["paths"] || %{}
 
-      Enum.each(paths, fn {_path, path_item} ->
+      Enum.each(paths, fn {_, path_item} ->
         Enum.each(path_item, fn
           {method, operation} when method in ~w(get post patch put delete) ->
             responses = operation["responses"] || %{}
@@ -193,7 +193,7 @@ defmodule AshOaskit.ResponseCodesTest do
       spec = AshOaskit.spec_31(domains: [AshOaskit.Test.Blog])
       paths = spec["paths"] || %{}
 
-      Enum.each(paths, fn {_path, path_item} ->
+      Enum.each(paths, fn {_, path_item} ->
         if get_op = path_item["get"] do
           responses = get_op["responses"] || %{}
 
@@ -241,12 +241,12 @@ defmodule AshOaskit.ResponseCodesTest do
       spec = AshOaskit.spec_31(domains: [AshOaskit.Test.Blog])
       paths = spec["paths"] || %{}
 
-      Enum.each(paths, fn {_path, path_item} ->
+      Enum.each(paths, fn {_, path_item} ->
         Enum.each(path_item, fn
           {method, operation} when method in ~w(get post patch) ->
             responses = operation["responses"] || %{}
 
-            Enum.each(responses, fn {_code, response} ->
+            Enum.each(responses, fn {_, response} ->
               if content = response["content"] do
                 # Should use appropriate content type
                 assert Map.has_key?(content, "application/vnd.api+json") or
@@ -314,14 +314,14 @@ defmodule AshOaskit.ResponseCodesTest do
       spec = AshOaskit.spec_31(domains: [AshOaskit.Test.Blog])
       paths = spec["paths"] || %{}
 
-      Enum.each(paths, fn {_path, path_item} ->
+      Enum.each(paths, fn {_, path_item} ->
         Enum.each(path_item, fn
           {method, operation} when method in ~w(get post patch) ->
             responses = operation["responses"] || %{}
 
-            Enum.each(responses, fn {_code, response} ->
+            Enum.each(responses, fn {_, response} ->
               if content = response["content"] do
-                Enum.each(content, fn {_media_type, media_obj} ->
+                Enum.each(content, fn {_, media_obj} ->
                   if schema = media_obj["schema"] do
                     # Schema can be inline or $ref
                     assert is_map(schema)

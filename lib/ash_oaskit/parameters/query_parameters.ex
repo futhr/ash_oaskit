@@ -147,7 +147,7 @@ defmodule AshOaskit.QueryParameters do
 
   """
   @spec build_fields_parameter([String.t()], keyword()) :: map()
-  def build_fields_parameter(resource_types, _opts \\ []) do
+  def build_fields_parameter(resource_types, _ \\ []) do
     properties =
       Map.new(resource_types, fn type ->
         {type,
@@ -203,7 +203,7 @@ defmodule AshOaskit.QueryParameters do
 
   """
   @spec build_include_parameter([atom() | String.t()], keyword()) :: map()
-  def build_include_parameter(available_includes, _opts \\ []) do
+  def build_include_parameter(available_includes, _ \\ []) do
     include_list = Enum.map_join(available_includes, ", ", &to_string/1)
 
     description =

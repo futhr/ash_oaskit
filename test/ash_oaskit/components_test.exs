@@ -261,7 +261,7 @@ defmodule AshOaskit.ComponentsTest do
       {"$ref", ref} when is_binary(ref) ->
         [ref]
 
-      {_key, value} ->
+      {_, value} ->
         extract_all_refs(value)
     end)
   end

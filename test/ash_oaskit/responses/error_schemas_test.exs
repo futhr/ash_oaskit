@@ -85,7 +85,7 @@ defmodule AshOaskit.ErrorSchemasTest do
     test "all properties have descriptions" do
       schema = ErrorSchemas.error_object_schema()
 
-      Enum.each(schema[:properties], fn {_name, prop} ->
+      Enum.each(schema[:properties], fn {_, prop} ->
         assert Map.has_key?(prop, :description),
                "Property #{inspect(prop)} should have description"
       end)
@@ -226,7 +226,7 @@ defmodule AshOaskit.ErrorSchemasTest do
     test "each response has correct structure" do
       responses = ErrorSchemas.error_responses(["400", "404", "422"])
 
-      Enum.each(responses, fn {_code, response} ->
+      Enum.each(responses, fn {_, response} ->
         assert Map.has_key?(response, :description)
         assert Map.has_key?(response, :content)
       end)

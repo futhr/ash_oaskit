@@ -269,7 +269,7 @@ defmodule AshOaskit.IncludedResourcesTest do
     test "all schemas can be serialized to JSON" do
       schemas = IncludedResources.build_included_component_schemas(["User", "Comment"])
 
-      assert {:ok, _json} = Jason.encode(schemas)
+      assert {:ok, _} = Jason.encode(schemas)
     end
 
     test "refs are valid JSON Pointer format" do

@@ -58,7 +58,7 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
       responses: build_responses(route, opts)
     }
     |> maybe_add_request_body(route, opts)
-    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.reject(fn {_, v} -> is_nil(v) end)
     |> Map.new()
   end
 

@@ -146,7 +146,7 @@ defmodule AshOaskit.Generators.InfoBuilder do
   # Removes nil values from a map
   defp reject_nil_values(map) do
     map
-    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.reject(fn {_, v} -> is_nil(v) end)
     |> Map.new()
   end
 

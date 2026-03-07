@@ -360,7 +360,7 @@ defmodule AshOaskit.TagBuilder do
   end
 
   @spec resource_description(module(), boolean()) :: String.t() | nil
-  defp resource_description(_resource, false), do: nil
+  defp resource_description(_, false), do: nil
 
   defp resource_description(resource, true) do
     name = resource_tag_name(resource)
@@ -368,7 +368,7 @@ defmodule AshOaskit.TagBuilder do
   end
 
   @spec domain_description(module(), boolean()) :: String.t() | nil
-  defp domain_description(_domain, false), do: nil
+  defp domain_description(_, false), do: nil
 
   defp domain_description(domain, true) do
     name = domain_tag_name(domain)

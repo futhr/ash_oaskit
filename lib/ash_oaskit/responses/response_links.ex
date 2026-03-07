@@ -88,7 +88,7 @@ defmodule AshOaskit.ResponseLinks do
       }
   """
   @spec build_resource_links_schema(keyword()) :: map()
-  def build_resource_links_schema(_opts \\ []) do
+  def build_resource_links_schema(_ \\ []) do
     %{
       type: :object,
       properties: %{
@@ -200,7 +200,7 @@ defmodule AshOaskit.ResponseLinks do
       }
   """
   @spec build_relationship_links_schema(keyword()) :: map()
-  def build_relationship_links_schema(_opts \\ []) do
+  def build_relationship_links_schema(_ \\ []) do
     %{
       type: :object,
       properties: %{
@@ -424,7 +424,7 @@ defmodule AshOaskit.ResponseLinks do
       }
   """
   @spec build_link_object_schema(keyword()) :: map()
-  def build_link_object_schema(_opts \\ []) do
+  def build_link_object_schema(_ \\ []) do
     %{
       oneOf: [
         uri_schema(),
