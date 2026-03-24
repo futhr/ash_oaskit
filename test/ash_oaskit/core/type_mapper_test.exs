@@ -979,6 +979,39 @@ defmodule AshOaskit.TypeMapperTest do
       result = TypeMapper.to_json_schema_31(attr)
       assert result["default"] == "hello"
     end
+
+    test "converts Decimal default to float" do
+      attr = %{type: :decimal, allow_nil?: false, default: Decimal.new("0.65")}
+      result = TypeMapper.to_json_schema_31(attr)
+      assert result["default"] == 0.65
+      assert is_float(result["default"])
+    end
+
+    test "converts Decimal default to float in 3.0 mode" do
+      attr = %{type: :decimal, allow_nil?: false, default: Decimal.new("3.14")}
+      result = TypeMapper.to_json_schema_30(attr)
+      assert result["default"] == 3.14
+      assert is_float(result["default"])
+    end
+
+    test "converts atom default to string" do
+      attr = %{type: :atom, allow_nil?: false, default: :active}
+      result = TypeMapper.to_json_schema_31(attr)
+      assert result["default"] == "active"
+      assert is_binary(result["default"])
+    end
+
+    test "preserves boolean defaults as-is" do
+      attr = %{type: :boolean, allow_nil?: false, default: true}
+      result = TypeMapper.to_json_schema_31(attr)
+      assert result["default"] == true
+    end
+
+    test "preserves integer defaults as-is" do
+      attr = %{type: :integer, allow_nil?: false, default: 42}
+      result = TypeMapper.to_json_schema_31(attr)
+      assert result["default"] == 42
+    end
   end
 
   describe "custom type json_schema/1 in 3.0 mode" do
