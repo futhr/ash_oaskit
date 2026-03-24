@@ -453,7 +453,10 @@ defmodule AshOaskit.TypeMapper do
 
   # Convert non-JSON-serializable defaults to JSON-safe values
   defp sanitize_default(%Decimal{} = d), do: Decimal.to_float(d)
-  defp sanitize_default(value) when is_atom(value) and value not in [true, false], do: to_string(value)
+
+  defp sanitize_default(value) when is_atom(value) and value not in [true, false],
+    do: to_string(value)
+
   defp sanitize_default(value), do: value
 
   # Ensures a value is a number (for minimum/maximum constraints)
