@@ -3,7 +3,7 @@
 # AshOaskit
 
 [![Hex.pm](https://img.shields.io/hexpm/v/ash_oaskit.svg)](https://hex.pm/packages/ash_oaskit)
-[![Docs](https://img.shields.io/badge/docs-github-blue.svg)](https://github.com/futhr/ash_oaskit)
+[![Docs](https://img.shields.io/badge/docs-hexdocs-blue.svg)](https://hexdocs.pm/ash_oaskit)
 [![CI](https://github.com/futhr/ash_oaskit/actions/workflows/ci.yml/badge.svg)](https://github.com/futhr/ash_oaskit/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/futhr/ash_oaskit/branch/main/graph/badge.svg)](https://codecov.io/gh/futhr/ash_oaskit)
 [![License](https://img.shields.io/github/license/futhr/ash_oaskit.svg)](LICENSE.md)
@@ -59,14 +59,12 @@ AshOaskit provides:
 
 ## Installation
 
-_Note: This project is currently in production evaluation and has not yet been released to Hex. Documentation is available on [GitHub](https://github.com/futhr/ash_oaskit)._
-
 Add `ash_oaskit` to your dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:ash_oaskit, github: "futhr/ash_oaskit"},
+    {:ash_oaskit, "~> 0.1.0"},
     # Optional: For YAML output
     {:ymlr, "~> 5.0", optional: true}
   ]
