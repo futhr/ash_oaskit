@@ -1,5 +1,3 @@
-<div align="center">
-
 # AshOaskit
 
 [![Hex.pm](https://img.shields.io/hexpm/v/ash_oaskit.svg)](https://hex.pm/packages/ash_oaskit)
@@ -15,8 +13,6 @@
 [Configuration](#configuration) |
 [API Reference](#api-reference) |
 [Phoenix Integration](#phoenix-integration)
-
-</div>
 
 ---
 
