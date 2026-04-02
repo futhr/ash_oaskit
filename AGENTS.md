@@ -223,6 +223,27 @@ mix check # Runs all 10 tools:
 - `mix test`
 - `mix deps.unlock --check-unused`
 
+## Commit Conventions
+
+All commits must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification. git_ops parses these to auto-generate CHANGELOG.md and determine version bumps.
+
+Format: `type(optional scope): description`
+
+Do not add `Co-Authored-By` or any AI/Claude attribution to commit messages.
+
+| Type | Version bump | Changelog |
+|------|-------------|-----------|
+| `feat:` | minor | "Features" |
+| `fix:` | patch | "Bug Fixes" |
+| `feat!:` / `fix!:` / `BREAKING CHANGE:` | major | shown |
+| `chore:`, `docs:`, `ci:`, `refactor:`, `style:`, `test:`, `build:` | none | hidden |
+
+### Release Flow
+
+1. `mix git_ops.release` — updates changelog, bumps version in mix.exs and README.md, commits, and tags
+2. `git push --follow-tags` — pushes commit and tag
+3. CI (`publish.yml`) triggers on `v*` tag → runs checks → `mix hex.publish`
+
 ## Guidelines
 
 - Do not modify generated specs after generation (use SpecModifier instead)

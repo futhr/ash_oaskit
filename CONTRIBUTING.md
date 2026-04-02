@@ -139,11 +139,10 @@ end
 
 Releases are managed by maintainers using git_ops:
 
-1. Ensure all tests pass
-2. Update CHANGELOG.md
-3. Run `mix git_ops.release`
-4. Push tags: `git push --tags`
-5. CI will publish to Hex.pm
+1. Ensure all tests pass: `mix check`
+2. Run `mix release` (alias for `mix git_ops.release`) — updates changelog, bumps version, commits, and tags
+3. Push with tags: `git push --follow-tags`
+4. CI will publish to Hex.pm on the `v*` tag
 
 ## Questions?
 
