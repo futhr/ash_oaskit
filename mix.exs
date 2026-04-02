@@ -103,9 +103,8 @@ defmodule AshOaskit.MixProject do
       # Testing
       "test.watch": ["test.watch --stale"],
 
-      # Publishing
-      "hex.publish": ["hex.build", "hex.publish", "tag"],
-      tag: &tag_release/1
+      # Release
+      release: ["git_ops.release"]
     ]
   end
 
@@ -168,11 +167,5 @@ defmodule AshOaskit.MixProject do
       source_url: @source_url,
       formatters: ["html"]
     ]
-  end
-
-  defp tag_release(_) do
-    Mix.shell().info("Tagging release as v#{@version}")
-    System.cmd("git", ["tag", "-a", "v#{@version}", "-m", "Release v#{@version}"])
-    System.cmd("git", ["push", "--tags"])
   end
 end
