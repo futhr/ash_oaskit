@@ -30,3 +30,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [Unreleased]: https://github.com/futhr/ash_oaskit/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/futhr/ash_oaskit/releases/tag/v0.1.0
+
+<!-- changelog -->
+
+## [v0.1.1](https://github.com/futhr/ash_oaskit/compare/v0.1.0...v0.1.1) (2026-04-02)
+
+
+
+
+### Bug Fixes:
+
+* remove HTML div wrapper for hex.pm rendering by Tobias Bohwalli
