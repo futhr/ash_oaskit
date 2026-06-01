@@ -87,6 +87,20 @@ defmodule AshOaskit.KitchenSinkTest do
     end
   end
 
+  describe "custom type discriminated union tagged (actor)" do
+    test "3.1 uses custom discriminated union properties", %{spec_31: spec} do
+      actor = get_attr(spec, "actor")
+      assert %{
+        "anyOf" => [
+          %{"type" => "null"},
+          %{"$ref" => "#/components/schemas/Person", "title" => "person"},
+          %{"$ref" => "#/components/schemas/Company", "title" => "company"}
+        ],
+        "description" => "The actor (person or company) associated with this record"
+      } === actor
+    end
+  end
+
   describe "deeply nested embedded resources" do
     test "venue references Venue via $ref (3.1)", %{spec_31: spec} do
       venue_attr = get_attr(spec, "venue")

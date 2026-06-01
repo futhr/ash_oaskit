@@ -45,6 +45,62 @@ defmodule AshOaskit.Test.ContentBlock do
 end
 
 # ===========================================================================
+# Union Type with Constraints and Discriminator (reproduces bug)
+# ===========================================================================
+
+defmodule AshOaskit.Test.Person do
+  @moduledoc """
+  TypedStruct for Person variant.
+  """
+
+  use Ash.TypedStruct
+
+  typed_struct do
+    field :type, :string, allow_nil?: false
+    field :name, :string, allow_nil?: false
+    field :email, :string, allow_nil?: false
+    field :age, :integer
+  end
+end
+
+defmodule AshOaskit.Test.Company do
+  @moduledoc """
+  TypedStruct for Company variant.
+  """
+
+  use Ash.TypedStruct
+
+  typed_struct do
+    field :type, :string, allow_nil?: false
+    field :company_name, :string, allow_nil?: false
+    field :tax_id, :string, allow_nil?: false
+    field :employee_count, :integer
+  end
+end
+
+defmodule AshOaskit.Test.Actor do
+  @moduledoc """
+  Union type for Actor (person or company) with discriminator.
+  """
+
+  use Ash.Type.NewType,
+    subtype_of: :union,
+    constraints: [
+      types: [
+        person: [
+          type: AshOaskit.Test.Person,
+          tag: :type,
+          tag_value: "person"
+        ],
+        company: [
+          type: AshOaskit.Test.Company,
+          tag: :type,
+          tag_value: "company"
+        ]
+      ]
+    ]
+  end
+
 # Custom type with json_schema/1 callback
 # ===========================================================================
 
@@ -178,6 +234,11 @@ defmodule AshOaskit.Test.KitchenSink do
     # --- Union type attribute ---
     attribute :content, AshOaskit.Test.ContentBlock do
       description "Polymorphic content block (text, image, or code)"
+    end
+
+    # --- Union with discriminator (Actor) ---
+    attribute :actor, AshOaskit.Test.Actor do
+      description "The actor (person or company) associated with this record"
     end
 
     # --- Custom type with json_schema/1 ---
