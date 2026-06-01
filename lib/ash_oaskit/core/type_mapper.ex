@@ -323,12 +323,12 @@ defmodule AshOaskit.TypeMapper do
       embedded_resource?(type) ->
         {:embedded, type}
 
-      # if type is a custom struct then it should return struct
-      is_atom(type) ->
-        {:struct, type}
-
       union_result = get_union_types(type) ->
         union_result
+
+      # if type is a custom struct then it should return struct
+      is_defined_struct?(type) ->
+        {:struct, type}
 
       true ->
         :string
@@ -378,6 +378,12 @@ defmodule AshOaskit.TypeMapper do
   # Called only after confirming the resource is a valid Ash.Resource via Spark.Dsl.is?
   @spec ash_embedded?(atom()) :: boolean()
   defp ash_embedded?(resource), do: Ash.Resource.Info.embedded?(resource)
+
+  @spec is_defined_struct?(atom()) :: boolean()
+  defp is_defined_struct?(type) when is_atom(type) do
+    Code.ensure_loaded?(type) and
+      function_exported?(type, :spark_is, 0)
+  end
 
   # Check if attribute allows nil
   defp allow_nil?(%{allow_nil?: allow_nil?}), do: allow_nil?
