@@ -99,7 +99,7 @@ defmodule AshOaskit.Test.Actor do
         ]
       ]
     ]
-  end
+end
 
 # Custom type with json_schema/1 callback
 # ===========================================================================

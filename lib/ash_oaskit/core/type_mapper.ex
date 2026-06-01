@@ -316,11 +316,16 @@ defmodule AshOaskit.TypeMapper do
   # Handle complex type checking for embedded resources, custom types, and unions
   defp normalize_complex_type(type) do
     cond do
+      # make sure callback always take priority
+      has_json_schema_callback?(type) ->
+        {:custom, get_custom_json_schema(type)}
+
       embedded_resource?(type) ->
         {:embedded, type}
 
-      has_json_schema_callback?(type) ->
-        {:custom, get_custom_json_schema(type)}
+      # if type is a custom struct then it should return struct
+      is_atom(type) ->
+        {:struct, type}
 
       union_result = get_union_types(type) ->
         union_result
@@ -364,8 +369,15 @@ defmodule AshOaskit.TypeMapper do
   @spec embedded_resource?(atom()) :: boolean()
   defp embedded_resource?(type) when is_atom(type) do
     Code.ensure_loaded?(type) and
-      function_exported?(type, :spark_is, 0)
+      function_exported?(type, :spark_is, 0) and
+      Spark.Dsl.is?(type, Ash.Resource) and
+      ash_embedded?(type)
   end
+
+  # Checks if a resource is embedded using Ash.Resource.Info.embedded?/1
+  # Called only after confirming the resource is a valid Ash.Resource via Spark.Dsl.is?
+  @spec ash_embedded?(atom()) :: boolean()
+  defp ash_embedded?(resource), do: Ash.Resource.Info.embedded?(resource)
 
   # Check if attribute allows nil
   defp allow_nil?(%{allow_nil?: allow_nil?}), do: allow_nil?

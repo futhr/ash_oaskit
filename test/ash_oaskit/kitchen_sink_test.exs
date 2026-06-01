@@ -90,14 +90,35 @@ defmodule AshOaskit.KitchenSinkTest do
   describe "custom type discriminated union tagged (actor)" do
     test "3.1 uses custom discriminated union properties", %{spec_31: spec} do
       actor = get_attr(spec, "actor")
+
       assert %{
-        "anyOf" => [
-          %{"type" => "null"},
-          %{"$ref" => "#/components/schemas/Person", "title" => "person"},
-          %{"$ref" => "#/components/schemas/Company", "title" => "company"}
-        ],
-        "description" => "The actor (person or company) associated with this record"
-      } === actor
+               "anyOf" => [
+                 %{"type" => "null"},
+                 %{
+                   "title" => "person",
+                   "description" => "Struct of type AshOaskit.Test.Person",
+                   "properties" => %{
+                     "age" => %{"type" => "string"},
+                     "email" => %{"type" => "string"},
+                     "name" => %{"type" => "string"},
+                     "type" => %{"type" => "string"}
+                   },
+                   "type" => "object"
+                 },
+                 %{
+                   "title" => "company",
+                   "description" => "Struct of type AshOaskit.Test.Company",
+                   "properties" => %{
+                     "company_name" => %{"type" => "string"},
+                     "employee_count" => %{"type" => "string"},
+                     "tax_id" => %{"type" => "string"},
+                     "type" => %{"type" => "string"}
+                   },
+                   "type" => "object"
+                 }
+               ],
+               "description" => "The actor (person or company) associated with this record"
+             } === actor
     end
   end
 
