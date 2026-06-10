@@ -2,6 +2,23 @@ defmodule AshOaskit.Controller do
   @moduledoc """
   Phoenix controller for serving OpenAPI specifications.
 
+  > #### Deprecated {: .warning}
+  >
+  > This controller regenerates the spec on every request and reads its
+  > configuration from the application environment. Define a spec module
+  > with `use AshOaskit` and serve it through `Oaskit.SpecController`
+  > instead — it is cached, explicit, and gains the Redoc UI:
+  >
+  >     defmodule MyAppWeb.ApiSpec do
+  >       use AshOaskit, domains: [MyApp.Blog], title: "My API"
+  >     end
+  >
+  >     # In your router
+  >     get "/openapi.json", Oaskit.SpecController, spec: MyAppWeb.ApiSpec
+  >     get "/redoc", Oaskit.SpecController, redoc: "/openapi.json"
+  >
+  > This module will be removed in 0.3.0.
+
   This module provides Plug-compatible controller actions for serving
   OpenAPI specs directly from your Phoenix application.
 
@@ -53,6 +70,7 @@ defmodule AshOaskit.Controller do
   @doc """
   Serve the OpenAPI spec using the configured default version.
   """
+  @deprecated "Use Oaskit.SpecController with a `use AshOaskit` spec module"
   @spec spec(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def spec(conn, _) do
     opts = get_options(conn)
@@ -63,6 +81,7 @@ defmodule AshOaskit.Controller do
   @doc """
   Serve an OpenAPI 3.0 spec.
   """
+  @deprecated "Use Oaskit.SpecController with a `use AshOaskit` spec module"
   @spec spec_30(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def spec_30(conn, _) do
     opts = conn |> get_options() |> Keyword.put(:version, "3.0")
@@ -73,6 +92,7 @@ defmodule AshOaskit.Controller do
   @doc """
   Serve an OpenAPI 3.1 spec.
   """
+  @deprecated "Use Oaskit.SpecController with a `use AshOaskit` spec module"
   @spec spec_31(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def spec_31(conn, _) do
     opts = conn |> get_options() |> Keyword.put(:version, "3.1")
