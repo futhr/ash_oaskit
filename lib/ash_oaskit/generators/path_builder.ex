@@ -58,6 +58,7 @@ defmodule AshOaskit.Generators.PathBuilder do
   alias AshOaskit.FilterBuilder
   alias AshOaskit.PhoenixIntrospection
   alias AshOaskit.RelationshipRoutes
+  alias AshOaskit.RouteGathering
   alias AshOaskit.SortBuilder
 
   @type opts :: keyword()
@@ -181,11 +182,10 @@ defmodule AshOaskit.Generators.PathBuilder do
     end)
   end
 
-  # Gets routes from a domain with their paths
+  # Gets routes from a domain with their served paths (domain-level and
+  # resource-level routes, with the domain prefix applied)
   defp get_domain_routes(domain) do
-    domain
-    |> AshJsonApi.Domain.Info.routes()
-    |> Enum.map(fn route -> {route.route, route} end)
+    RouteGathering.routes_with_paths(domain)
   end
 
   # Converts route type to HTTP method string
