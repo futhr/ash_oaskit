@@ -110,10 +110,10 @@ defmodule Mix.Tasks.AshOaskit.Generate do
 
   defp encode_yaml(spec) do
     if Code.ensure_loaded?(YamlElixir.Sigil) do
-      # Use yaml_elixir if available
+      # Round-trip through JSON to normalize atoms/structs before YAML
       spec
-      |> Jason.encode!()
-      |> Jason.decode!()
+      |> JSV.Codec.encode!()
+      |> JSV.Codec.decode!()
       |> Ymlr.document!()
     else
       Mix.raise(
