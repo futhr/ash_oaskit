@@ -60,7 +60,7 @@ defmodule AshOaskit.Router.Plug do
     if domains == [] do
       conn
       |> put_resp_content_type("application/json")
-      |> send_resp(500, Jason.encode!(%{error: "No domains configured for OpenAPI spec"}))
+      |> send_resp(500, JSV.Codec.encode!(%{error: "No domains configured for OpenAPI spec"}))
     else
       spec = generate_spec(config)
       send_spec(conn, spec, Map.get(config, :format, :json))

@@ -55,7 +55,7 @@ defmodule AshOaskit.OpenApi do
       )
 
       # Convert to JSON
-      json = Jason.encode!(spec)
+      json = Oaskit.SpecDumper.to_json!(spec, pretty: true)
 
   ## Version-Specific Differences
 
