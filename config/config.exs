@@ -1,14 +1,19 @@
 import Config
 
-# Configuration for AshOaskit
-# This is a library, so most configuration is done at runtime via options
+# Dev/test configuration for AshOaskit itself. This file is NOT shipped
+# to consumers — all library defaults live in code (see
+# AshOaskit.OpenApi and AshOaskit.Generators.InfoBuilder). Consumers may
+# override the same keys in their own config:
+#
+#     config :ash_oaskit,
+#       version: "3.1",        # default OpenAPI version
+#       title: "API",          # default info.title
+#       api_version: "1.0.0",  # default info.version
+#       cache_specs: false     # dev only: bypass spec module caching
 
 config :ash_oaskit,
-  # Default OpenAPI version ("3.0" or "3.1")
   version: "3.1",
-  # Default API title
   title: "API",
-  # Default API version
   api_version: "1.0.0"
 
 # Configure logger for minimal output
