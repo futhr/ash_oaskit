@@ -280,3 +280,6 @@ jobs:
 
       - name: Check for documentation warnings
         run: mix docs 2>&1 | grep -i warning && exit 1 || exit 0
+
+      - name: Verify hex package builds
+        run: mix hex.build
