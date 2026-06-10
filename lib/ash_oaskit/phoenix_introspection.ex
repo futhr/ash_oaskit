@@ -285,8 +285,8 @@ defmodule AshOaskit.PhoenixIntrospection do
   end
 
   defp normalize_tag(tag) when is_map(tag) do
-    # Handle string keys or mixed keys
-    name = Map.get(tag, :name) || Map.get(tag, "name")
+    # String keys only: the previous clause already matched atom :name keys
+    name = Map.get(tag, "name")
     desc = Map.get(tag, :description) || Map.get(tag, "description")
 
     result = %{name: name}

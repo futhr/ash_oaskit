@@ -193,7 +193,7 @@ defmodule AshOaskit.ConfigTest do
     test "returns atom for Blog domain" do
       result = Config.group_by(AshOaskit.Test.Blog)
 
-      assert is_atom(result) or is_nil(result)
+      assert is_atom(result)
     end
 
     test "defaults to :resource when not configured" do

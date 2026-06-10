@@ -70,7 +70,7 @@ defmodule AshOaskit.MixProject do
       {:decimal, "~> 3.1", override: true},
 
       # OpenAPI spec normalization, validation, and rendering
-      {:oaskit, "~> 0.13"},
+      {:oaskit, "~> 0.13.1"},
 
       # AshJsonApi integration (optional)
       {:ash_json_api, "~> 1.0", optional: true},
@@ -79,7 +79,7 @@ defmodule AshOaskit.MixProject do
       {:igniter, "~> 0.5", optional: true},
 
       # Phoenix integration (optional for consumers, available in test)
-      {:plug, "~> 1.14"},
+      {:plug, "~> 1.16"},
       {:phoenix, "~> 1.7", optional: true},
 
       # JSON encoding
