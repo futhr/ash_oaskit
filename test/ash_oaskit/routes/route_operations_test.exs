@@ -176,12 +176,71 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperationsTest do
       assert hd(path_params).required == true
     end
 
-    test "related routes include pagination query parameter" do
+    test "related routes without a real relationship take only path params" do
+      # mock_related_route points at a relationship Post does not have
       params = RouteOperations.build_parameters(mock_related_route())
       query_params = Enum.filter(params, &(&1.in == :query))
 
-      assert length(query_params) == 1
-      assert hd(query_params).name == "page"
+      assert query_params == []
+    end
+
+    test "to-many related routes document filter/sort/page/include against the destination" do
+      route = %{
+        type: :related,
+        resource: AshOaskit.Test.Article,
+        relationship: :reviews,
+        route: "/articles/:id/reviews",
+        action: :read,
+        name: :reviews
+      }
+
+      params = RouteOperations.build_parameters(route)
+      query_names = params |> Enum.filter(&(&1.in == :query)) |> Enum.map(& &1.name)
+
+      assert Enum.sort(query_names) == ["filter", "include", "page", "sort"]
+
+      # sort and filter are built against the DESTINATION (Review)
+      sort_param = Enum.find(params, &(&1.name == "sort"))
+      assert sort_param.description =~ "Review"
+
+      filter_param = Enum.find(params, &(&1.name == "filter"))
+      filter_fields = Map.keys(filter_param.schema.properties)
+      assert "rating" in filter_fields
+      refute "word_count" in filter_fields
+    end
+
+    test "to-one related routes document include only" do
+      route = %{
+        type: :related,
+        resource: AshOaskit.Test.Article,
+        relationship: :author,
+        route: "/articles/:id/author",
+        action: :read,
+        name: :author
+      }
+
+      params = RouteOperations.build_parameters(route)
+      query_names = params |> Enum.filter(&(&1.in == :query)) |> Enum.map(& &1.name)
+
+      assert query_names == ["include"]
+    end
+
+    test "derive_filter?/derive_sort? route flags suppress filter and sort" do
+      route = %{
+        type: :related,
+        resource: AshOaskit.Test.Article,
+        relationship: :reviews,
+        route: "/articles/:id/reviews",
+        action: :read,
+        name: :reviews,
+        derive_filter?: false,
+        derive_sort?: false
+      }
+
+      params = RouteOperations.build_parameters(route)
+      query_names = params |> Enum.filter(&(&1.in == :query)) |> Enum.map(& &1.name)
+
+      assert Enum.sort(query_names) == ["include", "page"]
     end
 
     test "relationship routes have no query parameters" do

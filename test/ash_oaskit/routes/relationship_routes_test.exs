@@ -218,11 +218,23 @@ defmodule AshOaskit.RelationshipRoutesTest do
       assert operation[:parameters] != []
     end
 
-    test "related route includes pagination parameters" do
-      operation = RelationshipRoutes.build_operation(mock_related_route())
+    test "to-many related route includes the JSON:API query parameter set" do
+      route = %{
+        type: :related,
+        resource: AshOaskit.Test.Article,
+        relationship: :reviews,
+        route: "/articles/:id/reviews",
+        action: :read,
+        name: :reviews
+      }
+
+      operation = RelationshipRoutes.build_operation(route)
 
       param_names = Enum.map(operation[:parameters], & &1[:name])
       assert "page" in param_names
+      assert "include" in param_names
+      assert "filter" in param_names
+      assert "sort" in param_names
     end
 
     test "relationship route does not include pagination parameters" do
