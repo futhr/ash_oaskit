@@ -6,6 +6,7 @@
 # - Deeply nested embedded resources (3+ levels)
 # - Array of embedded resources
 # - Union types as attributes (via Ash.Type.NewType)
+# - Typed structs (Ash.TypedStruct), direct and as discriminated-union variants
 # - Read-only attributes (writable?: false) — excluded from input schemas
 # - DurationName type in a real resource
 # - Custom type with json_schema/1 callback in a real resource
@@ -39,6 +40,64 @@ defmodule AshOaskit.Test.ContentBlock do
           type: :string,
           tag: :type,
           tag_value: :code
+        ]
+      ]
+    ]
+end
+
+# ===========================================================================
+# Typed Structs and a Discriminated Union of them (regression: these
+# previously degraded to "string" schemas)
+# ===========================================================================
+
+defmodule AshOaskit.Test.Person do
+  @moduledoc """
+  TypedStruct for Person variant.
+  """
+
+  use Ash.TypedStruct
+
+  typed_struct do
+    field :type, :string, allow_nil?: false
+    field :name, :string, allow_nil?: false
+    field :email, :string, allow_nil?: false
+    field :age, :integer
+  end
+end
+
+defmodule AshOaskit.Test.Company do
+  @moduledoc """
+  TypedStruct for Company variant.
+  """
+
+  use Ash.TypedStruct
+
+  typed_struct do
+    field :type, :string, allow_nil?: false
+    field :company_name, :string, allow_nil?: false
+    field :tax_id, :string, allow_nil?: false
+    field :employee_count, :integer
+  end
+end
+
+defmodule AshOaskit.Test.Actor do
+  @moduledoc """
+  Union type for Actor (person or company) with discriminator.
+  """
+
+  use Ash.Type.NewType,
+    subtype_of: :union,
+    constraints: [
+      types: [
+        person: [
+          type: AshOaskit.Test.Person,
+          tag: :type,
+          tag_value: "person"
+        ],
+        company: [
+          type: AshOaskit.Test.Company,
+          tag: :type,
+          tag_value: "company"
         ]
       ]
     ]
@@ -158,6 +217,8 @@ defmodule AshOaskit.Test.KitchenSink do
 
   Covers gaps identified in test resource analysis:
   - Union type attribute (ContentBlock)
+  - Typed struct attribute (Person) and a discriminated union of typed
+    structs (Actor: Person or Company)
   - Custom type with json_schema/1 (Coordinate)
   - Deeply nested embedded (Venue → Location → GeoPoint, 3 levels)
   - Array of embedded resources
@@ -187,6 +248,18 @@ defmodule AshOaskit.Test.KitchenSink do
     attribute :content, AshOaskit.Test.ContentBlock do
       public? true
       description "Polymorphic content block (text, image, or code)"
+    end
+
+    # --- Union of typed structs with discriminator (Actor) ---
+    attribute :actor, AshOaskit.Test.Actor do
+      public? true
+      description "The actor (person or company) associated with this record"
+    end
+
+    # --- Typed struct as a direct attribute type ---
+    attribute :owner, AshOaskit.Test.Person do
+      public? true
+      description "The owner of this record"
     end
 
     # --- Custom type with json_schema/1 ---

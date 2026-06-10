@@ -55,6 +55,7 @@ defmodule AshOaskit.TypeMapper do
   | `Ash.Type.File` | `string` (`byte`) | Base64 encoded content |
   | `Ash.Type.DurationName` | `string` | Enum from the type's `values/0` |
   | `Ash.Type.Enum` implementors | `string` | Enum from the type's `values/0` |
+  | `Ash.TypedStruct` modules | `object` | Typed properties and required list from the field definitions |
   | `Ash.Type.NewType` wrappers | (subtype schema) | Resolved via `subtype_of/0` |
   | Custom types | Calls `json_schema/1` | If defined on type |
 
@@ -241,6 +242,7 @@ defmodule AshOaskit.TypeMapper do
 
   defp complex_type_schema({:union, types}), do: build_union_schema(types)
   defp complex_type_schema({:struct, module}), do: build_struct_schema(module)
+  defp complex_type_schema({:struct_fields, module}), do: build_typed_struct_schema(module)
   defp complex_type_schema({:custom, custom_schema}), do: custom_schema
   defp complex_type_schema(_), do: %{"type" => "string"}
 
@@ -284,6 +286,37 @@ defmodule AshOaskit.TypeMapper do
   end
 
   defp build_struct_schema(_), do: %{"type" => "object"}
+
+  # Build an object schema for a NewType of Ash.Type.Struct (e.g. a
+  # module defined with `use Ash.TypedStruct`). Unlike build_struct_schema/1,
+  # the field definitions carry declared types and allow_nil? flags in the
+  # NewType's subtype constraints, so properties keep their real types and
+  # non-nil fields become required.
+  defp build_typed_struct_schema(module) do
+    fields = module.subtype_constraints()[:fields] || []
+
+    properties =
+      Map.new(fields, fn {name, config} ->
+        {to_string(name), ash_type_to_base_schema(Keyword.get(config, :type, :string))}
+      end)
+
+    required =
+      for {name, config} <- fields,
+          Keyword.get(config, :allow_nil?, true) == false,
+          do: to_string(name)
+
+    schema = %{
+      "type" => "object",
+      "properties" => properties,
+      "description" => "Struct of type #{inspect(module)}"
+    }
+
+    if required == [] do
+      schema
+    else
+      Map.put(schema, "required", Enum.sort(required))
+    end
+  end
 
   # Known basic atom types
   @basic_types ~w(string ci_string integer float decimal boolean date time time_usec
@@ -356,11 +389,12 @@ defmodule AshOaskit.TypeMapper do
   # Ash.Type.Enum implementors, and NewType wrappers
   defp normalize_complex_type(type) do
     cond do
-      embedded_resource?(type) ->
-        {:embedded, type}
-
+      # make sure callback always take priority
       has_json_schema_callback?(type) ->
         {:custom, get_custom_json_schema(type)}
+
+      embedded_resource?(type) ->
+        {:embedded, type}
 
       union_result = get_union_types(type) ->
         union_result
@@ -369,10 +403,21 @@ defmodule AshOaskit.TypeMapper do
         {:custom, enum_schema(type)}
 
       newtype?(type) ->
-        type |> NewType.subtype_of() |> normalize_type()
+        normalize_newtype(type)
 
       true ->
         :string
+    end
+  end
+
+  # NewType wrappers resolve to their subtype — except typed structs
+  # (subtype_of: :struct, e.g. `use Ash.TypedStruct`), whose field
+  # definitions live in the NewType's constraints and would be lost by
+  # plain recursion on the subtype
+  defp normalize_newtype(type) do
+    case NewType.subtype_of(type) do
+      Ash.Type.Struct -> {:struct_fields, type}
+      subtype -> normalize_type(subtype)
     end
   end
 

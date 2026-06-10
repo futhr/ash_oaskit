@@ -6,6 +6,7 @@ defmodule AshOaskit.KitchenSinkTest do
   covering:
 
   - Union types (Ash.Type.NewType subtype of Ash.Type.Union)
+  - Typed structs (Ash.TypedStruct), direct and as discriminated-union variants
   - Custom types with json_schema/1 callback
   - Deeply nested embedded resources (3 levels: Venue → Location → GeoPoint)
   - Array of embedded resources
@@ -84,6 +85,71 @@ defmodule AshOaskit.KitchenSinkTest do
       coords = get_attr(spec, "coordinates")
       assert coords["nullable"] == true
       assert coords["type"] == "object"
+    end
+  end
+
+  describe "discriminated union of typed structs (actor)" do
+    test "3.1 documents typed variants with declared field types", %{spec_31: spec} do
+      actor = get_attr(spec, "actor")
+
+      assert %{
+               "anyOf" => [
+                 %{"type" => "null"},
+                 %{
+                   "title" => "person",
+                   "description" => "Struct of type AshOaskit.Test.Person",
+                   "properties" => %{
+                     "age" => %{"type" => "integer"},
+                     "email" => %{"type" => "string"},
+                     "name" => %{"type" => "string"},
+                     "type" => %{"type" => "string"}
+                   },
+                   "required" => ["email", "name", "type"],
+                   "type" => "object"
+                 },
+                 %{
+                   "title" => "company",
+                   "description" => "Struct of type AshOaskit.Test.Company",
+                   "properties" => %{
+                     "company_name" => %{"type" => "string"},
+                     "employee_count" => %{"type" => "integer"},
+                     "tax_id" => %{"type" => "string"},
+                     "type" => %{"type" => "string"}
+                   },
+                   "required" => ["company_name", "tax_id", "type"],
+                   "type" => "object"
+                 }
+               ],
+               "description" => "The actor (person or company) associated with this record"
+             } === actor
+    end
+
+    test "3.0 uses anyOf with nullable flag", %{spec_30: spec} do
+      actor = get_attr(spec, "actor")
+
+      assert actor["nullable"] == true
+      assert [person, _] = actor["anyOf"]
+      assert person["properties"]["age"]["type"] == "integer"
+    end
+  end
+
+  describe "typed struct as a direct attribute (owner)" do
+    test "3.1 documents a typed nullable object", %{spec_31: spec} do
+      owner = get_attr(spec, "owner")
+
+      assert owner["type"] == ["object", "null"]
+      assert owner["properties"]["age"]["type"] == "integer"
+      assert owner["properties"]["name"]["type"] == "string"
+      assert owner["required"] == ["email", "name", "type"]
+      assert owner["description"] == "The owner of this record"
+    end
+
+    test "3.0 uses the nullable flag", %{spec_30: spec} do
+      owner = get_attr(spec, "owner")
+
+      assert owner["type"] == "object"
+      assert owner["nullable"] == true
+      assert owner["properties"]["age"]["type"] == "integer"
     end
   end
 
@@ -239,6 +305,16 @@ defmodule AshOaskit.KitchenSinkTest do
                  "3.1 must not use nullable flag, found in: #{inspect(schema)}"
         end
       end)
+    end
+  end
+
+  describe "Oaskit validation" do
+    test "3.1 spec with typed structs passes Oaskit validation", %{spec_31: spec} do
+      assert {:ok, %Oaskit.Spec.OpenAPI{}} = AshOaskit.validate(spec)
+    end
+
+    test "3.0 spec with typed structs passes Oaskit validation", %{spec_30: spec} do
+      assert {:ok, %Oaskit.Spec.OpenAPI{}} = AshOaskit.validate(spec)
     end
   end
 
