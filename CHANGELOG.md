@@ -33,6 +33,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- changelog -->
 
+## [v0.2.1](https://github.com/futhr/ash_oaskit/compare/v0.2.0...v0.2.1) (2026-06-10)
+
+
+
+
+### Bug Fixes:
+
+* document typed structs with their declared field types by HaimKortovich
+
 ## [v0.2.0](https://github.com/futhr/ash_oaskit/compare/v0.1.1...v0.2.0) (2026-06-10)
 ### Breaking Changes:
 
