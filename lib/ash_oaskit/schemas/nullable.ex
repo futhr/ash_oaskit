@@ -9,10 +9,10 @@ defmodule AshOaskit.Schemas.Nullable do
 
   ## Version Differences
 
-  | Version | Simple types | Complex types (`$ref`, `oneOf`) |
-  |---------|-------------|-------------------------------|
-  | 3.0 | `nullable: true` added to schema | `nullable: true` added to schema |
-  | 3.1 | `type` becomes `[type, :null]` array | Wrapped in `oneOf: [%{type: :null}, schema]` |
+  | Version | Simple types | `$ref` schemas | Other complex schemas |
+  |---------|-------------|----------------|-----------------------|
+  | 3.0 | `nullable: true` added to schema | Wrapped in `allOf` + `nullable: true` (3.0 ignores siblings of `$ref`) | `nullable: true` added to schema |
+  | 3.1 | `type` becomes `[type, :null]` array | Wrapped in `oneOf: [%{type: :null}, schema]` | Wrapped in `oneOf: [%{type: :null}, schema]` |
 
   ## Which function to use
 
@@ -86,6 +86,7 @@ defmodule AshOaskit.Schemas.Nullable do
   """
   @spec make_nullable(map(), String.t()) :: map()
   def make_nullable(schema, "3.1"), do: make_nullable_31(schema)
+  def make_nullable(%{"$ref" => _} = schema, _), do: %{allOf: [schema], nullable: true}
   def make_nullable(schema, _), do: Map.put(schema, :nullable, true)
 
   @doc ~S"""
@@ -93,7 +94,9 @@ defmodule AshOaskit.Schemas.Nullable do
 
   For schemas that cannot use the simple type-array approach (e.g.,
   `$ref` schemas, resource identifiers, link objects):
-  - OpenAPI 3.0: adds `nullable: true` to the schema
+  - OpenAPI 3.0: adds `nullable: true` to the schema; `$ref` schemas
+    are first wrapped in `allOf` because 3.0 ignores sibling keys
+    next to `$ref`
   - OpenAPI 3.1: wraps in `%{oneOf: [%{type: :null}, schema]}`
 
   If the schema already has a `:oneOf` key, prepends the null type
@@ -108,6 +111,12 @@ defmodule AshOaskit.Schemas.Nullable do
 
       iex> AshOaskit.Schemas.Nullable.make_nullable_oneof(%{type: :object, properties: %{}}, "3.0")
       %{type: :object, properties: %{}, nullable: true}
+
+      iex> AshOaskit.Schemas.Nullable.make_nullable_oneof(
+      ...>   %{"$ref" => "#/components/schemas/User"},
+      ...>   "3.0"
+      ...> )
+      %{allOf: [%{"$ref" => "#/components/schemas/User"}], nullable: true}
 
       iex> AshOaskit.Schemas.Nullable.make_nullable_oneof(%{type: :object, properties: %{}}, "3.1")
       %{oneOf: [%{type: :null}, %{type: :object, properties: %{}}]}
@@ -126,6 +135,7 @@ defmodule AshOaskit.Schemas.Nullable do
   """
   @spec make_nullable_oneof(map(), String.t()) :: map()
   def make_nullable_oneof(schema, "3.1"), do: make_nullable_oneof_31(schema)
+  def make_nullable_oneof(%{"$ref" => _} = schema, _), do: %{allOf: [schema], nullable: true}
   def make_nullable_oneof(schema, _), do: Map.put(schema, :nullable, true)
 
   defp make_nullable_31(%{type: type} = schema) when is_atom(type) do

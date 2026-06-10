@@ -8,8 +8,11 @@ defmodule AshOaskit.TypeMapper do
 
   ## Version Differences
 
-  - **OpenAPI 3.0**: Uses `nullable: true` for nullable fields
-  - **OpenAPI 3.1**: Uses type arrays like `["string", "null"]`
+  - **OpenAPI 3.0**: Uses `nullable: true` for nullable fields. `$ref`
+    schemas are wrapped in `allOf` first, because 3.0 ignores sibling
+    keys next to `$ref`.
+  - **OpenAPI 3.1**: Uses type arrays like `["string", "null"]`; `$ref`
+    schemas are wrapped in `oneOf` with a null type.
 
   ## Supported Types
 
@@ -398,6 +401,12 @@ defmodule AshOaskit.TypeMapper do
   defp make_nullable_31(schema), do: schema
 
   # Make nullable for OpenAPI 3.0 (nullable flag)
+  # Sibling keys next to $ref are ignored in 3.0, so the ref must be
+  # wrapped in allOf for nullable to take effect
+  defp make_nullable_30(%{"$ref" => _} = schema) do
+    %{"allOf" => [schema], "nullable" => true}
+  end
+
   defp make_nullable_30(schema) do
     Map.put(schema, "nullable", true)
   end
