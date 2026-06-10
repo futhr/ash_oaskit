@@ -214,6 +214,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Elixir
+        id: beam
         uses: erlef/setup-beam@v1
         with:
           elixir-version: "1.20"
@@ -229,14 +230,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-mix-dialyzer-
 
+      # PLTs are tied to the exact OTP/Elixir build: a PLT created on an
+      # older patch release makes dialyzer fail with "Old PLT file" once
+      # setup-beam resolves a newer one, so key on the resolved versions
       - name: Restore PLT cache
         id: plt-cache
         uses: actions/cache@v5
         with:
           path: priv/plts
-          key: ${{ runner.os }}-plt-1.20-28-${{ hashFiles('**/mix.lock') }}
+          key: ${{ runner.os }}-plt-${{ steps.beam.outputs.otp-version }}-${{ steps.beam.outputs.elixir-version }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
-            ${{ runner.os }}-plt-1.20-28-
+            ${{ runner.os }}-plt-${{ steps.beam.outputs.otp-version }}-${{ steps.beam.outputs.elixir-version }}-
 
       - name: Install dependencies
         run: mix deps.get
