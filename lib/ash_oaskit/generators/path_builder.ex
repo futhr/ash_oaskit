@@ -145,7 +145,8 @@ defmodule AshOaskit.Generators.PathBuilder do
       true ->
         reject_nil_values(%{
           operationId: build_operation_id(route),
-          summary: route.name |> to_string() |> humanize(),
+          summary: build_operation_summary(route),
+          description: build_operation_description(route),
           responses: build_responses(route),
           tags: build_operation_tags(route),
           parameters: build_parameters(route, version),
@@ -158,12 +159,38 @@ defmodule AshOaskit.Generators.PathBuilder do
   defp build_generic_operation(route, version) do
     reject_nil_values(%{
       operationId: build_operation_id(route),
-      summary: route.action |> to_string() |> humanize(),
+      summary: build_operation_summary(route),
+      description: build_operation_description(route),
       responses: build_generic_responses(route, version),
       tags: build_operation_tags(route),
       parameters: build_generic_parameters(route, version),
       requestBody: build_generic_request_body(route)
     })
+  end
+
+  # The route's name when set, otherwise "{Action} {Resource}"
+  defp build_operation_summary(%{name: name}) when is_binary(name) do
+    name |> to_string() |> humanize()
+  end
+
+  defp build_operation_summary(route) do
+    action = route.action |> to_string() |> humanize()
+    resource = route.resource |> Module.split() |> List.last()
+
+    "#{action} #{resource}"
+  end
+
+  # The route's description when set, otherwise the action's description
+  # (the same precedence AshJsonApi uses)
+  defp build_operation_description(%{description: description}) when is_binary(description) do
+    description
+  end
+
+  defp build_operation_description(route) do
+    case ResourceInfo.action(route.resource, route.action) do
+      nil -> nil
+      action -> action.description
+    end
   end
 
   # Builds paths from Ash domain routes

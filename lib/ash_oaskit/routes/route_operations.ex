@@ -21,7 +21,8 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
   ## Parameters
 
   Path parameters are extracted from the route pattern (e.g., `:id`).
-  Query parameters are added for related routes (pagination).
+  For `:related` routes the JSON:API query parameter set is added
+  against the destination resource (see `build_parameters/2`).
 
   ## Usage
 
@@ -147,6 +148,9 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
   @doc """
   Builds the description text for a relationship route.
 
+  A `description` set on the route takes precedence over the canned
+  per-route-type text.
+
   ## Parameters
 
   - `route` - An AshJsonApi route struct
@@ -156,6 +160,10 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
   A description string or nil.
   """
   @spec build_description(map()) :: String.t() | nil
+  def build_description(%{description: description}) when is_binary(description) do
+    description
+  end
+
   def build_description(route) do
     case route.type do
       :related ->

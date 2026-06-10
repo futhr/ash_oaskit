@@ -359,4 +359,39 @@ defmodule AshOaskit.Generators.PathBuilderTest do
       refute Map.has_key?(paths, "/no-type")
     end
   end
+
+  describe "operation summaries and descriptions" do
+    test "summaries default to action and resource names" do
+      paths = PathBuilder.build_paths([Blog], version: "3.1")
+
+      assert paths["/posts"]["post"][:summary] == "Create Post"
+      assert paths["/posts/{id}"]["patch"][:summary] == "Update Post"
+      assert paths["/posts"]["get"][:summary] == "Read Post"
+    end
+
+    test "route name overrides the default summary" do
+      paths = PathBuilder.build_paths([AshOaskit.Test.Workshop], version: "3.1")
+
+      assert paths["/gadgets/{id}/activate"]["post"][:summary] == "Power Up"
+    end
+
+    test "action descriptions propagate to operations" do
+      paths = PathBuilder.build_paths([Blog], version: "3.1")
+
+      assert paths["/posts"]["post"][:description] == "Creates a blog post"
+    end
+
+    test "route descriptions take precedence over action descriptions" do
+      paths = PathBuilder.build_paths([AshOaskit.Test.Workshop], version: "3.1")
+
+      assert paths["/gadgets/{id}/activate"]["post"][:description] ==
+               "Activates the gadget immediately"
+    end
+
+    test "operations without any description omit the field" do
+      paths = PathBuilder.build_paths([Blog], version: "3.1")
+
+      refute Map.has_key?(paths["/posts/{id}"]["patch"], :description)
+    end
+  end
 end

@@ -129,6 +129,7 @@ defmodule AshOaskit.Test.Post do
     defaults [:read, :destroy]
 
     create :create do
+      description "Creates a blog post"
       accept [:title, :body, :status, :tags, :is_featured]
     end
 
@@ -279,7 +280,11 @@ defmodule AshOaskit.Test.Gadget do
       get :read
       index :read
       post :create
-      route :post, "/:id/activate", :activate
+
+      route :post, "/:id/activate", :activate,
+        name: "power_up",
+        description: "Activates the gadget immediately"
+
       route :get, "/search", :search, query_params: [:query]
       route :post, "/recalibrate", :recalibrate, wrap_in_result?: true
     end
