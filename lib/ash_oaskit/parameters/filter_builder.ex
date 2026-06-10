@@ -218,11 +218,8 @@ defmodule AshOaskit.FilterBuilder do
   @spec get_filterable_attributes(module()) :: [map()]
   defp get_filterable_attributes(resource) do
     resource
-    |> Ash.Resource.Info.attributes()
-    |> Enum.reject(fn attr ->
-      Map.get(attr, :private?, false) or
-        Map.get(attr, :filterable?, true) == false
-    end)
+    |> Ash.Resource.Info.public_attributes()
+    |> Enum.reject(fn attr -> Map.get(attr, :filterable?, true) == false end)
   end
 
   # Map of types to their JSON Schema representation

@@ -21,7 +21,8 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
   ## Parameters
 
   Path parameters are extracted from the route pattern (e.g., `:id`).
-  Query parameters are added for related routes (pagination).
+  For `:related` routes the JSON:API query parameter set is added
+  against the destination resource (see `build_parameters/2`).
 
   ## Usage
 
@@ -30,7 +31,10 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
 
   import AshOaskit.Core.PathUtils, only: [humanize: 1, extract_path_params: 1]
 
+  alias AshOaskit.FilterBuilder
+  alias AshOaskit.QueryParameters
   alias AshOaskit.RelationshipRoutes.RouteResponses
+  alias AshOaskit.SortBuilder
 
   @doc """
   Builds an OpenAPI operation object for a relationship route.
@@ -54,7 +58,7 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
       summary: build_summary(route),
       description: build_description(route),
       tags: build_tags(route),
-      parameters: build_parameters(route),
+      parameters: build_parameters(route, opts),
       responses: build_responses(route, opts)
     }
     |> maybe_add_request_body(route, opts)
@@ -144,6 +148,9 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
   @doc """
   Builds the description text for a relationship route.
 
+  A `description` set on the route takes precedence over the canned
+  per-route-type text.
+
   ## Parameters
 
   - `route` - An AshJsonApi route struct
@@ -153,6 +160,10 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
   A description string or nil.
   """
   @spec build_description(map()) :: String.t() | nil
+  def build_description(%{description: description}) when is_binary(description) do
+    description
+  end
+
   def build_description(route) do
     case route.type do
       :related ->
@@ -195,18 +206,29 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
   @doc """
   Builds the parameters for a relationship route.
 
-  Extracts path parameters and adds query parameters for related routes.
+  Extracts path parameters. For `:related` GET routes, which serve the
+  DESTINATION resource, the JSON:API query parameter set is added:
+
+  - to-many relationships: `filter` and `sort` built against the
+    destination resource (gated on the route's `derive_filter?` /
+    `derive_sort?` flags and the destination's own settings), plus
+    `page` and `include`
+  - to-one relationships: `include` only
+
+  Relationship linkage routes (`:relationship` and modifications) take
+  only path parameters.
 
   ## Parameters
 
   - `route` - An AshJsonApi route struct
+  - `opts` - Options keyword list including `:version`
 
   ## Returns
 
   A list of parameter objects.
   """
-  @spec build_parameters(map()) :: [map()]
-  def build_parameters(route) do
+  @spec build_parameters(map(), keyword()) :: [map()]
+  def build_parameters(route, opts \\ []) do
     path_params =
       route.route
       |> extract_path_params()
@@ -220,27 +242,52 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
         }
       end)
 
-    if route.type == :related do
-      path_params ++
-        [
-          %{
-            name: "page",
-            in: :query,
-            required: false,
-            style: "deepObject",
-            schema: %{
-              type: :object,
-              properties: %{
-                "offset" => %{type: :integer},
-                "limit" => %{type: :integer}
-              }
-            },
-            description: "Pagination parameters"
-          }
-        ]
-    else
-      path_params
+    path_params ++ related_query_parameters(route, Keyword.get(opts, :version, "3.1"))
+  end
+
+  # Query parameters for :related routes, built against the destination
+  defp related_query_parameters(%{type: :related} = route, version) do
+    case RouteResponses.get_route_relationship(route) do
+      nil ->
+        []
+
+      relationship ->
+        case RouteResponses.relationship_cardinality(relationship) do
+          :many -> to_many_query_parameters(route, relationship.destination, version)
+          _ -> [include_parameter(relationship.destination)]
+        end
     end
+  end
+
+  defp related_query_parameters(_, _), do: []
+
+  defp to_many_query_parameters(route, destination, version) do
+    filter_param =
+      if Map.get(route, :derive_filter?, true) do
+        FilterBuilder.build_filter_parameter(destination, version: version)
+      end
+
+    sort_param =
+      if Map.get(route, :derive_sort?, true) do
+        SortBuilder.build_sort_parameter(destination, version: version)
+      end
+
+    Enum.reject(
+      [
+        filter_param,
+        sort_param,
+        QueryParameters.build_page_parameter([]),
+        include_parameter(destination)
+      ],
+      &is_nil/1
+    )
+  end
+
+  defp include_parameter(destination) do
+    destination
+    |> Ash.Resource.Info.public_relationships()
+    |> Enum.map(& &1.name)
+    |> QueryParameters.build_include_parameter()
   end
 
   # Builds responses based on route type

@@ -5,9 +5,43 @@ defmodule AshOaskit do
   AshOaskit automatically generates OpenAPI 3.0 and 3.1 specifications from your
   Ash domains by introspecting resources, attributes, actions, and AshJsonApi routes.
 
-  ## Three Levels of Customization
+  ## Spec Modules (Recommended)
 
-  AshOaskit provides three levels of customization for serving OpenAPI specs:
+  Define a spec module with `use AshOaskit` to get a cached, oaskit-native
+  spec that plugs into the whole `Oaskit` toolchain:
+
+      defmodule MyAppWeb.ApiSpec do
+        use AshOaskit,
+          domains: [MyApp.Blog, MyApp.Accounts],
+          title: "My API",
+          api_version: "1.0.0"
+      end
+
+  The module implements the `Oaskit` behaviour, which means:
+
+      # Serve it (JSON + Redoc UI) straight from your Phoenix router
+      get "/openapi.json", Oaskit.SpecController, spec: MyAppWeb.ApiSpec
+      get "/redoc", Oaskit.SpecController, redoc: "/openapi.json"
+
+      # Or via the AshOaskit router macro
+      use AshOaskit.Router,
+        spec: MyAppWeb.ApiSpec,
+        open_api: "/openapi",
+        redoc: "/redoc"
+
+      # Export from the command line
+      mix openapi.dump MyAppWeb.ApiSpec
+
+      # Validate requests in hand-written controllers documented
+      # alongside the Ash routes
+      plug Oaskit.Plugs.SpecProvider, spec: MyAppWeb.ApiSpec
+
+  The generated spec is cached in `:persistent_term` — the Ash domain
+  walk runs once, not on every request. See `AshOaskit.Spec` for all
+  options, the `modify_spec/1` customization callback, and cache
+  controls.
+
+  ## Other Levels of Customization
 
   ### 1. Router Macro (Simple)
 
@@ -89,10 +123,11 @@ defmodule AshOaskit do
 
   | Use Case | Approach |
   |----------|----------|
-  | Standard API documentation | Router Macro |
-  | Custom security schemes | Router + SpecBuilder |
-  | Feature flags / extensions | Router + SpecBuilder |
-  | Version-specific domains | Router + SpecBuilder |
+  | Standard API documentation | Spec module (`use AshOaskit`) |
+  | Custom security schemes | Spec module + `modify_spec/1` |
+  | Feature flags / extensions | Spec module + `modify_spec/1` |
+  | Redoc UI / request validation / `mix openapi.dump` | Spec module |
+  | Version-specific domains | Two spec modules |
   | Non-standard routing | Programmatic API |
   | Complete custom control | Programmatic API |
 
@@ -206,6 +241,7 @@ defmodule AshOaskit do
 
   | Module | Purpose |
   |--------|---------|
+  | `AshOaskit.Spec` | Spec module behaviour and runtime (`use AshOaskit`) |
   | `AshOaskit.Router` | Router macro for quick Phoenix integration |
   | `AshOaskit.SpecBuilder` | Behaviour for custom spec generation |
   | `AshOaskit.SpecBuilder.Default` | Default SpecBuilder implementation |
@@ -218,6 +254,59 @@ defmodule AshOaskit do
   """
 
   alias AshOaskit.OpenApi
+
+  @doc """
+  Defines an oaskit-compatible spec module from Ash domains.
+
+  Implements the `Oaskit` behaviour with a `spec/0` that generates (and
+  caches) the OpenAPI spec for the configured domains, plus a default
+  passthrough `c:AshOaskit.Spec.modify_spec/1`. Both are overridable,
+  as are Oaskit's `cache/1`, `cache_variant/0`, and `jsv_opts/0`.
+
+  See `AshOaskit.Spec` for the full option reference and examples.
+
+  ## Examples
+
+      defmodule MyAppWeb.ApiSpec do
+        use AshOaskit,
+          domains: [MyApp.Blog],
+          title: "My API",
+          api_version: "1.0.0"
+      end
+
+      MyAppWeb.ApiSpec.spec()
+      # => %{"openapi" => "3.1.0", ...}
+  """
+  defmacro __using__(opts) do
+    quote bind_quoted: [opts: opts] do
+      use Oaskit
+
+      @ash_oaskit_opts AshOaskit.Spec.validate_opts!(opts, __MODULE__)
+
+      @behaviour AshOaskit.Spec
+
+      @doc false
+      @spec __ash_oaskit__() :: keyword()
+      def __ash_oaskit__, do: @ash_oaskit_opts
+
+      @impl Oaskit
+      @doc """
+      Returns the OpenAPI specification generated from the configured
+      Ash domains (cached unless caching is disabled).
+      """
+      @spec spec() :: map()
+      def spec, do: AshOaskit.Spec.build(__MODULE__, @ash_oaskit_opts)
+
+      @impl AshOaskit.Spec
+      @doc """
+      Post-processes the generated spec. Default: passthrough.
+      """
+      @spec modify_spec(map()) :: map()
+      def modify_spec(spec), do: spec
+
+      defoverridable spec: 0, modify_spec: 1
+    end
+  end
 
   @doc """
   Generate an OpenAPI specification for the given domains.

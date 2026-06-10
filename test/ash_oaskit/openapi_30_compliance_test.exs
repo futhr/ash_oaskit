@@ -110,6 +110,25 @@ defmodule AshOaskit.OpenAPI30ComplianceTest do
       assert schema["format"] == "date-time"
       refute is_list(schema["type"])
     end
+
+    test "nullable embedded $ref is wrapped in allOf (3.0 ignores $ref siblings)" do
+      schema =
+        TypeMapper.to_json_schema_30(mock_attr(%{type: AshOaskit.Test.Address, allow_nil?: true}))
+
+      assert schema == %{
+               "allOf" => [%{"$ref" => "#/components/schemas/Address"}],
+               "nullable" => true
+             }
+    end
+
+    test "non-nullable embedded stays a bare $ref" do
+      schema =
+        TypeMapper.to_json_schema_30(
+          mock_attr(%{type: AshOaskit.Test.Address, allow_nil?: false})
+        )
+
+      assert schema == %{"$ref" => "#/components/schemas/Address"}
+    end
   end
 
   describe "type is always a string in 3.0" do
@@ -396,7 +415,36 @@ defmodule AshOaskit.OpenAPI30ComplianceTest do
                "Invalid component key: #{key}"
       end)
     end
+
+    test "no $ref object carries sibling keys anywhere in the spec" do
+      # Publishing exercises nullable embedded attributes and nullable
+      # relationship data, the paths where $ref siblings used to leak
+      spec = AshOaskit.spec_30(domains: [AshOaskit.Test.Publishing])
+
+      assert_no_ref_siblings(spec, [])
+    end
   end
+
+  defp assert_no_ref_siblings(%{"$ref" => _} = node, path) do
+    assert map_size(node) == 1,
+           "$ref with sibling keys at #{Enum.join(Enum.reverse(path), ".")}: #{inspect(node)}"
+  end
+
+  defp assert_no_ref_siblings(node, path) when is_map(node) do
+    Enum.each(node, fn {key, value} ->
+      assert_no_ref_siblings(value, [to_string(key) | path])
+    end)
+  end
+
+  defp assert_no_ref_siblings(node, path) when is_list(node) do
+    node
+    |> Enum.with_index()
+    |> Enum.each(fn {value, idx} ->
+      assert_no_ref_siblings(value, [Integer.to_string(idx) | path])
+    end)
+  end
+
+  defp assert_no_ref_siblings(_, _), do: :ok
 
   describe "Oaskit validation for 3.0" do
     test "full spec passes Oaskit validation" do

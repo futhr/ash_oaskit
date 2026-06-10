@@ -1,7 +1,7 @@
 defmodule AshOaskit.MixProject do
   use Mix.Project
 
-  @version "0.1.1"
+  @version "0.2.0"
   @source_url "https://github.com/futhr/ash_oaskit"
 
   def project do
@@ -64,13 +64,14 @@ defmodule AshOaskit.MixProject do
       {:ash, "~> 3.0"},
       {:spark, "~> 2.0"},
 
-      # Security override: decimal < 3.1.0 has a DoS via unbounded
-      # exponent parsing (GHSA-rhv4-8758-jx7v / elixirforum 75261).
-      # Pulled transitively via Ash; force >= 3.1.
-      {:decimal, "~> 3.1", override: true},
+      # Security floor: decimal < 3.1.0 has a DoS via unbounded exponent
+      # parsing (GHSA-rhv4-8758-jx7v / elixirforum 75261). Pulled
+      # transitively via Ash (~> 2.0 or ~> 3.0); ~> 3.1 narrows the
+      # resolution without needing override (hex.publish forbids overrides).
+      {:decimal, "~> 3.1"},
 
       # OpenAPI spec normalization, validation, and rendering
-      {:oaskit, "~> 0.13"},
+      {:oaskit, "~> 0.13.1"},
 
       # AshJsonApi integration (optional)
       {:ash_json_api, "~> 1.0", optional: true},
@@ -79,7 +80,7 @@ defmodule AshOaskit.MixProject do
       {:igniter, "~> 0.5", optional: true},
 
       # Phoenix integration (optional for consumers, available in test)
-      {:plug, "~> 1.14"},
+      {:plug, "~> 1.16"},
       {:phoenix, "~> 1.7", optional: true},
 
       # JSON encoding
@@ -124,6 +125,7 @@ defmodule AshOaskit.MixProject do
     [
       files: ~w(
         lib
+        guides
         .formatter.exs
         mix.exs
         README.md
@@ -148,24 +150,79 @@ defmodule AshOaskit.MixProject do
       main: "readme",
       extras: [
         "README.md": [title: "Overview"],
+        "guides/spec-modules.md": [title: "Spec Modules (use AshOaskit)"],
+        "guides/request-validation.md": [title: "Request Validation with Oaskit"],
+        "guides/cheatsheet.cheatmd": [title: "Cheatsheet"],
         "CHANGELOG.md": [title: "Changelog"],
         "CONTRIBUTING.md": [title: "Contributing"],
         "LICENSE.md": [title: "License"],
         "usage-rules.md": [title: "Usage Rules (LLM)"]
       ],
+      groups_for_extras: [
+        Guides: ~r{guides/.*}
+      ],
       groups_for_modules: [
         "Core API": [
-          AshOaskit
+          AshOaskit,
+          AshOaskit.Spec,
+          AshOaskit.OpenApi
+        ],
+        Customization: [
+          AshOaskit.SpecBuilder,
+          AshOaskit.SpecBuilder.Default,
+          AshOaskit.SpecModifier,
+          AshOaskit.OpenApiController
+        ],
+        "Phoenix Integration": [
+          AshOaskit.Router,
+          AshOaskit.Router.Plug,
+          AshOaskit.Controller,
+          AshOaskit.PhoenixIntrospection
         ],
         Generators: [
+          AshOaskit.Generators.Generator,
+          AshOaskit.Generators.InfoBuilder,
+          AshOaskit.Generators.PathBuilder,
+          AshOaskit.Generators.Shared,
           AshOaskit.Generators.V30,
           AshOaskit.Generators.V31
         ],
-        Utilities: [
-          AshOaskit.TypeMapper
+        Schemas: [
+          AshOaskit.SchemaBuilder,
+          AshOaskit.SchemaBuilder.EmbeddedSchemas,
+          AshOaskit.SchemaBuilder.PropertyBuilders,
+          AshOaskit.SchemaBuilder.RelationshipSchemas,
+          AshOaskit.SchemaBuilder.ResourceSchemas,
+          AshOaskit.Schemas.Nullable,
+          AshOaskit.TypeMapper,
+          AshOaskit.Core.SchemaRef
         ],
-        Phoenix: [
-          AshOaskit.Controller
+        Parameters: [
+          AshOaskit.FilterBuilder,
+          AshOaskit.SortBuilder,
+          AshOaskit.QueryParameters
+        ],
+        "Routes & Operations": [
+          AshOaskit.RouteGathering,
+          AshOaskit.RelationshipRoutes,
+          AshOaskit.RelationshipRoutes.RouteOperations,
+          AshOaskit.RelationshipRoutes.RouteResponses,
+          AshOaskit.Core.PathUtils
+        ],
+        Responses: [
+          AshOaskit.ErrorSchemas,
+          AshOaskit.ResponseLinks,
+          AshOaskit.ResponseMeta
+        ],
+        "JSON:API Documents": [
+          AshOaskit.IncludedResources,
+          AshOaskit.ResourceIdentifier,
+          AshOaskit.TagBuilder
+        ],
+        Support: [
+          AshOaskit.Config,
+          AshOaskit.MultipartSupport,
+          AshOaskit.Security
         ]
       ],
       source_ref: "v#{@version}",

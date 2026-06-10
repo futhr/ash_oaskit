@@ -8,8 +8,11 @@ defmodule AshOaskit.TypeMapper do
 
   ## Version Differences
 
-  - **OpenAPI 3.0**: Uses `nullable: true` for nullable fields
-  - **OpenAPI 3.1**: Uses type arrays like `["string", "null"]`
+  - **OpenAPI 3.0**: Uses `nullable: true` for nullable fields. `$ref`
+    schemas are wrapped in `allOf` first, because 3.0 ignores sibling
+    keys next to `$ref`.
+  - **OpenAPI 3.1**: Uses type arrays like `["string", "null"]`; `$ref`
+    schemas are wrapped in `oneOf` with a null type.
 
   ## Supported Types
 
@@ -23,15 +26,24 @@ defmodule AshOaskit.TypeMapper do
   | `:boolean` | `boolean` | - |
   | `:date` | `string` | `date` |
   | `:time` | `string` | `time` |
+  | `:time_usec` | `string` | `time` |
   | `:datetime` | `string` | `date-time` |
   | `:utc_datetime` | `string` | `date-time` |
   | `:utc_datetime_usec` | `string` | `date-time` |
   | `:naive_datetime` | `string` | `date-time` |
+  | `:duration` | `string` | `duration` |
   | `:uuid` | `string` | `uuid` |
+  | `:uuid_v7` | `string` | `uuid` |
   | `:binary` | `string` | `binary` |
+  | `:url_encoded_binary` | `string` | `byte` |
   | `:map` | `object` | - |
+  | `:keyword` | `object` | - |
+  | `:tuple` | `object` | - |
   | `:atom` | `string` | - |
+  | `:module` | `string` | - |
   | `:term` | (empty schema) | - |
+  | `:function` | (empty schema) | - |
+  | `:vector` | `array` of `number` | - |
   | `{:array, type}` | `array` | items: nested type |
 
   ## Advanced Types
@@ -40,8 +52,11 @@ defmodule AshOaskit.TypeMapper do
   |----------|-------------|-------|
   | `Ash.Type.Union` | `anyOf` | With optional discriminator |
   | `Ash.Type.Struct` | `object` | With constrained properties |
-  | `Ash.Type.File` | `string`/`object` | Binary or file object |
-  | `Ash.Type.DurationName` | `string` | With duration enum |
+  | `Ash.Type.File` | `string` (`byte`) | Base64 encoded content |
+  | `Ash.Type.DurationName` | `string` | Enum from the type's `values/0` |
+  | `Ash.Type.Enum` implementors | `string` | Enum from the type's `values/0` |
+  | `Ash.TypedStruct` modules | `object` | Typed properties and required list from the field definitions |
+  | `Ash.Type.NewType` wrappers | (subtype schema) | Resolved via `subtype_of/0` |
   | Custom types | Calls `json_schema/1` | If defined on type |
 
   ## Supported Constraints
@@ -65,6 +80,8 @@ defmodule AshOaskit.TypeMapper do
   # at runtime even though dialyzer thinks the type is narrowed to binary/map.
   # OpenAPI 3.1 schemas can have "type" as either a string or list of strings.
   @dialyzer {:nowarn_function, make_nullable_31: 1}
+
+  alias Ash.Type.NewType
 
   require Logger
 
@@ -173,19 +190,32 @@ defmodule AshOaskit.TypeMapper do
     boolean: %{"type" => "boolean"},
     date: %{"type" => "string", "format" => "date"},
     time: %{"type" => "string", "format" => "time"},
+    time_usec: %{"type" => "string", "format" => "time"},
     datetime: %{"type" => "string", "format" => "date-time"},
     utc_datetime: %{"type" => "string", "format" => "date-time"},
     utc_datetime_usec: %{"type" => "string", "format" => "date-time"},
     naive_datetime: %{"type" => "string", "format" => "date-time"},
+    duration: %{"type" => "string", "format" => "duration"},
     uuid: %{"type" => "string", "format" => "uuid"},
+    uuid_v7: %{"type" => "string", "format" => "uuid"},
     binary: %{"type" => "string", "format" => "binary"},
+    url_encoded_binary: %{"type" => "string", "format" => "byte"},
     map: %{"type" => "object"},
+    keyword: %{"type" => "object"},
+    tuple: %{"type" => "object"},
     atom: %{"type" => "string"},
+    module: %{"type" => "string"},
     term: %{},
-    file: %{"type" => "string", "format" => "binary", "description" => "File content (binary)"},
+    function: %{},
+    vector: %{"type" => "array", "items" => %{"type" => "number"}},
+    file: %{
+      "type" => "string",
+      "format" => "byte",
+      "description" => "Base64 encoded file content"
+    },
     duration_name: %{
       "type" => "string",
-      "enum" => ~w(year month week day hour minute second millisecond microsecond nanosecond),
+      "enum" => Enum.map(Ash.Type.DurationName.values(), &to_string/1),
       "description" => "Duration unit name"
     }
   }
@@ -212,6 +242,7 @@ defmodule AshOaskit.TypeMapper do
 
   defp complex_type_schema({:union, types}), do: build_union_schema(types)
   defp complex_type_schema({:struct, module}), do: build_struct_schema(module)
+  defp complex_type_schema({:struct_fields, module}), do: build_typed_struct_schema(module)
   defp complex_type_schema({:custom, custom_schema}), do: custom_schema
   defp complex_type_schema(_), do: %{"type" => "string"}
 
@@ -256,10 +287,42 @@ defmodule AshOaskit.TypeMapper do
 
   defp build_struct_schema(_), do: %{"type" => "object"}
 
+  # Build an object schema for a NewType of Ash.Type.Struct (e.g. a
+  # module defined with `use Ash.TypedStruct`). Unlike build_struct_schema/1,
+  # the field definitions carry declared types and allow_nil? flags in the
+  # NewType's subtype constraints, so properties keep their real types and
+  # non-nil fields become required.
+  defp build_typed_struct_schema(module) do
+    fields = module.subtype_constraints()[:fields] || []
+
+    properties =
+      Map.new(fields, fn {name, config} ->
+        {to_string(name), ash_type_to_base_schema(Keyword.get(config, :type, :string))}
+      end)
+
+    required =
+      for {name, config} <- fields,
+          Keyword.get(config, :allow_nil?, true) == false,
+          do: to_string(name)
+
+    schema = %{
+      "type" => "object",
+      "properties" => properties,
+      "description" => "Struct of type #{inspect(module)}"
+    }
+
+    if required == [] do
+      schema
+    else
+      Map.put(schema, "required", Enum.sort(required))
+    end
+  end
+
   # Known basic atom types
-  @basic_types ~w(string ci_string integer float decimal boolean date time datetime
-                  utc_datetime utc_datetime_usec naive_datetime uuid binary map atom
-                  term file duration_name)a
+  @basic_types ~w(string ci_string integer float decimal boolean date time time_usec
+                  datetime utc_datetime utc_datetime_usec naive_datetime duration uuid
+                  uuid_v7 binary url_encoded_binary map keyword tuple atom module term
+                  function vector file duration_name)a
 
   # Map of Ash.Type.* modules to their atom equivalents
   @ash_type_to_atom %{
@@ -271,15 +334,24 @@ defmodule AshOaskit.TypeMapper do
     Ash.Type.Boolean => :boolean,
     Ash.Type.Date => :date,
     Ash.Type.Time => :time,
+    Ash.Type.TimeUsec => :time_usec,
     Ash.Type.DateTime => :datetime,
     Ash.Type.UtcDatetime => :utc_datetime,
     Ash.Type.UtcDatetimeUsec => :utc_datetime_usec,
     Ash.Type.NaiveDatetime => :naive_datetime,
+    Ash.Type.Duration => :duration,
     Ash.Type.UUID => :uuid,
+    Ash.Type.UUIDv7 => :uuid_v7,
     Ash.Type.Binary => :binary,
+    Ash.Type.UrlEncodedBinary => :url_encoded_binary,
     Ash.Type.Map => :map,
+    Ash.Type.Keyword => :keyword,
+    Ash.Type.Tuple => :tuple,
     Ash.Type.Atom => :atom,
+    Ash.Type.Module => :module,
     Ash.Type.Term => :term,
+    Ash.Type.Function => :function,
+    Ash.Type.Vector => :vector,
     Ash.Type.File => :file,
     Ash.Type.DurationName => :duration_name
   }
@@ -313,7 +385,8 @@ defmodule AshOaskit.TypeMapper do
   # Fallback for unknown types
   defp normalize_type(_), do: :string
 
-  # Handle complex type checking for embedded resources, custom types, and unions
+  # Handle complex type checking for embedded resources, custom types, unions,
+  # Ash.Type.Enum implementors, and NewType wrappers
   defp normalize_complex_type(type) do
     cond do
       # make sure callback always take priority
@@ -326,13 +399,41 @@ defmodule AshOaskit.TypeMapper do
       union_result = get_union_types(type) ->
         union_result
 
-      # if type is a custom struct then it should return struct
-      is_defined_struct?(type) ->
-        {:struct, type}
+      enum_type?(type) ->
+        {:custom, enum_schema(type)}
+
+      newtype?(type) ->
+        normalize_newtype(type)
 
       true ->
         :string
     end
+  end
+
+  # NewType wrappers resolve to their subtype — except typed structs
+  # (subtype_of: :struct, e.g. `use Ash.TypedStruct`), whose field
+  # definitions live in the NewType's constraints and would be lost by
+  # plain recursion on the subtype
+  defp normalize_newtype(type) do
+    case NewType.subtype_of(type) do
+      Ash.Type.Struct -> {:struct_fields, type}
+      subtype -> normalize_type(subtype)
+    end
+  end
+
+  # Check if a type uses Ash.Type.Enum (e.g. `use Ash.Type.Enum, values: [...]`)
+  defp enum_type?(type) do
+    Code.ensure_loaded?(type) and Spark.implements_behaviour?(type, Ash.Type.Enum)
+  end
+
+  defp enum_schema(type) do
+    %{"type" => "string", "enum" => Enum.map(type.values(), &to_string/1)}
+  end
+
+  # Check if a type is an Ash.Type.NewType wrapper (union NewTypes are
+  # already resolved earlier via the attribute constraints)
+  defp newtype?(type) do
+    Code.ensure_loaded?(type) and NewType.new_type?(type)
   end
 
   # Check if a type has a json_schema/1 callback
@@ -379,12 +480,6 @@ defmodule AshOaskit.TypeMapper do
   @spec ash_embedded?(atom()) :: boolean()
   defp ash_embedded?(resource), do: Ash.Resource.Info.embedded?(resource)
 
-  @spec is_defined_struct?(atom()) :: boolean()
-  defp is_defined_struct?(type) when is_atom(type) do
-    Code.ensure_loaded?(type) and
-      function_exported?(type, :spark_is, 0)
-  end
-
   # Check if attribute allows nil
   defp allow_nil?(%{allow_nil?: allow_nil?}), do: allow_nil?
   defp allow_nil?(_), do: true
@@ -409,6 +504,12 @@ defmodule AshOaskit.TypeMapper do
   defp make_nullable_31(schema), do: schema
 
   # Make nullable for OpenAPI 3.0 (nullable flag)
+  # Sibling keys next to $ref are ignored in 3.0, so the ref must be
+  # wrapped in allOf for nullable to take effect
+  defp make_nullable_30(%{"$ref" => _} = schema) do
+    %{"allOf" => [schema], "nullable" => true}
+  end
+
   defp make_nullable_30(schema) do
     Map.put(schema, "nullable", true)
   end

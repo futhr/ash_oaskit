@@ -69,6 +69,16 @@ defmodule Mix.Tasks.AshOaskit.InstallTest do
         # Should return an Igniter struct
         assert %Igniter{} = result
       end
+
+      test "igniter/1 generates an ApiSpec module and prints the router snippet" do
+        result = Install.igniter(Igniter.new())
+
+        created_sources = Map.keys(result.rewrite.sources)
+        assert Enum.any?(created_sources, &String.ends_with?(&1, "api_spec.ex"))
+
+        assert Enum.any?(result.notices, &(&1 =~ "use AshOaskit.Router"))
+        assert Enum.any?(result.notices, &(&1 =~ "mix openapi.dump"))
+      end
     end
   else
     describe "without igniter available" do

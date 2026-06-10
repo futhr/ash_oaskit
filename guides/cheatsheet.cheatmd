@@ -1,0 +1,153 @@
+# Cheatsheet
+
+## Spec modules
+{: .col-2}
+
+### Define
+
+```elixir
+defmodule MyAppWeb.ApiSpec do
+  use AshOaskit,
+    domains: [MyApp.Blog],
+    title: "My API",
+    api_version: "1.0.0"
+end
+```
+
+### Customize
+
+```elixir
+defmodule MyAppWeb.ApiSpec do
+  use AshOaskit, domains: [MyApp.Blog]
+
+  @impl AshOaskit.Spec
+  def modify_spec(spec) do
+    put_in(spec, ["components", "securitySchemes"], %{
+      "bearerAuth" => %{"type" => "http", "scheme" => "bearer"}
+    })
+  end
+end
+```
+
+### Serve (Phoenix or Plug.Router)
+
+```elixir
+use AshOaskit.Router,
+  spec: MyAppWeb.ApiSpec,
+  open_api: "/openapi",
+  redoc: "/redoc"
+```
+
+### Serve both OpenAPI versions
+
+```elixir
+use AshOaskit.Router,
+  spec: [
+    {"3.1", MyAppWeb.ApiSpecV31},
+    {"3.0", MyAppWeb.ApiSpecV30}
+  ],
+  open_api: "/openapi"
+```
+
+### Dev: regenerate on reload
+
+```elixir
+# config/dev.exs
+config :ash_oaskit, cache_specs: false
+```
+
+### Validate in tests
+
+```elixir
+assert {:ok, _} = AshOaskit.validate(MyAppWeb.ApiSpec.spec())
+Oaskit.build_spec!(MyAppWeb.ApiSpec)
+```
+
+## One-off generation
+{: .col-2}
+
+### In code
+
+```elixir
+spec = AshOaskit.spec(domains: [MyApp.Blog])
+spec = AshOaskit.spec_30(domains: [MyApp.Blog])
+spec = AshOaskit.spec_31(domains: [MyApp.Blog])
+```
+
+### With full options
+
+```elixir
+AshOaskit.spec(
+  domains: [MyApp.Blog],
+  version: "3.1",
+  title: "My API",
+  api_version: "2.0.0",
+  description: "Blog API",
+  servers: ["https://api.example.com"]
+)
+```
+
+### Validate a spec map
+
+```elixir
+{:ok, validated} = AshOaskit.validate(spec)
+validated = AshOaskit.validate!(spec)
+```
+
+## Mix tasks
+{: .col-2}
+
+### Export a spec module (preferred)
+
+```sh
+mix openapi.dump MyAppWeb.ApiSpec \
+  --pretty -o priv/static/openapi.json
+```
+
+### Generate without a spec module
+
+```sh
+mix ash_oaskit.generate \
+  --domains MyApp.Blog,MyApp.Accounts \
+  --version 3.1 \
+  --output openapi.json
+```
+
+### Install
+
+```sh
+mix igniter.install ash_oaskit
+```
+
+## Making things appear in the spec
+{: .col-2}
+
+### Fields must be public
+
+```elixir
+attribute :title, :string do
+  public? true
+end
+```
+
+Only `public? true` attributes, calculations, aggregates, and
+relationships appear in generated specs — matching what AshJsonApi
+serializes.
+
+### Request bodies follow the action
+
+```elixir
+create :create do
+  accept [:title, :body]
+end
+# -> PostCreateInput documents exactly title + body
+```
+
+### Descriptions propagate
+
+```elixir
+create :create do
+  description "Creates a blog post"
+end
+# -> operation description
+```

@@ -32,6 +32,29 @@
 # - Special types: uuid, binary, map, atom, term, ci_string
 # - Array types: {:array, :string}
 # - Constraints: min_length, max_length, min, max, match, one_of
+#
+# ## Visibility Coverage
+#
+# Specs must only expose fields marked `public? true` (matching what
+# AshJsonApi serializes). `Post.internal_notes` is deliberately
+# non-public to regression-test that filtering; `Comment`'s timestamps
+# are deliberately public to prove public timestamps DO appear.
+
+defmodule AshOaskit.Test.Priority do
+  @moduledoc """
+  `Ash.Type.Enum` implementor used to test the generic enum fallback
+  in `TypeMapper` (string schema with enum from `values/0`).
+  """
+  use Ash.Type.Enum, values: [:low, :medium, :high]
+end
+
+defmodule AshOaskit.Test.Subject do
+  @moduledoc """
+  `Ash.Type.NewType` wrapper used to test the generic NewType fallback
+  in `TypeMapper` (schema resolved from the subtype).
+  """
+  use Ash.Type.NewType, subtype_of: :string, constraints: [max_length: 120]
+end
 
 defmodule AshOaskit.Test.Post do
   @moduledoc false
@@ -47,43 +70,56 @@ defmodule AshOaskit.Test.Post do
     uuid_primary_key :id
 
     attribute :title, :string do
+      public? true
       allow_nil? false
       constraints min_length: 1, max_length: 255
     end
 
     attribute :body, :string do
+      public? true
       description "Post content"
     end
 
     attribute :status, :atom do
+      public? true
       constraints one_of: [:draft, :published]
     end
 
     attribute :view_count, :integer do
+      public? true
       constraints min: 0
     end
 
     attribute :rating, :float do
+      public? true
       constraints min: 0.0, max: 5.0
     end
 
-    attribute :published_at, :utc_datetime
-    attribute :tags, {:array, :string}
-    attribute :metadata, :map
-    attribute :slug, :ci_string
-    attribute :duration, :time
-    attribute :local_time, :naive_datetime
-    attribute :attachment, :binary
-    attribute :config, :term
-    attribute :score, :decimal
+    attribute :published_at, :utc_datetime, public?: true
+    attribute :tags, {:array, :string}, public?: true
+    attribute :metadata, :map, public?: true
+    attribute :slug, :ci_string, public?: true
+    attribute :duration, :time, public?: true
+    attribute :local_time, :naive_datetime, public?: true
+    attribute :attachment, :binary, public?: true
+    attribute :config, :term, public?: true
+    attribute :score, :decimal, public?: true
+    attribute :external_id, :uuid_v7, public?: true
+    attribute :priority, AshOaskit.Test.Priority, public?: true
+    attribute :subject, AshOaskit.Test.Subject, public?: true
 
     attribute :is_featured, :boolean do
+      public? true
       default false
     end
 
     attribute :email, :string do
+      public? true
       constraints match: ~r/^[^\s]+@[^\s]+$/
     end
+
+    # Deliberately non-public: must never appear in generated specs
+    attribute :internal_notes, :string
 
     create_timestamp :inserted_at
     update_timestamp :updated_at
@@ -93,6 +129,7 @@ defmodule AshOaskit.Test.Post do
     defaults [:read, :destroy]
 
     create :create do
+      description "Creates a blog post"
       accept [:title, :body, :status, :tags, :is_featured]
     end
 
@@ -108,7 +145,7 @@ defmodule AshOaskit.Test.NoDomainResource do
     data_layer: :embedded
 
   attributes do
-    attribute :name, :string
+    attribute :name, :string, public?: true
   end
 end
 
@@ -125,7 +162,7 @@ defmodule AshOaskit.Test.NoTypeResource do
 
   attributes do
     uuid_primary_key :id
-    attribute :name, :string
+    attribute :name, :string, public?: true
   end
 
   actions do
@@ -167,7 +204,7 @@ defmodule AshOaskit.Test.NilTypeResource do
 
   attributes do
     uuid_primary_key :id
-    attribute :label, :string
+    attribute :label, :string, public?: true
   end
 
   actions do
@@ -210,9 +247,11 @@ defmodule AshOaskit.Test.Comment do
 
   attributes do
     uuid_primary_key :id
-    attribute :content, :string, allow_nil?: false
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
+    attribute :content, :string, allow_nil?: false, public?: true
+
+    # Deliberately public timestamps: must appear in generated specs
+    create_timestamp :inserted_at, public?: true
+    update_timestamp :updated_at, public?: true
   end
 
   actions do
@@ -220,6 +259,99 @@ defmodule AshOaskit.Test.Comment do
 
     create :create do
       accept [:content]
+    end
+  end
+end
+
+# Resource that declares its routes on the RESOURCE (classic ash_json_api
+# style) — regression guard for resource-level route gathering
+defmodule AshOaskit.Test.Gadget do
+  @moduledoc false
+  use Ash.Resource,
+    domain: AshOaskit.Test.Workshop,
+    data_layer: Ash.DataLayer.Ets,
+    extensions: [AshJsonApi.Resource]
+
+  json_api do
+    type "gadget"
+
+    routes do
+      base "/gadgets"
+      get :read
+      index :read
+      post :create
+
+      route :post, "/:id/activate", :activate,
+        name: "power_up",
+        description: "Activates the gadget immediately"
+
+      route :get, "/search", :search, query_params: [:query]
+      route :post, "/recalibrate", :recalibrate, wrap_in_result?: true
+    end
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :name, :string do
+      public? true
+      allow_nil? false
+    end
+
+    attribute :status, :atom do
+      public? true
+      constraints one_of: [:idle, :active]
+      default :idle
+    end
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [:name]
+    end
+
+    update :update do
+      accept [:name, :status]
+    end
+
+    action :activate do
+      argument :force, :boolean, default: false
+
+      run fn _input, _context -> :ok end
+    end
+
+    action :search, {:array, :string} do
+      argument :query, :string, allow_nil?: false
+
+      run fn _input, _context -> {:ok, []} end
+    end
+
+    action :recalibrate, :integer do
+      run fn _input, _context -> {:ok, 0} end
+    end
+  end
+end
+
+# Domain that ALSO declares routes for Gadget at the domain level —
+# proves both sources merge without duplicating operations
+defmodule AshOaskit.Test.Workshop do
+  @moduledoc false
+  use Ash.Domain,
+    validate_config_inclusion?: false,
+    extensions: [AshJsonApi.Domain]
+
+  resources do
+    resource AshOaskit.Test.Gadget
+  end
+
+  json_api do
+    routes do
+      base_route "/gadgets", AshOaskit.Test.Gadget do
+        patch :update
+        delete :destroy
+      end
     end
   end
 end
