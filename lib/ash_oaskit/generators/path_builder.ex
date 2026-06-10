@@ -55,11 +55,14 @@ defmodule AshOaskit.Generators.PathBuilder do
   import AshOaskit.Core.PathUtils
   import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
 
+  alias Ash.Resource.Info, as: ResourceInfo
+
   alias AshOaskit.FilterBuilder
   alias AshOaskit.PhoenixIntrospection
   alias AshOaskit.RelationshipRoutes
   alias AshOaskit.RouteGathering
   alias AshOaskit.SortBuilder
+  alias AshOaskit.TypeMapper
 
   @type opts :: keyword()
 
@@ -130,18 +133,34 @@ defmodule AshOaskit.Generators.PathBuilder do
   def build_operation(route, opts) do
     version = Keyword.fetch!(opts, :version)
 
-    if RelationshipRoutes.relationship_route?(route) do
-      RelationshipRoutes.build_operation(route, opts)
-    else
-      reject_nil_values(%{
-        operationId: build_operation_id(route),
-        summary: route.name |> to_string() |> humanize(),
-        responses: build_responses(route),
-        tags: build_operation_tags(route),
-        parameters: build_parameters(route, version),
-        requestBody: build_request_body(route)
-      })
+    cond do
+      RelationshipRoutes.relationship_route?(route) ->
+        RelationshipRoutes.build_operation(route, opts)
+
+      route.type == :route ->
+        build_generic_operation(route, version)
+
+      true ->
+        reject_nil_values(%{
+          operationId: build_operation_id(route),
+          summary: route.name |> to_string() |> humanize(),
+          responses: build_responses(route),
+          tags: build_operation_tags(route),
+          parameters: build_parameters(route, version),
+          requestBody: build_request_body(route)
+        })
     end
+  end
+
+  # Builds an operation for a generic action route (`route :post, "...", :action`)
+  defp build_generic_operation(route, version) do
+    reject_nil_values(%{
+      operationId: build_operation_id(route),
+      summary: route.action |> to_string() |> humanize(),
+      responses: build_generic_responses(route, version),
+      tags: build_operation_tags(route),
+      parameters: build_generic_parameters(route, version)
+    })
   end
 
   # Builds paths from Ash domain routes
@@ -188,7 +207,13 @@ defmodule AshOaskit.Generators.PathBuilder do
     RouteGathering.routes_with_paths(domain)
   end
 
-  # Converts route type to HTTP method string
+  # Resolves the HTTP method for a route. Every AshJsonApi route entity
+  # carries an authoritative :method field (generic routes require it);
+  # the type-based mapping remains as a fallback for hand-built maps.
+  defp route_to_method(%{method: method}) when is_atom(method) and not is_nil(method) do
+    to_string(method)
+  end
+
   defp route_to_method(route) do
     if RelationshipRoutes.relationship_route?(route) do
       RelationshipRoutes.route_method(route)
@@ -197,18 +222,17 @@ defmodule AshOaskit.Generators.PathBuilder do
     end
   end
 
-  # Maps Ash route types to HTTP methods
+  # Maps Ash route types to HTTP methods (fallback when :method is absent)
   defp route_type_to_method(:index), do: "get"
   defp route_type_to_method(:get), do: "get"
   defp route_type_to_method(:post), do: "post"
   defp route_type_to_method(:patch), do: "patch"
   defp route_type_to_method(:delete), do: "delete"
-  defp route_type_to_method(type), do: type |> to_string() |> String.downcase()
 
   # Builds operation ID from resource, action, route type, and path
   # The path prefix is included for nested routes to ensure uniqueness
   defp build_operation_id(route) do
-    method = route_type_to_method(route.type)
+    method = route_to_method(route)
 
     resource_name =
       route.resource
@@ -412,6 +436,94 @@ defmodule AshOaskit.Generators.PathBuilder do
       "422" => %{description: "Unprocessable entity"}
     }
   end
+
+  # Builds parameters for a generic action route: path params plus the
+  # route's :query_params, typed from the action's arguments (or the
+  # resource attribute of the same name)
+  defp build_generic_parameters(route, version) do
+    path_params =
+      route.route
+      |> extract_path_params()
+      |> Enum.map(fn param ->
+        %{
+          name: param,
+          in: :path,
+          required: true,
+          schema: %{type: :string}
+        }
+      end)
+
+    case path_params ++ build_generic_query_parameters(route, version) do
+      [] -> nil
+      params -> params
+    end
+  end
+
+  defp build_generic_query_parameters(route, version) do
+    action = ResourceInfo.action(route.resource, route.action)
+    arguments = if action, do: Map.new(action.arguments, &{&1.name, &1}), else: %{}
+
+    route
+    |> Map.get(:query_params, [])
+    |> Enum.map(fn name ->
+      case Map.get(arguments, name) do
+        nil ->
+          attribute = ResourceInfo.attribute(route.resource, name)
+          schema = if attribute, do: version_schema(attribute, version), else: %{type: :string}
+          %{name: to_string(name), in: :query, required: false, schema: schema}
+
+        argument ->
+          %{
+            name: to_string(name),
+            in: :query,
+            required: not argument.allow_nil? and is_nil(argument.default),
+            schema: version_schema(argument, version)
+          }
+      end
+    end)
+  end
+
+  # Builds responses for a generic action route, mirroring how AshJsonApi
+  # serializes generic action results
+  defp build_generic_responses(route, version) do
+    success_code = if route.method == :post, do: "201", else: "200"
+
+    %{
+      success_code => %{
+        description: "Successful response",
+        content: %{
+          "application/vnd.api+json" => %{
+            schema: generic_result_schema(route, version)
+          }
+        }
+      },
+      "400" => %{description: "Bad request"},
+      "401" => %{description: "Unauthorized"},
+      "404" => %{description: "Not found"},
+      "422" => %{description: "Unprocessable entity"}
+    }
+  end
+
+  defp generic_result_schema(route, version) do
+    action = ResourceInfo.action(route.resource, route.action)
+
+    if action && action.returns do
+      returns = %{type: action.returns, constraints: action.constraints, allow_nil?: false}
+      schema = version_schema(returns, version)
+
+      if Map.get(route, :wrap_in_result?, false) do
+        %{type: :object, properties: %{result: schema}, required: [:result]}
+      else
+        schema
+      end
+    else
+      # Actions without a return type respond with {"success": true}
+      %{type: :object, properties: %{success: %{enum: [true]}}, required: [:success]}
+    end
+  end
+
+  defp version_schema(attr_or_arg, "3.0"), do: TypeMapper.to_json_schema_30(attr_or_arg)
+  defp version_schema(attr_or_arg, _), do: TypeMapper.to_json_schema_31(attr_or_arg)
 
   # Removes nil values from a map
   defp reject_nil_values(map) do

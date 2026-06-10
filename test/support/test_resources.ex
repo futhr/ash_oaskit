@@ -279,6 +279,9 @@ defmodule AshOaskit.Test.Gadget do
       get :read
       index :read
       post :create
+      route :post, "/:id/activate", :activate
+      route :get, "/search", :search, query_params: [:query]
+      route :post, "/recalibrate", :recalibrate, wrap_in_result?: true
     end
   end
 
@@ -306,6 +309,22 @@ defmodule AshOaskit.Test.Gadget do
 
     update :update do
       accept [:name, :status]
+    end
+
+    action :activate do
+      argument :force, :boolean, default: false
+
+      run fn _input, _context -> :ok end
+    end
+
+    action :search, {:array, :string} do
+      argument :query, :string, allow_nil?: false
+
+      run fn _input, _context -> {:ok, []} end
+    end
+
+    action :recalibrate, :integer do
+      run fn _input, _context -> {:ok, 0} end
     end
   end
 end
