@@ -124,6 +124,7 @@ defmodule AshOaskit.MixProject do
     [
       files: ~w(
         lib
+        guides
         .formatter.exs
         mix.exs
         README.md
@@ -148,24 +149,79 @@ defmodule AshOaskit.MixProject do
       main: "readme",
       extras: [
         "README.md": [title: "Overview"],
+        "guides/spec-modules.md": [title: "Spec Modules (use AshOaskit)"],
+        "guides/request-validation.md": [title: "Request Validation with Oaskit"],
+        "guides/cheatsheet.cheatmd": [title: "Cheatsheet"],
         "CHANGELOG.md": [title: "Changelog"],
         "CONTRIBUTING.md": [title: "Contributing"],
         "LICENSE.md": [title: "License"],
         "usage-rules.md": [title: "Usage Rules (LLM)"]
       ],
+      groups_for_extras: [
+        Guides: ~r{guides/.*}
+      ],
       groups_for_modules: [
         "Core API": [
-          AshOaskit
+          AshOaskit,
+          AshOaskit.Spec,
+          AshOaskit.OpenApi
+        ],
+        Customization: [
+          AshOaskit.SpecBuilder,
+          AshOaskit.SpecBuilder.Default,
+          AshOaskit.SpecModifier,
+          AshOaskit.OpenApiController
+        ],
+        "Phoenix Integration": [
+          AshOaskit.Router,
+          AshOaskit.Router.Plug,
+          AshOaskit.Controller,
+          AshOaskit.PhoenixIntrospection
         ],
         Generators: [
+          AshOaskit.Generators.Generator,
+          AshOaskit.Generators.InfoBuilder,
+          AshOaskit.Generators.PathBuilder,
+          AshOaskit.Generators.Shared,
           AshOaskit.Generators.V30,
           AshOaskit.Generators.V31
         ],
-        Utilities: [
-          AshOaskit.TypeMapper
+        Schemas: [
+          AshOaskit.SchemaBuilder,
+          AshOaskit.SchemaBuilder.EmbeddedSchemas,
+          AshOaskit.SchemaBuilder.PropertyBuilders,
+          AshOaskit.SchemaBuilder.RelationshipSchemas,
+          AshOaskit.SchemaBuilder.ResourceSchemas,
+          AshOaskit.Schemas.Nullable,
+          AshOaskit.TypeMapper,
+          AshOaskit.Core.SchemaRef
         ],
-        Phoenix: [
-          AshOaskit.Controller
+        Parameters: [
+          AshOaskit.FilterBuilder,
+          AshOaskit.SortBuilder,
+          AshOaskit.QueryParameters
+        ],
+        "Routes & Operations": [
+          AshOaskit.RouteGathering,
+          AshOaskit.RelationshipRoutes,
+          AshOaskit.RelationshipRoutes.RouteOperations,
+          AshOaskit.RelationshipRoutes.RouteResponses,
+          AshOaskit.Core.PathUtils
+        ],
+        Responses: [
+          AshOaskit.ErrorSchemas,
+          AshOaskit.ResponseLinks,
+          AshOaskit.ResponseMeta
+        ],
+        "JSON:API Documents": [
+          AshOaskit.IncludedResources,
+          AshOaskit.ResourceIdentifier,
+          AshOaskit.TagBuilder
+        ],
+        Support: [
+          AshOaskit.Config,
+          AshOaskit.MultipartSupport,
+          AshOaskit.Security
         ]
       ],
       source_ref: "v#{@version}",

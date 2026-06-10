@@ -53,7 +53,7 @@ defmodule AshOaskit.TypeMapper do
   | `Ash.Type.Union` | `anyOf` | With optional discriminator |
   | `Ash.Type.Struct` | `object` | With constrained properties |
   | `Ash.Type.File` | `string` (`byte`) | Base64 encoded content |
-  | `Ash.Type.DurationName` | `string` | Enum from `Ash.Type.DurationName.values/0` |
+  | `Ash.Type.DurationName` | `string` | Enum from the type's `values/0` |
   | `Ash.Type.Enum` implementors | `string` | Enum from the type's `values/0` |
   | `Ash.Type.NewType` wrappers | (subtype schema) | Resolved via `subtype_of/0` |
   | Custom types | Calls `json_schema/1` | If defined on type |

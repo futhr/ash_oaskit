@@ -2,7 +2,51 @@
 
 OpenAPI specification generator for Ash Framework domains. Supports OpenAPI 3.0 and 3.1.
 
-## API
+## Spec Modules (preferred)
+
+```elixir
+# Define a cached, oaskit-native spec module
+defmodule MyAppWeb.ApiSpec do
+  use AshOaskit,
+    domains: [MyApp.Blog],
+    title: "My API",
+    api_version: "1.0.0"
+end
+
+# Customize the generated spec (result is cached)
+defmodule MyAppWeb.ApiSpec do
+  use AshOaskit, domains: [MyApp.Blog]
+
+  @impl AshOaskit.Spec
+  def modify_spec(spec) do
+    put_in(spec, ["components", "securitySchemes"], %{
+      "bearerAuth" => %{"type" => "http", "scheme" => "bearer"}
+    })
+  end
+end
+
+# Serve it (Phoenix or Plug.Router) with optional Redoc UI
+use AshOaskit.Router,
+  spec: MyAppWeb.ApiSpec,
+  open_api: "/openapi",
+  redoc: "/redoc"
+
+# Dual version: two spec modules
+use AshOaskit.Router,
+  spec: [{"3.1", MyAppWeb.ApiSpecV31}, {"3.0", MyAppWeb.ApiSpecV30}],
+  open_api: "/openapi"
+
+# Export the exact served spec
+# mix openapi.dump MyAppWeb.ApiSpec --pretty -o openapi.json
+```
+
+Rules:
+- The spec is cached in `:persistent_term`; disable in dev with `config :ash_oaskit, cache_specs: false` (or per module with `cache: false`).
+- One spec module = one OpenAPI version; define two modules for dual-version output.
+- Only `public? true` attributes/calculations/aggregates/relationships appear in specs.
+- Request body schemas follow the routed action's `accept` list plus its public arguments.
+
+## Programmatic API
 
 ```elixir
 # Generate spec (defaults to 3.1)
@@ -27,6 +71,9 @@ AshOaskit.spec(
 ## CLI
 
 ```bash
+# Preferred once a spec module exists:
+mix openapi.dump MyAppWeb.ApiSpec --pretty -o openapi.json
+
 mix ash_oaskit.generate -d MyApp.Blog -o openapi.json
 mix ash_oaskit.generate -d MyApp.Blog,MyApp.Accounts -v 3.0 -o openapi.yaml -f yaml
 mix ash_oaskit.generate --domains MyApp.Blog --title "My API" --api-version 1.0.0
@@ -35,13 +82,15 @@ mix ash_oaskit.generate --domains MyApp.Blog --title "My API" --api-version 1.0.
 ## Router Macro
 
 ```elixir
-# Phoenix Router
+# Preferred: spec module mode (cached, supports redoc:)
 use AshOaskit.Router,
-  domains: [MyApp.Blog],
+  spec: MyAppWeb.ApiSpec,
   open_api: "/openapi",
-  title: "My API"
+  redoc: "/redoc"
 
 # Plug.Router — same options, place before catch-all `match _`
+
+# DEPRECATED (regenerates spec per request, warns at compile time):
 use AshOaskit.Router,
   domains: [MyApp.Blog],
   open_api: "/openapi",
@@ -84,9 +133,15 @@ defmodule MyApp.Blog.Post do
 
   attributes do
     uuid_primary_key :id
-    attribute :title, :string, allow_nil?: false, constraints: [min_length: 1, max_length: 255]
-    attribute :body, :string, description: "Post content"
-    attribute :status, :atom, constraints: [one_of: [:draft, :published]], default: :draft
+
+    # public? true is REQUIRED for fields to appear in the spec
+    attribute :title, :string,
+      public?: true,
+      allow_nil?: false,
+      constraints: [min_length: 1, max_length: 255]
+
+    attribute :body, :string, public?: true, description: "Post content"
+    attribute :status, :atom, public?: true, constraints: [one_of: [:draft, :published]], default: :draft
   end
 
   actions do
@@ -101,19 +156,24 @@ end
 
 | Ash Type | JSON Schema | Format |
 |----------|-------------|--------|
-| `:string`, `:ci_string`, `:atom` | `string` | - |
+| `:string`, `:ci_string`, `:atom`, `:module` | `string` | - |
 | `:integer` | `integer` | - |
 | `:float` | `number` | `float` |
 | `:decimal` | `number` | `double` |
 | `:boolean` | `boolean` | - |
 | `:date` | `string` | `date` |
-| `:time` | `string` | `time` |
+| `:time`, `:time_usec` | `string` | `time` |
 | `:datetime`, `:utc_datetime`, `:utc_datetime_usec`, `:naive_datetime` | `string` | `date-time` |
-| `:uuid` | `string` | `uuid` |
+| `:duration` | `string` | `duration` |
+| `:uuid`, `:uuid_v7` | `string` | `uuid` |
 | `:binary` | `string` | `binary` |
-| `:map` | `object` | - |
-| `:term` | `{}` (any) | - |
+| `:url_encoded_binary`, `Ash.Type.File` | `string` | `byte` |
+| `:map`, `:keyword`, `:tuple` | `object` | - |
+| `:vector` | `array` of `number` | - |
+| `:term`, `:function` | `{}` (any) | - |
 | `{:array, type}` | `array` | - |
+| `Ash.Type.Enum` implementors | `string` + `enum` | - |
+| `Ash.Type.NewType` wrappers | (subtype schema) | - |
 
 ## Constraint Mapping
 
@@ -137,6 +197,7 @@ end
 lib/ash_oaskit.ex                              # Main API (spec, validate)
 lib/ash_oaskit/
   open_api.ex                                  # Version routing
+  spec.ex                                      # Spec module behaviour (use AshOaskit)
   open_api_controller.ex                       # Controller behaviour
   phoenix_introspection.ex                     # Phoenix router extraction
   router.ex                                    # Router macro
@@ -144,6 +205,7 @@ lib/ash_oaskit/
   spec_builder/default.ex                      # Default SpecBuilder
   core/
     config.ex                                  # AshJsonApi DSL reader
+    route_gathering.ex                         # Domain + resource route collection
     path_utils.ex                              # Path param conversion
     schema_ref.ex                              # $ref object builder
     spec_modifier.ex                           # Post-generation hooks
@@ -196,6 +258,9 @@ config :ash_oaskit,
   version: "3.1",
   title: "My API",
   api_version: "1.0.0"
+
+# Dev only: regenerate the spec on code reload
+config :ash_oaskit, cache_specs: false
 ```
 
 ## Testing
