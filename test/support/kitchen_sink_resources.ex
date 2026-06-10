@@ -94,11 +94,13 @@ defmodule AshOaskit.Test.GeoPoint do
 
   attributes do
     attribute :lat, :float do
+      public? true
       allow_nil? false
       constraints min: -90.0, max: 90.0
     end
 
     attribute :lng, :float do
+      public? true
       allow_nil? false
       constraints min: -180.0, max: 180.0
     end
@@ -111,10 +113,12 @@ defmodule AshOaskit.Test.Location do
 
   attributes do
     attribute :label, :string do
+      public? true
       allow_nil? false
     end
 
     attribute :geo, AshOaskit.Test.GeoPoint do
+      public? true
       allow_nil? false
       description "Geographic coordinates"
     end
@@ -127,15 +131,18 @@ defmodule AshOaskit.Test.Venue do
 
   attributes do
     attribute :name, :string do
+      public? true
       allow_nil? false
     end
 
     attribute :location, AshOaskit.Test.Location do
+      public? true
       allow_nil? false
       description "Venue location with coordinates"
     end
 
     attribute :capacity, :integer do
+      public? true
       constraints min: 1
     end
   end
@@ -171,37 +178,44 @@ defmodule AshOaskit.Test.KitchenSink do
 
     # --- Standard types already covered elsewhere, but needed for a valid resource ---
     attribute :name, :string do
+      public? true
       allow_nil? false
       constraints min_length: 1, max_length: 200
     end
 
     # --- Union type attribute ---
     attribute :content, AshOaskit.Test.ContentBlock do
+      public? true
       description "Polymorphic content block (text, image, or code)"
     end
 
     # --- Custom type with json_schema/1 ---
     attribute :coordinates, AshOaskit.Test.Coordinate do
+      public? true
       description "Geographic coordinates via custom type"
     end
 
     # --- Deeply nested embedded (3 levels) ---
     attribute :venue, AshOaskit.Test.Venue do
+      public? true
       description "Event venue with nested location and geo point"
     end
 
     # --- Array of embedded resources ---
     attribute :locations, {:array, AshOaskit.Test.Location} do
+      public? true
       description "Multiple locations with coordinates"
     end
 
     # --- DurationName type ---
     attribute :billing_unit, :duration_name do
+      public? true
       description "Billing time unit"
     end
 
     # --- Read-only attribute (in output but NOT in input schemas) ---
     attribute :slug, :string do
+      public? true
       writable? false
       description "Auto-generated URL slug"
     end

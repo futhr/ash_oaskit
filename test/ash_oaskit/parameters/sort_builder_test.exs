@@ -91,17 +91,39 @@ defmodule AshOaskit.SortBuilderTest do
       assert :status in fields
     end
 
-    test "excludes id field" do
+    test "includes id field (public primary keys are sortable)" do
       fields = SortBuilder.get_sortable_fields(AshOaskit.Test.Post)
 
-      refute :id in fields
+      assert :id in fields
     end
 
-    test "excludes timestamp fields by default" do
+    test "excludes non-public attributes" do
+      fields = SortBuilder.get_sortable_fields(AshOaskit.Test.Post)
+
+      refute :internal_notes in fields
+    end
+
+    test "excludes non-public timestamp fields" do
       fields = SortBuilder.get_sortable_fields(AshOaskit.Test.Post)
 
       refute :inserted_at in fields
       refute :updated_at in fields
+    end
+
+    test "includes public timestamp fields" do
+      fields = SortBuilder.get_sortable_fields(AshOaskit.Test.Comment)
+
+      assert :inserted_at in fields
+      assert :updated_at in fields
+    end
+
+    test "excludes non-public calculations and aggregates" do
+      fields = SortBuilder.get_sortable_fields(AshOaskit.Test.Author)
+
+      refute :internal_rank in fields
+      refute :draft_count in fields
+      assert :full_name in fields
+      assert :total_articles in fields
     end
 
     test "returns sortable fields for Comment" do

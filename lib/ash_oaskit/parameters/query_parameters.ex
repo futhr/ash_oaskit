@@ -441,8 +441,7 @@ defmodule AshOaskit.QueryParameters do
 
   defp get_includable_relationships(resource) do
     resource
-    |> Ash.Resource.Info.relationships()
-    |> Enum.reject(fn rel -> Map.get(rel, :private?, false) end)
+    |> Ash.Resource.Info.public_relationships()
     |> Enum.map(& &1.name)
   end
 
@@ -451,8 +450,7 @@ defmodule AshOaskit.QueryParameters do
 
     related_types =
       resource
-      |> Ash.Resource.Info.relationships()
-      |> Enum.reject(fn rel -> Map.get(rel, :private?, false) end)
+      |> Ash.Resource.Info.public_relationships()
       |> Enum.map(fn rel -> resource_type(rel.destination) end)
       |> Enum.uniq()
 

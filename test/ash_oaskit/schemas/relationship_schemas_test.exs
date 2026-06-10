@@ -410,6 +410,12 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
       tags = schema[:properties][:tags][:properties][:data]
       assert tags[:type] == :array
     end
+
+    test "excludes non-public relationships", %{builder: builder} do
+      schema = SchemaBuilder.get_schema(builder, "ArticleRelationships")
+
+      refute Map.has_key?(schema[:properties], :moderator)
+    end
   end
 
   describe "relationship links" do

@@ -361,8 +361,8 @@ defmodule AshOaskit.Config do
   @doc """
   Gets the public attributes for a resource.
 
-  Returns only non-private attributes that should be included in
-  OpenAPI schemas.
+  Returns only attributes marked `public? true`, which are the ones
+  that belong in OpenAPI schemas.
 
   ## Parameters
 

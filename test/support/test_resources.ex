@@ -32,6 +32,13 @@
 # - Special types: uuid, binary, map, atom, term, ci_string
 # - Array types: {:array, :string}
 # - Constraints: min_length, max_length, min, max, match, one_of
+#
+# ## Visibility Coverage
+#
+# Specs must only expose fields marked `public? true` (matching what
+# AshJsonApi serializes). `Post.internal_notes` is deliberately
+# non-public to regression-test that filtering; `Comment`'s timestamps
+# are deliberately public to prove public timestamps DO appear.
 
 defmodule AshOaskit.Test.Post do
   @moduledoc false
@@ -47,43 +54,53 @@ defmodule AshOaskit.Test.Post do
     uuid_primary_key :id
 
     attribute :title, :string do
+      public? true
       allow_nil? false
       constraints min_length: 1, max_length: 255
     end
 
     attribute :body, :string do
+      public? true
       description "Post content"
     end
 
     attribute :status, :atom do
+      public? true
       constraints one_of: [:draft, :published]
     end
 
     attribute :view_count, :integer do
+      public? true
       constraints min: 0
     end
 
     attribute :rating, :float do
+      public? true
       constraints min: 0.0, max: 5.0
     end
 
-    attribute :published_at, :utc_datetime
-    attribute :tags, {:array, :string}
-    attribute :metadata, :map
-    attribute :slug, :ci_string
-    attribute :duration, :time
-    attribute :local_time, :naive_datetime
-    attribute :attachment, :binary
-    attribute :config, :term
-    attribute :score, :decimal
+    attribute :published_at, :utc_datetime, public?: true
+    attribute :tags, {:array, :string}, public?: true
+    attribute :metadata, :map, public?: true
+    attribute :slug, :ci_string, public?: true
+    attribute :duration, :time, public?: true
+    attribute :local_time, :naive_datetime, public?: true
+    attribute :attachment, :binary, public?: true
+    attribute :config, :term, public?: true
+    attribute :score, :decimal, public?: true
 
     attribute :is_featured, :boolean do
+      public? true
       default false
     end
 
     attribute :email, :string do
+      public? true
       constraints match: ~r/^[^\s]+@[^\s]+$/
     end
+
+    # Deliberately non-public: must never appear in generated specs
+    attribute :internal_notes, :string
 
     create_timestamp :inserted_at
     update_timestamp :updated_at
@@ -108,7 +125,7 @@ defmodule AshOaskit.Test.NoDomainResource do
     data_layer: :embedded
 
   attributes do
-    attribute :name, :string
+    attribute :name, :string, public?: true
   end
 end
 
@@ -125,7 +142,7 @@ defmodule AshOaskit.Test.NoTypeResource do
 
   attributes do
     uuid_primary_key :id
-    attribute :name, :string
+    attribute :name, :string, public?: true
   end
 
   actions do
@@ -167,7 +184,7 @@ defmodule AshOaskit.Test.NilTypeResource do
 
   attributes do
     uuid_primary_key :id
-    attribute :label, :string
+    attribute :label, :string, public?: true
   end
 
   actions do
@@ -210,9 +227,11 @@ defmodule AshOaskit.Test.Comment do
 
   attributes do
     uuid_primary_key :id
-    attribute :content, :string, allow_nil?: false
-    create_timestamp :inserted_at
-    update_timestamp :updated_at
+    attribute :content, :string, allow_nil?: false, public?: true
+
+    # Deliberately public timestamps: must appear in generated specs
+    create_timestamp :inserted_at, public?: true
+    update_timestamp :updated_at, public?: true
   end
 
   actions do

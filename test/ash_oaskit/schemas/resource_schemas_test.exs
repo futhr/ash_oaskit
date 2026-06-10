@@ -34,7 +34,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemasTest do
   end
 
   describe "get_public_attributes/1" do
-    test "excludes id and timestamps" do
+    test "excludes the sole primary key and non-public timestamps" do
       attrs = ResourceSchemas.get_public_attributes(AshOaskit.Test.Post)
       attr_names = Enum.map(attrs, & &1.name)
 
@@ -43,11 +43,27 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemasTest do
       refute :updated_at in attr_names
     end
 
+    test "excludes non-public attributes" do
+      attrs = ResourceSchemas.get_public_attributes(AshOaskit.Test.Post)
+      attr_names = Enum.map(attrs, & &1.name)
+
+      refute :internal_notes in attr_names
+    end
+
+    test "includes public timestamps" do
+      attrs = ResourceSchemas.get_public_attributes(AshOaskit.Test.Comment)
+      attr_names = Enum.map(attrs, & &1.name)
+
+      assert :inserted_at in attr_names
+      assert :updated_at in attr_names
+    end
+
     test "includes regular public attributes" do
       attrs = ResourceSchemas.get_public_attributes(AshOaskit.Test.Post)
       attr_names = Enum.map(attrs, & &1.name)
 
-      assert :title in attr_names or :name in attr_names or attr_names != []
+      assert :title in attr_names
+      assert :body in attr_names
     end
   end
 
@@ -56,12 +72,28 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemasTest do
       calcs = ResourceSchemas.get_public_calculations(AshOaskit.Test.Post)
       assert is_list(calcs)
     end
+
+    test "excludes non-public calculations" do
+      calcs = ResourceSchemas.get_public_calculations(AshOaskit.Test.Author)
+      calc_names = Enum.map(calcs, & &1.name)
+
+      assert :full_name in calc_names
+      refute :internal_rank in calc_names
+    end
   end
 
   describe "get_public_aggregates/1" do
     test "returns list of aggregates" do
       aggs = ResourceSchemas.get_public_aggregates(AshOaskit.Test.Post)
       assert is_list(aggs)
+    end
+
+    test "excludes non-public aggregates" do
+      aggs = ResourceSchemas.get_public_aggregates(AshOaskit.Test.Author)
+      agg_names = Enum.map(aggs, & &1.name)
+
+      assert :total_articles in agg_names
+      refute :draft_count in agg_names
     end
   end
 

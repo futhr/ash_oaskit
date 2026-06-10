@@ -36,6 +36,13 @@
 # - Embedded resources
 # - Nested embedded resources
 # - Recursive type detection and $ref generation
+#
+# ## Visibility Coverage
+#
+# Specs must only expose fields marked `public? true`. The non-public
+# members below are deliberate regression guards:
+# - `Author.internal_rank` (calculation) and `Author.draft_count` (aggregate)
+# - `Article.moderator` (relationship)
 
 # ===========================================================================
 # Embedded Resources (must be defined first - no domain required)
@@ -54,24 +61,29 @@ defmodule AshOaskit.Test.Address do
 
   attributes do
     attribute :street, :string do
+      public? true
       description "Street address line"
     end
 
     attribute :city, :string do
+      public? true
       allow_nil? false
       description "City name"
     end
 
     attribute :state, :string do
+      public? true
       description "State or province"
     end
 
     attribute :postal_code, :string do
+      public? true
       constraints match: ~r/^\d{5}(-\d{4})?$/
       description "ZIP or postal code"
     end
 
     attribute :country, :string do
+      public? true
       default "US"
       description "ISO country code"
     end
@@ -91,23 +103,28 @@ defmodule AshOaskit.Test.Profile do
 
   attributes do
     attribute :bio, :string do
+      public? true
       constraints max_length: 500
       description "Short biography"
     end
 
     attribute :website, :string do
+      public? true
       description "Personal website URL"
     end
 
     attribute :avatar_url, :string do
+      public? true
       description "URL to avatar image"
     end
 
     attribute :address, AshOaskit.Test.Address do
+      public? true
       description "Mailing address"
     end
 
     attribute :social_links, {:array, :string} do
+      public? true
       default []
       description "Social media profile URLs"
     end
@@ -127,6 +144,7 @@ defmodule AshOaskit.Test.Author do
   - has_one relationship (profile - embedded)
   - Calculations (article_count, full_name)
   - Aggregates (total_articles)
+  - Non-public calculation/aggregate exclusion (internal_rank, draft_count)
   """
   use Ash.Resource,
     domain: AshOaskit.Test.Publishing,
@@ -141,26 +159,31 @@ defmodule AshOaskit.Test.Author do
     uuid_primary_key :id
 
     attribute :first_name, :string do
+      public? true
       allow_nil? false
       description "Author's first name"
     end
 
     attribute :last_name, :string do
+      public? true
       allow_nil? false
       description "Author's last name"
     end
 
     attribute :email, :string do
+      public? true
       allow_nil? false
       constraints match: ~r/^[^\s]+@[^\s]+$/
       description "Author's email address"
     end
 
     attribute :profile, AshOaskit.Test.Profile do
+      public? true
       description "Author's profile information"
     end
 
     attribute :active, :boolean do
+      public? true
       default true
       description "Whether the author is currently active"
     end
@@ -171,21 +194,25 @@ defmodule AshOaskit.Test.Author do
 
   relationships do
     has_many :articles, AshOaskit.Test.Article do
+      public? true
       description "Articles written by this author"
     end
   end
 
   calculations do
     calculate :full_name, :string, expr(first_name <> " " <> last_name) do
+      public? true
       description "Author's full name"
     end
 
     calculate :article_count, :integer, expr(count(articles)) do
+      public? true
       description "Number of articles written"
     end
 
     # Calculation with arguments for coverage testing
     calculate :greeting, :string, expr("Hello, " <> ^arg(:name)) do
+      public? true
       description "Personalized greeting"
 
       argument :name, :string do
@@ -197,6 +224,7 @@ defmodule AshOaskit.Test.Author do
     calculate :formal_greeting,
               :string,
               expr("Dear " <> (^arg(:title) || "") <> " " <> first_name) do
+      public? true
       description "Formal greeting with optional title"
 
       argument :title, :string do
@@ -204,11 +232,22 @@ defmodule AshOaskit.Test.Author do
         default nil
       end
     end
+
+    # Deliberately non-public: must never appear in generated specs
+    calculate :internal_rank, :integer, expr(article_count * 10) do
+      description "Internal ranking score"
+    end
   end
 
   aggregates do
     count :total_articles, :articles do
+      public? true
       description "Total number of articles"
+    end
+
+    # Deliberately non-public: must never appear in generated specs
+    count :draft_count, :articles do
+      description "Internal draft counter"
     end
   end
 
@@ -235,6 +274,7 @@ defmodule AshOaskit.Test.Article do
   - many_to_many relationship (tags via article_tags)
   - Calculations depending on relationships
   - Aggregates on relationships
+  - Non-public relationship exclusion (moderator)
   """
   use Ash.Resource,
     domain: AshOaskit.Test.Publishing,
@@ -249,26 +289,31 @@ defmodule AshOaskit.Test.Article do
     uuid_primary_key :id
 
     attribute :title, :string do
+      public? true
       allow_nil? false
       constraints min_length: 1, max_length: 255
       description "Article title"
     end
 
     attribute :content, :string do
+      public? true
       description "Article body content"
     end
 
     attribute :status, :atom do
+      public? true
       constraints one_of: [:draft, :published, :archived]
       default :draft
       description "Publication status"
     end
 
     attribute :published_at, :utc_datetime do
+      public? true
       description "When the article was published"
     end
 
     attribute :word_count, :integer do
+      public? true
       constraints min: 0
       description "Number of words in the article"
     end
@@ -290,56 +335,73 @@ defmodule AshOaskit.Test.Article do
     end
 
     many_to_many :tags, AshOaskit.Test.Tag do
+      public? true
       through AshOaskit.Test.ArticleTag
       description "Tags associated with this article"
+    end
+
+    # Deliberately non-public: must never appear in generated specs
+    belongs_to :moderator, AshOaskit.Test.Author do
+      description "Internal moderation assignment"
     end
   end
 
   calculations do
     calculate :author_name, :string, expr(author.first_name <> " " <> author.last_name) do
+      public? true
       description "Name of the article's author"
     end
 
     calculate :review_count, :integer, expr(count(reviews)) do
+      public? true
       description "Number of reviews"
     end
   end
 
   aggregates do
     count :total_reviews, :reviews do
+      public? true
       description "Total number of reviews"
     end
 
     avg :average_rating, :reviews, :rating do
+      public? true
       description "Average review rating"
     end
 
     count :tag_count, :tags do
+      public? true
       description "Number of tags"
     end
 
     # Additional aggregates for coverage testing
     first :first_review_rating, :reviews, :rating do
+      public? true
       description "Rating of the first review"
     end
 
     list :review_ratings, :reviews, :rating do
+      public? true
       description "List of all review ratings"
     end
 
     min :min_review_rating, :reviews, :rating do
+      public? true
       description "Minimum review rating"
     end
 
     max :max_review_rating, :reviews, :rating do
+      public? true
       description "Maximum review rating"
     end
 
     sum :total_rating, :reviews, :rating do
+      public? true
       description "Sum of all review ratings"
     end
 
     exists :has_reviews, :reviews do
+      public? true
       description "Whether this article has any reviews"
     end
   end
@@ -386,17 +448,20 @@ defmodule AshOaskit.Test.Review do
     uuid_primary_key :id
 
     attribute :rating, :integer do
+      public? true
       allow_nil? false
       constraints min: 1, max: 5
       description "Rating from 1 to 5 stars"
     end
 
     attribute :comment, :string do
+      public? true
       constraints max_length: 1000
       description "Review comment text"
     end
 
     attribute :reviewer_name, :string do
+      public? true
       allow_nil? false
       description "Name of the reviewer"
     end
@@ -407,6 +472,7 @@ defmodule AshOaskit.Test.Review do
 
   relationships do
     belongs_to :article, AshOaskit.Test.Article do
+      public? true
       allow_nil? false
       description "The article being reviewed"
     end
@@ -442,17 +508,20 @@ defmodule AshOaskit.Test.Tag do
     uuid_primary_key :id
 
     attribute :name, :string do
+      public? true
       allow_nil? false
       constraints min_length: 1, max_length: 50
       description "Tag name"
     end
 
     attribute :slug, :ci_string do
+      public? true
       allow_nil? false
       description "URL-friendly tag identifier"
     end
 
     attribute :color, :string do
+      public? true
       constraints match: ~r/^#[0-9A-Fa-f]{6}$/
       description "Hex color code for display"
     end
@@ -462,6 +531,7 @@ defmodule AshOaskit.Test.Tag do
 
   relationships do
     many_to_many :articles, AshOaskit.Test.Article do
+      public? true
       through AshOaskit.Test.ArticleTag
       description "Articles with this tag"
     end
@@ -469,6 +539,7 @@ defmodule AshOaskit.Test.Tag do
 
   aggregates do
     count :article_count, :articles do
+      public? true
       description "Number of articles with this tag"
     end
   end
@@ -499,11 +570,13 @@ defmodule AshOaskit.Test.ArticleTag do
 
   relationships do
     belongs_to :article, AshOaskit.Test.Article do
+      public? true
       primary_key? true
       allow_nil? false
     end
 
     belongs_to :tag, AshOaskit.Test.Tag do
+      public? true
       primary_key? true
       allow_nil? false
     end
@@ -541,21 +614,25 @@ defmodule AshOaskit.Test.Category do
     uuid_primary_key :id
 
     attribute :name, :string do
+      public? true
       allow_nil? false
       constraints min_length: 1, max_length: 100
       description "Category name"
     end
 
     attribute :description, :string do
+      public? true
       description "Category description"
     end
 
     attribute :slug, :ci_string do
+      public? true
       allow_nil? false
       description "URL-friendly identifier"
     end
 
     attribute :position, :integer do
+      public? true
       default 0
       description "Sort position within parent"
     end
@@ -566,10 +643,12 @@ defmodule AshOaskit.Test.Category do
 
   relationships do
     belongs_to :parent, __MODULE__ do
+      public? true
       description "Parent category (null for root categories)"
     end
 
     has_many :children, __MODULE__ do
+      public? true
       destination_attribute :parent_id
       description "Child categories"
     end
@@ -585,16 +664,19 @@ defmodule AshOaskit.Test.Category do
                   parent.name <> " > " <> name
                 end
               ) do
+      public? true
       description "Full category path"
     end
 
     calculate :child_count, :integer, expr(count(children)) do
+      public? true
       description "Number of direct child categories"
     end
   end
 
   aggregates do
     count :total_children, :children do
+      public? true
       description "Total number of child categories"
     end
   end

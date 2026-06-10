@@ -216,7 +216,9 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemas do
   def relationship_cardinality(_), do: :one
 
   @doc """
-  Gets public (non-private) relationships for a resource.
+  Gets public relationships for a resource.
+
+  Only relationships marked `public? true` are included.
 
   ## Parameters
 
@@ -228,9 +230,7 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemas do
   """
   @spec get_public_relationships(module()) :: [map()]
   def get_public_relationships(resource) do
-    resource
-    |> Ash.Resource.Info.relationships()
-    |> Enum.reject(fn rel -> Map.get(rel, :private?, false) end)
+    Ash.Resource.Info.public_relationships(resource)
   end
 
   @doc """
