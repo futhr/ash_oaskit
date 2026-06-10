@@ -14,7 +14,9 @@ if Code.ensure_loaded?(Igniter) do
     ## What it does
 
     1. Adds `:ash_oaskit` to your formatter's import dependencies
-    2. Configures the default OpenAPI version in your config
+    2. Generates an `ApiSpec` module (`use AshOaskit`) to fill in with
+       your domains
+    3. Prints the router snippet for serving the spec and Redoc UI
 
     ## Options
 
@@ -37,14 +39,39 @@ if Code.ensure_loaded?(Igniter) do
     @impl Igniter.Mix.Task
     @spec igniter(Igniter.t()) :: Igniter.t()
     def igniter(igniter) do
+      spec_module = Igniter.Project.Module.module_name(igniter, "ApiSpec")
+
       igniter
       |> Igniter.Project.Formatter.import_dep(:ash_oaskit)
-      |> Igniter.Project.Config.configure(
-        "config.exs",
-        :ash_oaskit,
-        [:version],
-        "3.1"
-      )
+      |> Igniter.Project.Module.create_module(spec_module, """
+      use AshOaskit,
+        domains: [
+          # Add your Ash domains here, e.g. #{inspect(Igniter.Project.Module.module_name_prefix(igniter))}.Blog
+        ],
+        title: "API",
+        api_version: "1.0.0"
+      """)
+      |> Igniter.add_notice("""
+      AshOaskit installed!
+
+      1. Add your Ash domains to #{inspect(spec_module)}.
+
+      2. Serve the spec from your router:
+
+           use AshOaskit.Router,
+             spec: #{inspect(spec_module)},
+             open_api: "/openapi",
+             redoc: "/redoc"
+
+      3. (Optional, dev) Regenerate the spec on code reload by adding
+         to config/dev.exs:
+
+           config :ash_oaskit, cache_specs: false
+
+      4. Export the spec from the command line:
+
+           mix openapi.dump #{inspect(spec_module)}
+      """)
     end
   end
 else
