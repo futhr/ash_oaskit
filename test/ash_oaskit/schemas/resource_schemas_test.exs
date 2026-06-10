@@ -197,7 +197,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemasTest do
   end
 
   describe "add_input_schemas/4" do
-    test "generates both create and update input schemas" do
+    test "generates input schemas for all create and update actions by default" do
       builder = SchemaBuilder.new(version: "3.1")
 
       builder =
@@ -205,7 +205,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemasTest do
           builder,
           AshOaskit.Test.Post,
           "Post",
-          &SchemaBuilder.add_schema/3
+          add_schema_fn: &SchemaBuilder.add_schema/3
         )
 
       assert SchemaBuilder.has_schema?(builder, "PostCreateInput")
@@ -220,11 +220,127 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemasTest do
           builder,
           AshOaskit.Test.Post,
           "Post",
-          &SchemaBuilder.add_schema/3
+          add_schema_fn: &SchemaBuilder.add_schema/3
         )
 
       update_schema = builder.schemas["PostUpdateInput"]
       refute Map.has_key?(update_schema, :required)
+    end
+
+    test "respects the :input_actions option" do
+      builder = SchemaBuilder.new(version: "3.1")
+
+      builder =
+        ResourceSchemas.add_input_schemas(
+          builder,
+          AshOaskit.Test.Post,
+          "Post",
+          add_schema_fn: &SchemaBuilder.add_schema/3,
+          input_actions: [{:create, nil}]
+        )
+
+      assert SchemaBuilder.has_schema?(builder, "PostCreateInput")
+      refute SchemaBuilder.has_schema?(builder, "PostUpdateInput")
+    end
+  end
+
+  describe "add_action_input_schema/5" do
+    test "input properties match the action's accept list exactly" do
+      builder = SchemaBuilder.new(version: "3.1")
+
+      builder =
+        ResourceSchemas.add_action_input_schema(
+          builder,
+          AshOaskit.Test.Post,
+          :create,
+          "Post",
+          add_schema_fn: &SchemaBuilder.add_schema/3
+        )
+
+      properties = builder.schemas["PostCreateInput"][:properties]
+
+      # Post.create accepts exactly these attributes
+      assert properties |> Map.keys() |> Enum.sort() ==
+               [:body, :is_featured, :status, :tags, :title]
+
+      # email is public and writable but NOT accepted by :create
+      refute Map.has_key?(properties, :email)
+    end
+
+    test "create required excludes attributes with defaults" do
+      builder = SchemaBuilder.new(version: "3.1")
+
+      builder =
+        ResourceSchemas.add_action_input_schema(
+          builder,
+          AshOaskit.Test.Post,
+          :create,
+          "Post",
+          add_schema_fn: &SchemaBuilder.add_schema/3
+        )
+
+      # title is allow_nil? false with no default; is_featured has a default
+      assert builder.schemas["PostCreateInput"][:required] == ["title"]
+    end
+
+    test "unknown actions are skipped" do
+      builder = SchemaBuilder.new(version: "3.1")
+
+      result =
+        ResourceSchemas.add_action_input_schema(
+          builder,
+          AshOaskit.Test.Post,
+          :nonexistent,
+          "Post",
+          add_schema_fn: &SchemaBuilder.add_schema/3
+        )
+
+      assert result == builder
+    end
+
+    test "public action arguments appear in the input" do
+      builder = SchemaBuilder.new(version: "3.1")
+
+      builder =
+        ResourceSchemas.add_action_input_schema(
+          builder,
+          AshOaskit.Test.Gadget,
+          :activate,
+          "Gadget",
+          add_schema_fn: &SchemaBuilder.add_schema/3
+        )
+
+      properties = builder.schemas["GadgetActivateInput"][:properties]
+
+      assert Map.has_key?(properties, :force)
+    end
+
+    test "path params and query_params are excluded from the input" do
+      route = %{route: "/:id/activate", query_params: [:force], relationship_arguments: []}
+
+      builder = SchemaBuilder.new(version: "3.1")
+
+      builder =
+        ResourceSchemas.add_action_input_schema(
+          builder,
+          AshOaskit.Test.Gadget,
+          :activate,
+          "Gadget",
+          add_schema_fn: &SchemaBuilder.add_schema/3,
+          route: route
+        )
+
+      properties = builder.schemas["GadgetActivateInput"][:properties]
+
+      refute Map.has_key?(properties, :force)
+      refute Map.has_key?(properties, :id)
+    end
+  end
+
+  describe "action_input_schema_name/2" do
+    test "camelizes multi-word action names" do
+      assert ResourceSchemas.action_input_schema_name("Post", :bulk_archive) ==
+               "PostBulkArchiveInput"
     end
   end
 end

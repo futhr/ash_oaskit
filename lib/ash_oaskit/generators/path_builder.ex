@@ -57,10 +57,12 @@ defmodule AshOaskit.Generators.PathBuilder do
 
   alias Ash.Resource.Info, as: ResourceInfo
 
+  alias AshOaskit.Config
   alias AshOaskit.FilterBuilder
   alias AshOaskit.PhoenixIntrospection
   alias AshOaskit.RelationshipRoutes
   alias AshOaskit.RouteGathering
+  alias AshOaskit.SchemaBuilder.ResourceSchemas
   alias AshOaskit.SortBuilder
   alias AshOaskit.TypeMapper
 
@@ -159,7 +161,8 @@ defmodule AshOaskit.Generators.PathBuilder do
       summary: route.action |> to_string() |> humanize(),
       responses: build_generic_responses(route, version),
       tags: build_operation_tags(route),
-      parameters: build_generic_parameters(route, version)
+      parameters: build_generic_parameters(route, version),
+      requestBody: build_generic_request_body(route)
     })
   end
 
@@ -368,36 +371,66 @@ defmodule AshOaskit.Generators.PathBuilder do
     if filter_param, do: [filter_param | params], else: params
   end
 
-  # Builds request body for POST/PATCH operations
-  defp build_request_body(route) do
-    if route.type in [:post, :patch] do
-      schema_name =
-        route.resource
-        |> Module.split()
-        |> List.last()
+  # Builds request body for POST/PATCH operations, referencing the
+  # action-derived input schema in a JSON:API envelope
+  defp build_request_body(%{type: type} = route) when type in [:post, :patch] do
+    data =
+      reject_nil_values(%{
+        type: :object,
+        required: if(type == :patch, do: [:id]),
+        properties:
+          reject_nil_values(%{
+            id: if(type == :patch, do: %{type: :string}),
+            type: json_api_type_member(route.resource),
+            attributes: action_input_ref(route)
+          })
+      })
 
-      %{
-        required: true,
-        content: %{
-          "application/vnd.api+json" => %{
-            schema: %{
-              type: :object,
-              properties: %{
-                data: %{
-                  type: :object,
-                  properties: %{
-                    type: %{type: :string},
-                    attributes: schema_ref("#{schema_name}Attributes")
-                  }
-                }
-              }
-            }
+    %{
+      required: true,
+      content: %{
+        "application/vnd.api+json" => %{
+          schema: %{
+            type: :object,
+            required: [:data],
+            properties: %{data: data}
           }
         }
       }
-    else
-      nil
-    end
+    }
+  end
+
+  defp build_request_body(_), do: nil
+
+  # Generic action routes wrap the input object directly in `data`
+  defp build_generic_request_body(%{method: method}) when method in [:get, :delete], do: nil
+
+  defp build_generic_request_body(route) do
+    %{
+      required: true,
+      content: %{
+        "application/vnd.api+json" => %{
+          schema: %{
+            type: :object,
+            required: [:data],
+            properties: %{data: action_input_ref(route)}
+          }
+        }
+      }
+    }
+  end
+
+  defp action_input_ref(route) do
+    schema_name =
+      route.resource
+      |> Module.split()
+      |> List.last()
+
+    schema_ref(ResourceSchemas.action_input_schema_name(schema_name, route.action))
+  end
+
+  defp json_api_type_member(resource) do
+    %{type: :string, enum: [Config.resource_type(resource)]}
   end
 
   # Builds response definitions for an operation

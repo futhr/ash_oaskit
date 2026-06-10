@@ -394,27 +394,36 @@ defmodule AshOaskit.SchemaBuilder do
   - Attributes schema (`{Resource}Attributes`)
   - Response schema (`{Resource}Response`)
   - Relationships schema if the resource has relationships
-  - Input schemas for create/update actions
+  - Action-derived input schemas (`{Resource}{Action}Input`)
+
+  ## Options
+
+  - `:input_actions` - List of `{action_name, route}` tuples to derive
+    input schemas from (route may be `nil`). Defaults to the resource's
+    primary create and update actions.
 
   ## Parameters
 
   - `builder` - The current SchemaBuilder
   - `resource` - The Ash resource module
+  - `opts` - Options (see above)
 
   ## Returns
 
   Updated SchemaBuilder with all resource schemas added.
   """
-  @spec add_resource_schemas(t(), module()) :: t()
-  def add_resource_schemas(%{} = builder, resource) when is_atom(resource) do
-    opts = [
+  @spec add_resource_schemas(t(), module(), keyword()) :: t()
+  def add_resource_schemas(builder, resource, opts \\ [])
+
+  def add_resource_schemas(%{} = builder, resource, opts) when is_atom(resource) do
+    builder_opts = [
       mark_seen_fn: &mark_seen/2,
       add_schema_fn: &add_schema/3,
       has_schema_fn: &has_schema?/2,
       seen_fn: &seen?/2
     ]
 
-    ResourceSchemas.add_resource_schemas(builder, resource, opts)
+    ResourceSchemas.add_resource_schemas(builder, resource, Keyword.merge(builder_opts, opts))
   end
 
   @doc """

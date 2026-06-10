@@ -50,6 +50,7 @@ defmodule AshOaskit.Generators.Generator do
   alias AshOaskit.Generators.InfoBuilder
   alias AshOaskit.Generators.PathBuilder
   alias AshOaskit.PhoenixIntrospection
+  alias AshOaskit.RouteGathering
   alias AshOaskit.SchemaBuilder
 
   require Logger
@@ -125,16 +126,36 @@ defmodule AshOaskit.Generators.Generator do
   @spec build_components(list(module()), opts()) :: map()
   def build_components(domains, opts) do
     version = Keyword.fetch!(opts, :version)
+    input_actions = collect_input_actions(domains)
 
     builder =
       domains
       |> Enum.flat_map(&get_domain_resources/1)
       |> Enum.reduce(SchemaBuilder.new(version: version), fn resource, builder ->
-        SchemaBuilder.add_resource_schemas(builder, resource)
+        SchemaBuilder.add_resource_schemas(builder, resource,
+          input_actions: Map.get(input_actions, resource, [])
+        )
       end)
 
     %{schemas: builder.schemas}
   end
+
+  # Collects {action, route} pairs per resource for every route that
+  # carries a request body, so components contain exactly the input
+  # schemas the operations reference
+  defp collect_input_actions(domains) do
+    domains
+    |> Enum.flat_map(&RouteGathering.domain_routes/1)
+    |> Enum.filter(&body_bearing_route?/1)
+    |> Enum.group_by(& &1.resource)
+    |> Map.new(fn {resource, routes} ->
+      {resource, routes |> Enum.uniq_by(& &1.action) |> Enum.map(&{&1.action, &1})}
+    end)
+  end
+
+  defp body_bearing_route?(%{type: type}) when type in [:post, :patch], do: true
+  defp body_bearing_route?(%{type: :route, method: method}), do: method not in [:get, :delete]
+  defp body_bearing_route?(_), do: false
 
   # Builds all tags from domains and optionally from router
   defp build_all_tags(domains, opts) do
