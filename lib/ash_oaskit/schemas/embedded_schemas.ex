@@ -210,11 +210,7 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemas do
   """
   @spec get_embedded_attributes(module()) :: [map()]
   def get_embedded_attributes(embedded_type) do
-    embedded_type
-    |> ResourceInfo.attributes()
-    |> Enum.reject(fn attr ->
-      attr.name in [:id, :inserted_at, :updated_at] or Map.get(attr, :private?, false)
-    end)
+    ResourceInfo.public_attributes(embedded_type)
   end
 
   @doc """

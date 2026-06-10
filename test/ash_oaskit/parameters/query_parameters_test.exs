@@ -291,6 +291,14 @@ defmodule AshOaskit.QueryParametersTest do
       page_param = Enum.find(params, &(&1.name == "page"))
       assert page_param != nil
     end
+
+    test "include parameter only lists public relationships" do
+      params = QueryParameters.all_parameters(AshOaskit.Test.Article)
+
+      include_param = Enum.find(params, &(&1.name == "include"))
+      assert include_param.description =~ "reviews"
+      refute include_param.description =~ "moderator"
+    end
   end
 
   describe "basic_parameters/2" do

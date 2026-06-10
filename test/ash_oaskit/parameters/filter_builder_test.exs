@@ -151,6 +151,12 @@ defmodule AshOaskit.FilterBuilderTest do
       # Boolean
       assert Map.has_key?(filters, "is_featured")
     end
+
+    test "excludes non-public attributes" do
+      filters = FilterBuilder.build_attribute_filters(AshOaskit.Test.Post)
+
+      refute Map.has_key?(filters, "internal_notes")
+    end
   end
 
   describe "build_attribute_filter_schema/1" do

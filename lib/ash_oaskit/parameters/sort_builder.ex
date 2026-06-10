@@ -242,17 +242,13 @@ defmodule AshOaskit.SortBuilder do
 
   defp get_sortable_attributes(resource) do
     resource
-    |> Ash.Resource.Info.attributes()
-    |> Enum.reject(fn attr ->
-      attr.name in [:id, :inserted_at, :updated_at] or Map.get(attr, :private?, false)
-    end)
+    |> Ash.Resource.Info.public_attributes()
     |> Enum.map(& &1.name)
   end
 
   defp get_sortable_calculations(resource) do
     resource
-    |> Ash.Resource.Info.calculations()
-    |> Enum.reject(fn calc -> Map.get(calc, :private?, false) end)
+    |> Ash.Resource.Info.public_calculations()
     |> Enum.filter(&sortable_calculation?/1)
     |> Enum.map(& &1.name)
   end
@@ -270,8 +266,7 @@ defmodule AshOaskit.SortBuilder do
 
   defp get_sortable_aggregates(resource) do
     resource
-    |> Ash.Resource.Info.aggregates()
-    |> Enum.reject(fn agg -> Map.get(agg, :private?, false) end)
+    |> Ash.Resource.Info.public_aggregates()
     |> Enum.map(& &1.name)
   end
 

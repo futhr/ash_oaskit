@@ -349,7 +349,14 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   end
 
   @doc """
-  Gets public (non-private) attributes, excluding id and timestamps.
+  Gets public attributes, excluding the sole primary key.
+
+  Only attributes marked `public? true` are included, matching what
+  AshJsonApi actually serializes. The primary key is excluded only when
+  it is the resource's single primary key — JSON:API carries it as the
+  top-level `id` member, never inside `attributes`. Composite primary
+  keys keep their parts as regular attributes. Public timestamps are
+  included.
 
   ## Parameters
 
@@ -362,14 +369,18 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   @spec get_public_attributes(module()) :: [map()]
   def get_public_attributes(resource) do
     resource
-    |> ResourceInfo.attributes()
-    |> Enum.reject(fn attr ->
-      attr.name in [:id, :inserted_at, :updated_at] or Map.get(attr, :private?, false)
-    end)
+    |> ResourceInfo.public_attributes()
+    |> Enum.reject(&only_primary_key?(resource, &1.name))
+  end
+
+  defp only_primary_key?(resource, name) do
+    ResourceInfo.primary_key(resource) == [name]
   end
 
   @doc """
-  Gets public (non-private) calculations from a resource.
+  Gets public calculations from a resource.
+
+  Only calculations marked `public? true` are included.
 
   ## Parameters
 
@@ -381,13 +392,13 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   """
   @spec get_public_calculations(module()) :: [map()]
   def get_public_calculations(resource) do
-    resource
-    |> ResourceInfo.calculations()
-    |> Enum.reject(fn calc -> Map.get(calc, :private?, false) end)
+    ResourceInfo.public_calculations(resource)
   end
 
   @doc """
-  Gets public (non-private) aggregates from a resource.
+  Gets public aggregates from a resource.
+
+  Only aggregates marked `public? true` are included.
 
   ## Parameters
 
@@ -399,9 +410,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   """
   @spec get_public_aggregates(module()) :: [map()]
   def get_public_aggregates(resource) do
-    resource
-    |> ResourceInfo.aggregates()
-    |> Enum.reject(fn agg -> Map.get(agg, :private?, false) end)
+    ResourceInfo.public_aggregates(resource)
   end
 
   @doc """
