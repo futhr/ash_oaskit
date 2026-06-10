@@ -40,6 +40,22 @@
 # non-public to regression-test that filtering; `Comment`'s timestamps
 # are deliberately public to prove public timestamps DO appear.
 
+defmodule AshOaskit.Test.Priority do
+  @moduledoc """
+  `Ash.Type.Enum` implementor used to test the generic enum fallback
+  in `TypeMapper` (string schema with enum from `values/0`).
+  """
+  use Ash.Type.Enum, values: [:low, :medium, :high]
+end
+
+defmodule AshOaskit.Test.Subject do
+  @moduledoc """
+  `Ash.Type.NewType` wrapper used to test the generic NewType fallback
+  in `TypeMapper` (schema resolved from the subtype).
+  """
+  use Ash.Type.NewType, subtype_of: :string, constraints: [max_length: 120]
+end
+
 defmodule AshOaskit.Test.Post do
   @moduledoc false
   use Ash.Resource,
@@ -88,6 +104,9 @@ defmodule AshOaskit.Test.Post do
     attribute :attachment, :binary, public?: true
     attribute :config, :term, public?: true
     attribute :score, :decimal, public?: true
+    attribute :external_id, :uuid_v7, public?: true
+    attribute :priority, AshOaskit.Test.Priority, public?: true
+    attribute :subject, AshOaskit.Test.Subject, public?: true
 
     attribute :is_featured, :boolean do
       public? true
