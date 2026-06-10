@@ -64,10 +64,11 @@ defmodule AshOaskit.MixProject do
       {:ash, "~> 3.0"},
       {:spark, "~> 2.0"},
 
-      # Security override: decimal < 3.1.0 has a DoS via unbounded
-      # exponent parsing (GHSA-rhv4-8758-jx7v / elixirforum 75261).
-      # Pulled transitively via Ash; force >= 3.1.
-      {:decimal, "~> 3.1", override: true},
+      # Security floor: decimal < 3.1.0 has a DoS via unbounded exponent
+      # parsing (GHSA-rhv4-8758-jx7v / elixirforum 75261). Pulled
+      # transitively via Ash (~> 2.0 or ~> 3.0); ~> 3.1 narrows the
+      # resolution without needing override (hex.publish forbids overrides).
+      {:decimal, "~> 3.1"},
 
       # OpenAPI spec normalization, validation, and rendering
       {:oaskit, "~> 0.13.1"},
