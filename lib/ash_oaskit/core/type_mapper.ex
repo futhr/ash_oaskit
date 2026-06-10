@@ -26,15 +26,24 @@ defmodule AshOaskit.TypeMapper do
   | `:boolean` | `boolean` | - |
   | `:date` | `string` | `date` |
   | `:time` | `string` | `time` |
+  | `:time_usec` | `string` | `time` |
   | `:datetime` | `string` | `date-time` |
   | `:utc_datetime` | `string` | `date-time` |
   | `:utc_datetime_usec` | `string` | `date-time` |
   | `:naive_datetime` | `string` | `date-time` |
+  | `:duration` | `string` | `duration` |
   | `:uuid` | `string` | `uuid` |
+  | `:uuid_v7` | `string` | `uuid` |
   | `:binary` | `string` | `binary` |
+  | `:url_encoded_binary` | `string` | `byte` |
   | `:map` | `object` | - |
+  | `:keyword` | `object` | - |
+  | `:tuple` | `object` | - |
   | `:atom` | `string` | - |
+  | `:module` | `string` | - |
   | `:term` | (empty schema) | - |
+  | `:function` | (empty schema) | - |
+  | `:vector` | `array` of `number` | - |
   | `{:array, type}` | `array` | items: nested type |
 
   ## Advanced Types
@@ -43,8 +52,10 @@ defmodule AshOaskit.TypeMapper do
   |----------|-------------|-------|
   | `Ash.Type.Union` | `anyOf` | With optional discriminator |
   | `Ash.Type.Struct` | `object` | With constrained properties |
-  | `Ash.Type.File` | `string`/`object` | Binary or file object |
-  | `Ash.Type.DurationName` | `string` | With duration enum |
+  | `Ash.Type.File` | `string` (`byte`) | Base64 encoded content |
+  | `Ash.Type.DurationName` | `string` | Enum from `Ash.Type.DurationName.values/0` |
+  | `Ash.Type.Enum` implementors | `string` | Enum from the type's `values/0` |
+  | `Ash.Type.NewType` wrappers | (subtype schema) | Resolved via `subtype_of/0` |
   | Custom types | Calls `json_schema/1` | If defined on type |
 
   ## Supported Constraints
@@ -68,6 +79,8 @@ defmodule AshOaskit.TypeMapper do
   # at runtime even though dialyzer thinks the type is narrowed to binary/map.
   # OpenAPI 3.1 schemas can have "type" as either a string or list of strings.
   @dialyzer {:nowarn_function, make_nullable_31: 1}
+
+  alias Ash.Type.NewType
 
   require Logger
 
@@ -176,19 +189,32 @@ defmodule AshOaskit.TypeMapper do
     boolean: %{"type" => "boolean"},
     date: %{"type" => "string", "format" => "date"},
     time: %{"type" => "string", "format" => "time"},
+    time_usec: %{"type" => "string", "format" => "time"},
     datetime: %{"type" => "string", "format" => "date-time"},
     utc_datetime: %{"type" => "string", "format" => "date-time"},
     utc_datetime_usec: %{"type" => "string", "format" => "date-time"},
     naive_datetime: %{"type" => "string", "format" => "date-time"},
+    duration: %{"type" => "string", "format" => "duration"},
     uuid: %{"type" => "string", "format" => "uuid"},
+    uuid_v7: %{"type" => "string", "format" => "uuid"},
     binary: %{"type" => "string", "format" => "binary"},
+    url_encoded_binary: %{"type" => "string", "format" => "byte"},
     map: %{"type" => "object"},
+    keyword: %{"type" => "object"},
+    tuple: %{"type" => "object"},
     atom: %{"type" => "string"},
+    module: %{"type" => "string"},
     term: %{},
-    file: %{"type" => "string", "format" => "binary", "description" => "File content (binary)"},
+    function: %{},
+    vector: %{"type" => "array", "items" => %{"type" => "number"}},
+    file: %{
+      "type" => "string",
+      "format" => "byte",
+      "description" => "Base64 encoded file content"
+    },
     duration_name: %{
       "type" => "string",
-      "enum" => ~w(year month week day hour minute second millisecond microsecond nanosecond),
+      "enum" => Enum.map(Ash.Type.DurationName.values(), &to_string/1),
       "description" => "Duration unit name"
     }
   }
@@ -260,9 +286,10 @@ defmodule AshOaskit.TypeMapper do
   defp build_struct_schema(_), do: %{"type" => "object"}
 
   # Known basic atom types
-  @basic_types ~w(string ci_string integer float decimal boolean date time datetime
-                  utc_datetime utc_datetime_usec naive_datetime uuid binary map atom
-                  term file duration_name)a
+  @basic_types ~w(string ci_string integer float decimal boolean date time time_usec
+                  datetime utc_datetime utc_datetime_usec naive_datetime duration uuid
+                  uuid_v7 binary url_encoded_binary map keyword tuple atom module term
+                  function vector file duration_name)a
 
   # Map of Ash.Type.* modules to their atom equivalents
   @ash_type_to_atom %{
@@ -274,15 +301,24 @@ defmodule AshOaskit.TypeMapper do
     Ash.Type.Boolean => :boolean,
     Ash.Type.Date => :date,
     Ash.Type.Time => :time,
+    Ash.Type.TimeUsec => :time_usec,
     Ash.Type.DateTime => :datetime,
     Ash.Type.UtcDatetime => :utc_datetime,
     Ash.Type.UtcDatetimeUsec => :utc_datetime_usec,
     Ash.Type.NaiveDatetime => :naive_datetime,
+    Ash.Type.Duration => :duration,
     Ash.Type.UUID => :uuid,
+    Ash.Type.UUIDv7 => :uuid_v7,
     Ash.Type.Binary => :binary,
+    Ash.Type.UrlEncodedBinary => :url_encoded_binary,
     Ash.Type.Map => :map,
+    Ash.Type.Keyword => :keyword,
+    Ash.Type.Tuple => :tuple,
     Ash.Type.Atom => :atom,
+    Ash.Type.Module => :module,
     Ash.Type.Term => :term,
+    Ash.Type.Function => :function,
+    Ash.Type.Vector => :vector,
     Ash.Type.File => :file,
     Ash.Type.DurationName => :duration_name
   }
@@ -316,7 +352,8 @@ defmodule AshOaskit.TypeMapper do
   # Fallback for unknown types
   defp normalize_type(_), do: :string
 
-  # Handle complex type checking for embedded resources, custom types, and unions
+  # Handle complex type checking for embedded resources, custom types, unions,
+  # Ash.Type.Enum implementors, and NewType wrappers
   defp normalize_complex_type(type) do
     cond do
       embedded_resource?(type) ->
@@ -328,9 +365,30 @@ defmodule AshOaskit.TypeMapper do
       union_result = get_union_types(type) ->
         union_result
 
+      enum_type?(type) ->
+        {:custom, enum_schema(type)}
+
+      newtype?(type) ->
+        type |> NewType.subtype_of() |> normalize_type()
+
       true ->
         :string
     end
+  end
+
+  # Check if a type uses Ash.Type.Enum (e.g. `use Ash.Type.Enum, values: [...]`)
+  defp enum_type?(type) do
+    Code.ensure_loaded?(type) and Spark.implements_behaviour?(type, Ash.Type.Enum)
+  end
+
+  defp enum_schema(type) do
+    %{"type" => "string", "enum" => Enum.map(type.values(), &to_string/1)}
+  end
+
+  # Check if a type is an Ash.Type.NewType wrapper (union NewTypes are
+  # already resolved earlier via the attribute constraints)
+  defp newtype?(type) do
+    Code.ensure_loaded?(type) and NewType.new_type?(type)
   end
 
   # Check if a type has a json_schema/1 callback

@@ -576,8 +576,8 @@ defmodule AshOaskit.TypeMapperTest do
       attr = %{type: :file, allow_nil?: false}
       result = TypeMapper.to_json_schema_31(attr)
       assert result["type"] == "string"
-      assert result["format"] == "binary"
-      assert result["description"] == "File content (binary)"
+      assert result["format"] == "byte"
+      assert result["description"] == "Base64 encoded file content"
     end
 
     test "maps duration_name type for 3.1" do
@@ -590,11 +590,11 @@ defmodule AshOaskit.TypeMapperTest do
       assert result["description"] == "Duration unit name"
     end
 
-    test "maps Ash.Type.File module" do
+    test "maps Ash.Type.File module to base64 byte format" do
       attr = %{type: Ash.Type.File, allow_nil?: false}
       result = TypeMapper.to_json_schema_31(attr)
       assert result["type"] == "string"
-      assert result["format"] == "binary"
+      assert result["format"] == "byte"
     end
 
     test "maps Ash.Type.DurationName module" do
@@ -602,6 +602,99 @@ defmodule AshOaskit.TypeMapperTest do
       result = TypeMapper.to_json_schema_31(attr)
       assert result["type"] == "string"
       assert is_list(result["enum"])
+    end
+  end
+
+  describe "extended builtin types" do
+    test "maps Ash.Type.UUIDv7 to string/uuid in both versions" do
+      attr = %{type: Ash.Type.UUIDv7, allow_nil?: false}
+
+      assert TypeMapper.to_json_schema_31(attr) == %{"type" => "string", "format" => "uuid"}
+      assert TypeMapper.to_json_schema_30(attr) == %{"type" => "string", "format" => "uuid"}
+    end
+
+    test "maps Ash.Type.Duration to ISO 8601 duration string" do
+      attr = %{type: Ash.Type.Duration, allow_nil?: false}
+
+      assert TypeMapper.to_json_schema_31(attr) == %{"type" => "string", "format" => "duration"}
+      assert TypeMapper.to_json_schema_30(attr) == %{"type" => "string", "format" => "duration"}
+    end
+
+    test "maps Ash.Type.Vector to array of numbers" do
+      attr = %{type: Ash.Type.Vector, allow_nil?: false}
+
+      assert TypeMapper.to_json_schema_31(attr) == %{
+               "type" => "array",
+               "items" => %{"type" => "number"}
+             }
+    end
+
+    test "maps Ash.Type.TimeUsec to string/time" do
+      attr = %{type: Ash.Type.TimeUsec, allow_nil?: false}
+
+      assert TypeMapper.to_json_schema_31(attr) == %{"type" => "string", "format" => "time"}
+    end
+
+    test "maps Ash.Type.UrlEncodedBinary to string/byte" do
+      attr = %{type: Ash.Type.UrlEncodedBinary, allow_nil?: false}
+
+      assert TypeMapper.to_json_schema_31(attr) == %{"type" => "string", "format" => "byte"}
+    end
+
+    test "maps Ash.Type.Keyword and Ash.Type.Tuple to object" do
+      assert TypeMapper.to_json_schema_31(%{type: Ash.Type.Keyword, allow_nil?: false}) ==
+               %{"type" => "object"}
+
+      assert TypeMapper.to_json_schema_31(%{type: Ash.Type.Tuple, allow_nil?: false}) ==
+               %{"type" => "object"}
+    end
+
+    test "maps Ash.Type.Module to string" do
+      attr = %{type: Ash.Type.Module, allow_nil?: false}
+
+      assert TypeMapper.to_json_schema_31(attr) == %{"type" => "string"}
+    end
+
+    test "maps Ash.Type.Function to empty schema" do
+      attr = %{type: Ash.Type.Function, allow_nil?: false}
+
+      assert TypeMapper.to_json_schema_31(attr) == %{}
+    end
+
+    test "maps atom shorthand types for new builtins" do
+      assert TypeMapper.to_json_schema_31(%{type: :uuid_v7, allow_nil?: false}) ==
+               %{"type" => "string", "format" => "uuid"}
+
+      assert TypeMapper.to_json_schema_31(%{type: :duration, allow_nil?: false}) ==
+               %{"type" => "string", "format" => "duration"}
+
+      assert TypeMapper.to_json_schema_31(%{type: :vector, allow_nil?: false}) ==
+               %{"type" => "array", "items" => %{"type" => "number"}}
+    end
+  end
+
+  describe "Ash.Type.Enum and NewType fallbacks" do
+    test "Ash.Type.Enum implementors map to string with values enum" do
+      attr = %{type: AshOaskit.Test.Priority, allow_nil?: false, constraints: []}
+      result = TypeMapper.to_json_schema_31(attr)
+
+      assert result == %{"type" => "string", "enum" => ["low", "medium", "high"]}
+    end
+
+    test "NewType wrappers resolve to their subtype schema" do
+      attr = %{type: AshOaskit.Test.Subject, allow_nil?: false, constraints: []}
+      result = TypeMapper.to_json_schema_31(attr)
+
+      assert result == %{"type" => "string"}
+    end
+
+    test "fallbacks flow through resource attributes end to end" do
+      spec = AshOaskit.spec_31(domains: [AshOaskit.Test.SimpleDomain])
+      attrs = spec["components"]["schemas"]["PostAttributes"]["properties"]
+
+      assert attrs["priority"]["enum"] == ["low", "medium", "high"]
+      assert attrs["external_id"]["format"] == "uuid"
+      assert "string" in List.wrap(attrs["subject"]["type"])
     end
   end
 

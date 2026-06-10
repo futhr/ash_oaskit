@@ -444,7 +444,7 @@ defmodule AshOaskit.OpenAPI30ComplianceTest do
     end)
   end
 
-  defp assert_no_ref_siblings(_node, _path), do: :ok
+  defp assert_no_ref_siblings(_, _), do: :ok
 
   describe "Oaskit validation for 3.0" do
     test "full spec passes Oaskit validation" do

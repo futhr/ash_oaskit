@@ -150,15 +150,13 @@ defmodule AshOaskit.KitchenSinkTest do
   end
 
   describe "duration_name type (billing_unit)" do
-    test "generates string with enum of all duration units", %{spec_31: spec} do
+    test "generates string with enum matching Ash.Type.DurationName.values/0", %{spec_31: spec} do
       billing = get_attr(spec, "billing_unit")
 
-      expected_units =
-        ~w(year month week day hour minute second millisecond microsecond nanosecond)
+      expected_units = Enum.map(Ash.Type.DurationName.values(), &to_string/1)
 
-      for unit <- expected_units do
-        assert unit in billing["enum"], "Expected #{unit} in billing_unit enum"
-      end
+      assert billing["enum"] == expected_units
+      refute "nanosecond" in billing["enum"]
     end
 
     test "3.1 nullable uses type array", %{spec_31: spec} do

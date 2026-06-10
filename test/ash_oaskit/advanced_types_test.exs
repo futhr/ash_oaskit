@@ -43,7 +43,7 @@ defmodule AshOaskit.AdvancedTypesTest do
       schema = TypeMapper.to_json_schema_31(attr)
 
       assert schema["type"] == ["string", "null"] or "string" in schema["type"]
-      assert schema["format"] == "binary"
+      assert schema["format"] == "byte"
     end
 
     test "file type generates binary format string (3.0)" do
@@ -51,7 +51,7 @@ defmodule AshOaskit.AdvancedTypesTest do
       schema = TypeMapper.to_json_schema_30(attr)
 
       assert schema["type"] == "string"
-      assert schema["format"] == "binary"
+      assert schema["format"] == "byte"
       assert schema["nullable"] == true
     end
 
@@ -67,7 +67,7 @@ defmodule AshOaskit.AdvancedTypesTest do
       schema = TypeMapper.to_json_schema_31(attr)
 
       assert schema["type"] == "string"
-      assert schema["format"] == "binary"
+      assert schema["format"] == "byte"
     end
   end
 
@@ -82,26 +82,14 @@ defmodule AshOaskit.AdvancedTypesTest do
       assert is_list(schema["enum"])
     end
 
-    test "duration_name includes all duration units" do
+    test "duration_name enum matches Ash.Type.DurationName.values/0 exactly" do
       attr = mock_attr(:duration_name, allow_nil?: false)
       schema = TypeMapper.to_json_schema_31(attr)
 
-      expected_units = [
-        "year",
-        "month",
-        "week",
-        "day",
-        "hour",
-        "minute",
-        "second",
-        "millisecond",
-        "microsecond",
-        "nanosecond"
-      ]
+      expected_units = Enum.map(Ash.Type.DurationName.values(), &to_string/1)
 
-      Enum.each(expected_units, fn unit ->
-        assert unit in schema["enum"], "Expected #{unit} in enum"
-      end)
+      assert schema["enum"] == expected_units
+      refute "nanosecond" in schema["enum"]
     end
 
     test "duration_name generates valid schema (3.0)" do
@@ -194,7 +182,7 @@ defmodule AshOaskit.AdvancedTypesTest do
 
       assert schema["type"] == "array"
       assert schema["items"]["type"] == "string"
-      assert schema["items"]["format"] == "binary"
+      assert schema["items"]["format"] == "byte"
     end
 
     test "array of duration_name type" do
@@ -215,8 +203,8 @@ defmodule AshOaskit.AdvancedTypesTest do
       schema_31 = TypeMapper.to_json_schema_31(attr)
       schema_30 = TypeMapper.to_json_schema_30(attr)
 
-      assert schema_31["format"] == "binary"
-      assert schema_30["format"] == "binary"
+      assert schema_31["format"] == "byte"
+      assert schema_30["format"] == "byte"
     end
 
     test "duration_name type valid in both versions" do
