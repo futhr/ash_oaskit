@@ -320,7 +320,7 @@ defmodule AshOaskit.Config do
   """
   @spec domain_routes(module()) :: [map()]
   def domain_routes(domain) do
-    AshJsonApi.Domain.Info.routes(domain)
+    AshOaskit.RouteGathering.domain_routes(domain)
   end
 
   @doc """

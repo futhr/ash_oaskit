@@ -326,4 +326,37 @@ defmodule AshOaskit.Generators.PathBuilderTest do
       assert Map.has_key?(operation[:responses], "422")
     end
   end
+
+  describe "resource-level routes and domain prefix" do
+    test "routes declared on the resource appear in paths" do
+      paths = PathBuilder.build_paths([AshOaskit.Test.Workshop], version: "3.1")
+
+      assert Map.has_key?(paths, "/gadgets")
+      assert Map.has_key?(paths, "/gadgets/{id}")
+    end
+
+    test "resource-level and domain-level routes merge without duplication" do
+      paths = PathBuilder.build_paths([AshOaskit.Test.Workshop], version: "3.1")
+
+      # get (index) + post (create) come from the resource block
+      assert paths["/gadgets"] |> Map.keys() |> Enum.sort() == ["get", "post"]
+      # get comes from the resource block; patch + delete from the domain block
+      assert paths["/gadgets/{id}"] |> Map.keys() |> Enum.sort() == ["delete", "get", "patch"]
+    end
+
+    test "resource-level routes carry the resource for operation building" do
+      paths = PathBuilder.build_paths([AshOaskit.Test.Workshop], version: "3.1")
+
+      operation = paths["/gadgets"]["post"]
+      assert operation[:operationId] =~ "gadget"
+      assert operation[:tags] == ["Gadget"]
+    end
+
+    test "domain prefix is prepended to all paths" do
+      paths = PathBuilder.build_paths([AshOaskit.Test.EdgeCaseDomain], version: "3.1")
+
+      assert Map.has_key?(paths, "/edge/no-type")
+      refute Map.has_key?(paths, "/no-type")
+    end
+  end
 end

@@ -262,6 +262,76 @@ defmodule AshOaskit.Test.Comment do
   end
 end
 
+# Resource that declares its routes on the RESOURCE (classic ash_json_api
+# style) — regression guard for resource-level route gathering
+defmodule AshOaskit.Test.Gadget do
+  @moduledoc false
+  use Ash.Resource,
+    domain: AshOaskit.Test.Workshop,
+    data_layer: Ash.DataLayer.Ets,
+    extensions: [AshJsonApi.Resource]
+
+  json_api do
+    type "gadget"
+
+    routes do
+      base "/gadgets"
+      get :read
+      index :read
+      post :create
+    end
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :name, :string do
+      public? true
+      allow_nil? false
+    end
+
+    attribute :status, :atom do
+      public? true
+      constraints one_of: [:idle, :active]
+      default :idle
+    end
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [:name]
+    end
+
+    update :update do
+      accept [:name, :status]
+    end
+  end
+end
+
+# Domain that ALSO declares routes for Gadget at the domain level —
+# proves both sources merge without duplicating operations
+defmodule AshOaskit.Test.Workshop do
+  @moduledoc false
+  use Ash.Domain,
+    validate_config_inclusion?: false,
+    extensions: [AshJsonApi.Domain]
+
+  resources do
+    resource AshOaskit.Test.Gadget
+  end
+
+  json_api do
+    routes do
+      base_route "/gadgets", AshOaskit.Test.Gadget do
+        patch :update
+        delete :destroy
+      end
+    end
+  end
+end
+
 # Simple domain without AshJsonApi routes (for fallback testing)
 defmodule AshOaskit.Test.SimpleDomain do
   @moduledoc false
