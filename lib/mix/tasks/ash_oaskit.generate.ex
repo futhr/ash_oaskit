@@ -4,6 +4,16 @@ defmodule Mix.Tasks.AshOaskit.Generate do
   @moduledoc """
   Generate OpenAPI specification files from Ash domains.
 
+  > #### Tip {: .tip}
+  >
+  > If you already define a spec module with `use AshOaskit`, prefer
+  > oaskit's exporter — it uses the exact spec your app serves:
+  >
+  >     mix openapi.dump MyAppWeb.ApiSpec
+  >
+  > This task remains useful for YAML output and one-off generation
+  > without a spec module.
+
   ## Usage
 
       mix ash_oaskit.generate --domains MyApp.Blog,MyApp.Accounts
