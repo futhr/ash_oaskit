@@ -60,7 +60,7 @@ Add `ash_oaskit` to your dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ash_oaskit, "~> 0.1.1"},
+    {:ash_oaskit, "~> 0.2"},
     # Optional: For YAML output
     {:ymlr, "~> 5.0", optional: true}
   ]
