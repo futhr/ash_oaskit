@@ -132,6 +132,32 @@ defmodule AshOaskit.Generators.InfoBuilder do
   def build_tags(domains) do
     domains
     |> Enum.flat_map(&get_domain_resources/1)
+    |> build_resource_tags()
+  end
+
+  @doc """
+  Builds tags from an explicit resource list.
+
+  Used by the generator when `:resource_scope` narrows the seed set —
+  tags group operations, so only resources that own operations should
+  contribute one.
+
+  ## Parameters
+
+  - `resources` - List of Ash resource modules
+
+  ## Returns
+
+  A list of tag objects with name field.
+
+  ## Examples
+
+      iex> InfoBuilder.build_resource_tags([MyApp.Blog.Post])
+      [%{name: "Post"}]
+  """
+  @spec build_resource_tags(list(module())) :: list(map())
+  def build_resource_tags(resources) do
+    resources
     |> Enum.map(fn resource ->
       name =
         resource

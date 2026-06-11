@@ -45,6 +45,18 @@ defmodule AshOaskit.Generators.Generator do
   | `:security` | list | Security requirements |
   | `:router` | module | Phoenix router for controller introspection |
   | `:modify_open_api` | function or MFA | Post-processing hook for spec customization |
+  | `:resource_scope` | `:all` or `:routed` | Which resources seed schemas and tags (default `:all`) |
+
+  ## Resource scope
+
+  With the default `:all`, every resource of every listed domain
+  contributes a schema and a tag — including resources no route exposes.
+  With `:routed`, only resources that contribute at least one JSON:API
+  route seed the components; the schema builder still pulls relationship
+  and embedded destinations in transitively, so the output is exactly the
+  closure the served paths reference. Use `:routed` when listed domains
+  contain internal resources whose shape should not appear in a public
+  spec.
   """
 
   alias AshOaskit.Generators.InfoBuilder
@@ -130,7 +142,7 @@ defmodule AshOaskit.Generators.Generator do
 
     builder =
       domains
-      |> Enum.flat_map(&get_domain_resources/1)
+      |> seed_resources(Keyword.get(opts, :resource_scope, :all))
       |> Enum.reduce(SchemaBuilder.new(version: version), fn resource, builder ->
         SchemaBuilder.add_resource_schemas(builder, resource,
           input_actions: Map.get(input_actions, resource, [])
@@ -138,6 +150,21 @@ defmodule AshOaskit.Generators.Generator do
       end)
 
     %{schemas: builder.schemas}
+  end
+
+  # :all seeds every resource of every domain; :routed seeds only the
+  # resources that contribute at least one JSON:API route. Relationship
+  # and embedded destinations are pulled in transitively by the schema
+  # builder either way, so :routed yields the closure the paths reference.
+  defp seed_resources(domains, :all) do
+    Enum.flat_map(domains, &get_domain_resources/1)
+  end
+
+  defp seed_resources(domains, :routed) do
+    domains
+    |> Enum.flat_map(&RouteGathering.domain_routes/1)
+    |> Enum.map(& &1.resource)
+    |> Enum.uniq()
   end
 
   # Collects {action, route} pairs per resource for every route that
@@ -159,7 +186,10 @@ defmodule AshOaskit.Generators.Generator do
 
   # Builds all tags from domains and optionally from router
   defp build_all_tags(domains, opts) do
-    domain_tags = InfoBuilder.build_tags(domains)
+    domain_tags =
+      domains
+      |> seed_resources(Keyword.get(opts, :resource_scope, :all))
+      |> InfoBuilder.build_resource_tags()
 
     controller_tags =
       case Keyword.get(opts, :router) do

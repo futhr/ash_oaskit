@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `:resource_scope` option (`:all` | `:routed`, default `:all`) on `use AshOaskit`,
+  `AshOaskit.spec/1`, and the version shortcuts. With `:routed`, only resources
+  contributing at least one JSON:API route seed the generated schemas and tags;
+  relationship and embedded destinations are still pulled in transitively, so the
+  components are exactly the closure the served paths reference. Use it when a
+  listed domain contains internal resources whose shape should not appear in a
+  public spec.
+
 ## [0.1.0] - 2026-03-31
 
 ### Added
