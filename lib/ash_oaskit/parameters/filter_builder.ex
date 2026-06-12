@@ -87,6 +87,8 @@ defmodule AshOaskit.FilterBuilder do
   This module respects that configuration when available.
   """
 
+  alias AshOaskit.Config
+
   @typedoc """
   Filter operator specification.
 
@@ -365,6 +367,6 @@ defmodule AshOaskit.FilterBuilder do
   # Gets the resource name for descriptions
   @spec resource_name(module()) :: String.t()
   defp resource_name(resource) do
-    resource |> Module.split() |> List.last()
+    Config.resource_display_name(resource)
   end
 end

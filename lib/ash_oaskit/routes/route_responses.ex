@@ -42,8 +42,9 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
   """
 
   import AshOaskit.Schemas.Nullable, only: [make_nullable_oneof: 2]
-
   import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
+
+  alias AshOaskit.Config
 
   @to_one_relationships [:belongs_to, :has_one]
 
@@ -179,7 +180,7 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
   def build_related_response_schema(relationship, opts) do
     version = Keyword.get(opts, :version, "3.1")
     related_resource = relationship.destination
-    schema_name = related_resource |> Module.split() |> List.last()
+    schema_name = Config.resource_display_name(related_resource)
 
     data_schema =
       case relationship_cardinality(relationship) do

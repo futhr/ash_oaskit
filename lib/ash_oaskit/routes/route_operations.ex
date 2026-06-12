@@ -31,6 +31,7 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
 
   import AshOaskit.Core.PathUtils, only: [humanize: 1, extract_path_params: 1]
 
+  alias AshOaskit.Config
   alias AshOaskit.FilterBuilder
   alias AshOaskit.QueryParameters
   alias AshOaskit.RelationshipRoutes.RouteResponses
@@ -81,8 +82,7 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
   def build_operation_id(route) do
     resource_name =
       route.resource
-      |> Module.split()
-      |> List.last()
+      |> Config.resource_display_name()
       |> Macro.underscore()
 
     relationship_name = to_string(Map.get(route, :relationship) || "related")
@@ -121,7 +121,7 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
   """
   @spec build_summary(map()) :: String.t()
   def build_summary(route) do
-    resource_name = route.resource |> Module.split() |> List.last()
+    resource_name = Config.resource_display_name(route.resource)
     relationship_name = route |> Map.get(:relationship, "related") |> to_string() |> humanize()
 
     case route.type do
@@ -199,8 +199,7 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
   """
   @spec build_tags(map()) :: [String.t()]
   def build_tags(route) do
-    resource_name = route.resource |> Module.split() |> List.last()
-    [resource_name]
+    [Config.resource_display_name(route.resource)]
   end
 
   @doc """

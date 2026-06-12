@@ -41,6 +41,8 @@ defmodule AshOaskit.Generators.InfoBuilder do
       tags = InfoBuilder.build_tags([MyApp.Domain])
   """
 
+  alias AshOaskit.Config
+
   @type opts :: keyword()
 
   @doc """
@@ -159,12 +161,7 @@ defmodule AshOaskit.Generators.InfoBuilder do
   def build_resource_tags(resources) do
     resources
     |> Enum.map(fn resource ->
-      name =
-        resource
-        |> Module.split()
-        |> List.last()
-
-      %{name: name}
+      %{name: Config.resource_display_name(resource)}
     end)
     |> Enum.uniq_by(& &1[:name])
   end

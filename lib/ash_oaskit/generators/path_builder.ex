@@ -175,7 +175,7 @@ defmodule AshOaskit.Generators.PathBuilder do
 
   defp build_operation_summary(route) do
     action = route.action |> to_string() |> humanize()
-    resource = route.resource |> Module.split() |> List.last()
+    resource = Config.resource_display_name(route.resource)
 
     "#{action} #{resource}"
   end
@@ -266,8 +266,7 @@ defmodule AshOaskit.Generators.PathBuilder do
 
     resource_name =
       route.resource
-      |> Module.split()
-      |> List.last()
+      |> Config.resource_display_name()
       |> Macro.underscore()
 
     action_name = to_string(route.action)
@@ -325,12 +324,7 @@ defmodule AshOaskit.Generators.PathBuilder do
 
   # Builds operation tags from resource name
   defp build_operation_tags(route) do
-    resource_name =
-      route.resource
-      |> Module.split()
-      |> List.last()
-
-    [resource_name]
+    [Config.resource_display_name(route.resource)]
   end
 
   # Builds parameters for an operation (path + query params)
@@ -448,10 +442,7 @@ defmodule AshOaskit.Generators.PathBuilder do
   end
 
   defp action_input_ref(route) do
-    schema_name =
-      route.resource
-      |> Module.split()
-      |> List.last()
+    schema_name = Config.resource_display_name(route.resource)
 
     schema_ref(ResourceSchemas.action_input_schema_name(schema_name, route.action))
   end
@@ -469,10 +460,7 @@ defmodule AshOaskit.Generators.PathBuilder do
         _ -> "200"
       end
 
-    schema_name =
-      route.resource
-      |> Module.split()
-      |> List.last()
+    schema_name = Config.resource_display_name(route.resource)
 
     success_response =
       if route.type == :delete do

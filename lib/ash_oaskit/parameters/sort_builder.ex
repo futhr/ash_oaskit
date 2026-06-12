@@ -38,6 +38,8 @@ defmodule AshOaskit.SortBuilder do
   AshJsonApi resource DSL. When disabled, this module returns `nil`.
   """
 
+  alias AshOaskit.Config
+
   @doc """
   Builds the sort query parameter schema for the given resource.
 
@@ -271,8 +273,6 @@ defmodule AshOaskit.SortBuilder do
   end
 
   defp resource_name(resource) do
-    resource
-    |> Module.split()
-    |> List.last()
+    Config.resource_display_name(resource)
   end
 end

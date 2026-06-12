@@ -213,6 +213,28 @@ defmodule AshOaskit.Test.NilTypeResource do
 end
 
 # Domain for edge case testing
+# Deeply nested resource whose JSON:API type disambiguates its generic module
+# short name (schema/tag naming derives "ReconciliationState" from the type)
+defmodule AshOaskit.Test.Nested.State do
+  @moduledoc false
+  use Ash.Resource,
+    domain: AshOaskit.Test.EdgeCaseDomain,
+    extensions: [AshJsonApi.Resource]
+
+  json_api do
+    type "reconciliation-state"
+  end
+
+  attributes do
+    uuid_primary_key :id
+    attribute :status, :string, public?: true
+  end
+
+  actions do
+    defaults [:read]
+  end
+end
+
 defmodule AshOaskit.Test.EdgeCaseDomain do
   @moduledoc false
   use Ash.Domain,
@@ -222,6 +244,7 @@ defmodule AshOaskit.Test.EdgeCaseDomain do
   resources do
     resource AshOaskit.Test.NoTypeResource
     resource AshOaskit.Test.NilTypeResource
+    resource AshOaskit.Test.Nested.State
   end
 
   json_api do

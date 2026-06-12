@@ -264,9 +264,7 @@ defmodule AshOaskit.TagBuilder do
   def resource_tag_name(nil), do: nil
 
   def resource_tag_name(resource) when is_atom(resource) do
-    resource
-    |> Module.split()
-    |> List.last()
+    Config.resource_display_name(resource)
   end
 
   @doc """

@@ -53,6 +53,23 @@ defmodule AshOaskit.ConfigTest do
     end
   end
 
+  describe "resource_display_name/1" do
+    test "camelizes the declared JSON:API type" do
+      # the type disambiguates the generic module short name "State"
+      name = Config.resource_display_name(AshOaskit.Test.Nested.State)
+
+      assert name == "ReconciliationState"
+    end
+
+    test "coincides with the module short name when the type matches" do
+      assert Config.resource_display_name(AshOaskit.Test.Post) == "Post"
+    end
+
+    test "falls back to the module short name for non-resource modules" do
+      assert Config.resource_display_name(MyApp.Blog.Post) == "Post"
+    end
+  end
+
   describe "derive_filter?/1" do
     # Tests for filter derivation setting
 

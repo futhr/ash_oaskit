@@ -63,6 +63,8 @@ defmodule AshOaskit.MultipartSupport do
 
   import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
 
+  alias AshOaskit.Config
+
   @doc """
   Checks if an action has any file upload arguments.
 
@@ -154,7 +156,7 @@ defmodule AshOaskit.MultipartSupport do
   """
   @spec build_request_body(map() | struct(), module(), keyword()) :: map()
   def build_request_body(action, resource, opts) do
-    schema_name = resource |> Module.split() |> List.last()
+    schema_name = Config.resource_display_name(resource)
 
     json_schema = %{
       type: :object,

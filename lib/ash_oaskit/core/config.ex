@@ -79,6 +79,38 @@ defmodule AshOaskit.Config do
   end
 
   @doc """
+  Returns the PascalCase display name for a resource, used to build schema
+  and tag names.
+
+  Derives from the resource's declared JSON:API type when present — so a
+  deeply nested module like `MyApp.Reconciliation.State` with
+  `type "reconciliation-state"` names its schemas `ReconciliationState*`
+  instead of the ambiguous `State*`. Falls back to the module's short name
+  when no type is declared.
+
+  ## Examples
+
+      iex> AshOaskit.Config.resource_display_name(MyApp.Blog.Post)
+      "Post"
+
+  """
+  @spec resource_display_name(module()) :: String.t()
+  def resource_display_name(resource) do
+    json_api_type =
+      if Ash.Resource.Info.resource?(resource) do
+        AshJsonApi.Resource.Info.type(resource)
+      end
+
+    case json_api_type do
+      nil ->
+        resource |> Module.split() |> List.last()
+
+      type ->
+        type |> to_string() |> String.replace("-", "_") |> Macro.camelize()
+    end
+  end
+
+  @doc """
   Checks whether filter schemas should be auto-derived for a resource.
 
   When enabled, the OpenAPI generator will create detailed filter

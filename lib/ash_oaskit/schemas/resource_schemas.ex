@@ -53,6 +53,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
 
   alias Ash.Resource.Info, as: ResourceInfo
+  alias AshOaskit.Config
   alias AshOaskit.SchemaBuilder.EmbeddedSchemas
   alias AshOaskit.SchemaBuilder.PropertyBuilders
   alias AshOaskit.SchemaBuilder.RelationshipSchemas
@@ -127,7 +128,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   """
   @spec resource_schema_name(module()) :: String.t()
   def resource_schema_name(resource) when is_atom(resource) do
-    resource |> Module.split() |> List.last()
+    Config.resource_display_name(resource)
   end
 
   @doc """

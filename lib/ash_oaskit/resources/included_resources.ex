@@ -451,8 +451,6 @@ defmodule AshOaskit.IncludedResources do
 
   @spec resource_name(module()) :: String.t()
   defp resource_name(resource) do
-    resource
-    |> Module.split()
-    |> List.last()
+    Config.resource_display_name(resource)
   end
 end
