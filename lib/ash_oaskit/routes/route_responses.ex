@@ -417,16 +417,6 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
 
   # Gets the JSON:API type for the related resource
   defp get_related_type(relationship) do
-    case AshJsonApi.Resource.Info.type(relationship.destination) do
-      nil -> default_type_name(relationship.destination)
-      type -> type
-    end
-  end
-
-  defp default_type_name(resource) do
-    resource
-    |> Module.split()
-    |> List.last()
-    |> Macro.underscore()
+    Config.resource_type(relationship.destination)
   end
 end

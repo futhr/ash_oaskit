@@ -295,6 +295,7 @@ defmodule AshOaskit.Generators.PathBuilder do
       |> String.trim_leading("/")
       |> String.split("/")
       |> Enum.reject(&(String.starts_with?(&1, ":") or String.starts_with?(&1, "{")))
+      |> Enum.map(&String.replace(&1, "-", "_"))
 
     resource_plural = pluralize(resource_name)
 
@@ -303,7 +304,7 @@ defmodule AshOaskit.Generators.PathBuilder do
       [^resource_plural | _] -> nil
       # Top-level route (singular)
       [^resource_name | _] -> nil
-      [parent | _] -> String.replace(parent, "-", "_")
+      [parent | _] -> parent
       _ -> nil
     end
   end
@@ -518,11 +519,19 @@ defmodule AshOaskit.Generators.PathBuilder do
         nil ->
           attribute = ResourceInfo.attribute(route.resource, name)
           schema = if attribute, do: version_schema(attribute, version), else: %{type: :string}
-          %{name: to_string(name), in: :query, required: false, schema: schema}
+
+          param_name =
+            if attribute do
+              Config.json_field_name(route.resource, name)
+            else
+              to_string(name)
+            end
+
+          %{name: param_name, in: :query, required: false, schema: schema}
 
         argument ->
           %{
-            name: to_string(name),
+            name: Config.json_argument_name(route.resource, route.action, name),
             in: :query,
             required: not argument.allow_nil? and is_nil(argument.default),
             schema: version_schema(argument, version)

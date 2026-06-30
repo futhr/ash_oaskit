@@ -72,7 +72,7 @@ defmodule AshOaskit.Config do
   """
   @spec resource_type(module()) :: String.t()
   def resource_type(resource) do
-    case AshJsonApi.Resource.Info.type(resource) do
+    case json_api_type(resource) do
       nil -> default_type(resource)
       type -> type
     end
@@ -96,17 +96,57 @@ defmodule AshOaskit.Config do
   """
   @spec resource_display_name(module()) :: String.t()
   def resource_display_name(resource) do
-    json_api_type =
-      if Ash.Resource.Info.resource?(resource) do
-        AshJsonApi.Resource.Info.type(resource)
-      end
-
-    case json_api_type do
+    case json_api_type(resource) do
       nil ->
         resource |> Module.split() |> List.last()
 
       type ->
         type |> to_string() |> String.replace("-", "_") |> Macro.camelize()
+    end
+  end
+
+  @doc """
+  Returns the JSON:API field name for a resource field.
+
+  Applies the resource's `field_names` mapping when the resource uses
+  `AshJsonApi.Resource`; otherwise falls back to the atom/string name.
+  """
+  @spec json_field_name(module(), atom() | String.t()) :: String.t()
+  def json_field_name(resource, field_name) do
+    if json_api_resource?(resource) do
+      AshJsonApi.Resource.Info.field_to_json_key(resource, field_name)
+    else
+      to_string(field_name)
+    end
+  end
+
+  @doc """
+  Returns the JSON:API argument name for an action argument.
+
+  Applies the resource's `argument_names` mapping when the resource uses
+  `AshJsonApi.Resource`; otherwise falls back to the atom/string name.
+  """
+  @spec json_argument_name(module(), atom(), atom() | String.t()) :: String.t()
+  def json_argument_name(resource, action_name, argument_name) do
+    if json_api_resource?(resource) do
+      AshJsonApi.Resource.Info.argument_to_json_key(resource, action_name, argument_name)
+    else
+      to_string(argument_name)
+    end
+  end
+
+  @doc """
+  Returns whether a field should be exposed in JSON:API output and specs.
+
+  Applies `hide_fields`/`show_fields` for AshJsonApi resources and defaults
+  to true for plain Ash resources.
+  """
+  @spec show_field?(module(), atom() | map()) :: boolean()
+  def show_field?(resource, field) do
+    if json_api_resource?(resource) do
+      AshJsonApi.Resource.Info.show_field?(resource, field)
+    else
+      true
     end
   end
 
@@ -443,6 +483,16 @@ defmodule AshOaskit.Config do
   @spec relationship(module(), atom()) :: map() | nil
   def relationship(resource, name) do
     Ash.Resource.Info.relationship(resource, name)
+  end
+
+  defp json_api_type(resource) do
+    if json_api_resource?(resource) do
+      AshJsonApi.Resource.Info.type(resource)
+    end
+  end
+
+  defp json_api_resource?(resource) do
+    Ash.Resource.Info.resource?(resource) and AshJsonApi.Resource in Spark.extensions(resource)
   end
 
   defp default_type(resource) do

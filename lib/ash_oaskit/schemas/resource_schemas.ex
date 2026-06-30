@@ -172,16 +172,25 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
       PropertyBuilders.build_attribute_properties_with_embedded(
         builder,
         attributes,
-        embedded_handler
+        embedded_handler,
+        field_name_fn: &Config.json_field_name(resource, &1)
       )
 
     # Build properties from calculations
     calculations = get_public_calculations(resource)
-    calc_properties = PropertyBuilders.build_calculation_properties(builder, calculations)
+
+    calc_properties =
+      PropertyBuilders.build_calculation_properties(builder, calculations,
+        field_name_fn: &Config.json_field_name(resource, &1)
+      )
 
     # Build properties from aggregates
     aggregates = get_public_aggregates(resource)
-    agg_properties = PropertyBuilders.build_aggregate_properties(builder, aggregates)
+
+    agg_properties =
+      PropertyBuilders.build_aggregate_properties(builder, aggregates,
+        field_name_fn: &Config.json_field_name(resource, &1)
+      )
 
     # Merge all properties (attributes take precedence)
     properties =
@@ -193,7 +202,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
     required =
       attributes
       |> Enum.filter(&EmbeddedSchemas.required_attribute?/1)
-      |> Enum.map(&to_string(&1.name))
+      |> Enum.map(&Config.json_field_name(resource, &1.name))
 
     schema =
       %{
@@ -341,13 +350,20 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
       action ->
         attributes = accepted_writable_attributes(resource, action)
         arguments = body_arguments(action, route)
+        argument_names = Enum.map(arguments, & &1.name)
 
-        properties = PropertyBuilders.build_attribute_properties(builder, attributes ++ arguments)
+        properties =
+          PropertyBuilders.build_attribute_properties(builder, attributes ++ arguments,
+            action_name: action.name,
+            argument_names: argument_names,
+            field_name_fn: &Config.json_field_name(resource, &1),
+            argument_name_fn: &Config.json_argument_name(resource, action.name, &1)
+          )
 
         schema =
           maybe_add_required(
             %{type: :object, properties: properties},
-            action_input_required(action, attributes, arguments)
+            action_input_required(resource, action, attributes, arguments)
           )
 
         add_schema_fn.(builder, action_input_schema_name(schema_name, action_name), schema)
@@ -389,7 +405,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
 
     resource
     |> ResourceInfo.attributes()
-    |> Enum.filter(&(&1.name in accept and &1.writable?))
+    |> Enum.filter(&(&1.name in accept and &1.writable? and Config.show_field?(resource, &1)))
   end
 
   # Public arguments that belong in the request body: path params,
@@ -437,8 +453,11 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   end
 
   # Required body members, mirroring AshJsonApi.OpenApi.required_write_attributes/4
-  defp action_input_required(action, attributes, arguments) do
-    argument_names = arguments |> Enum.reject(& &1.allow_nil?) |> Enum.map(&to_string(&1.name))
+  defp action_input_required(resource, action, attributes, arguments) do
+    argument_names =
+      arguments
+      |> Enum.reject(& &1.allow_nil?)
+      |> Enum.map(&Config.json_argument_name(resource, action.name, &1.name))
 
     attribute_names =
       case action.type do
@@ -459,13 +478,14 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
               attr.name in allow_nil_input or
               MapSet.member?(argument_name_set, attr.name)
           end)
-          |> Enum.map(&to_string(&1.name))
+          |> Enum.map(&Config.json_field_name(resource, &1.name))
       end
 
     require_attributes =
       action
       |> Map.get(:require_attributes, [])
-      |> Enum.map(&to_string/1)
+      |> Enum.filter(&Config.show_field?(resource, &1))
+      |> Enum.map(&Config.json_field_name(resource, &1))
 
     Enum.uniq(attribute_names ++ argument_names ++ require_attributes)
   end
@@ -493,6 +513,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
     resource
     |> ResourceInfo.public_attributes()
     |> Enum.reject(&only_primary_key?(resource, &1.name))
+    |> Enum.filter(&Config.show_field?(resource, &1))
   end
 
   defp only_primary_key?(resource, name) do
@@ -514,7 +535,9 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   """
   @spec get_public_calculations(module()) :: [map()]
   def get_public_calculations(resource) do
-    ResourceInfo.public_calculations(resource)
+    resource
+    |> ResourceInfo.public_calculations()
+    |> Enum.filter(&Config.show_field?(resource, &1))
   end
 
   @doc """
@@ -532,7 +555,9 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   """
   @spec get_public_aggregates(module()) :: [map()]
   def get_public_aggregates(resource) do
-    ResourceInfo.public_aggregates(resource)
+    resource
+    |> ResourceInfo.public_aggregates()
+    |> Enum.filter(&Config.show_field?(resource, &1))
   end
 
   @doc """

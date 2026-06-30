@@ -75,7 +75,10 @@ defmodule AshOaskit.SortBuilder do
   @spec build_sort_parameter(module(), keyword()) :: map() | nil
   def build_sort_parameter(resource, opts \\ []) do
     if derive_sort?(resource) do
-      sortable_fields = get_sortable_fields(resource)
+      sortable_fields =
+        resource
+        |> get_sortable_fields()
+        |> Enum.map(&Config.json_field_name(resource, &1))
 
       %{
         name: "sort",
@@ -245,13 +248,14 @@ defmodule AshOaskit.SortBuilder do
   defp get_sortable_attributes(resource) do
     resource
     |> Ash.Resource.Info.public_attributes()
+    |> Enum.filter(&Config.show_field?(resource, &1))
     |> Enum.map(& &1.name)
   end
 
   defp get_sortable_calculations(resource) do
     resource
     |> Ash.Resource.Info.public_calculations()
-    |> Enum.filter(&sortable_calculation?/1)
+    |> Enum.filter(&(Config.show_field?(resource, &1) and sortable_calculation?(&1)))
     |> Enum.map(& &1.name)
   end
 
@@ -269,6 +273,7 @@ defmodule AshOaskit.SortBuilder do
   defp get_sortable_aggregates(resource) do
     resource
     |> Ash.Resource.Info.public_aggregates()
+    |> Enum.filter(&Config.show_field?(resource, &1))
     |> Enum.map(& &1.name)
   end
 

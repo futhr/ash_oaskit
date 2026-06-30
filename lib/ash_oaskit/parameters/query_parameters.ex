@@ -62,6 +62,8 @@ defmodule AshOaskit.QueryParameters do
       params = QueryParameters.all_parameters(resource, opts)
   """
 
+  alias Ash.Resource.Info, as: ResourceInfo
+  alias AshOaskit.Config
   alias AshOaskit.FilterBuilder
   alias AshOaskit.SortBuilder
 
@@ -441,7 +443,8 @@ defmodule AshOaskit.QueryParameters do
 
   defp get_includable_relationships(resource) do
     resource
-    |> Ash.Resource.Info.public_relationships()
+    |> ResourceInfo.public_relationships()
+    |> Enum.filter(&Config.show_field?(resource, &1))
     |> Enum.map(& &1.name)
   end
 
@@ -450,7 +453,8 @@ defmodule AshOaskit.QueryParameters do
 
     related_types =
       resource
-      |> Ash.Resource.Info.public_relationships()
+      |> ResourceInfo.public_relationships()
+      |> Enum.filter(&Config.show_field?(resource, &1))
       |> Enum.map(fn rel -> resource_type(rel.destination) end)
       |> Enum.uniq()
 
@@ -458,16 +462,6 @@ defmodule AshOaskit.QueryParameters do
   end
 
   defp resource_type(resource) do
-    case AshJsonApi.Resource.Info.type(resource) do
-      nil -> default_type(resource)
-      type -> type
-    end
-  end
-
-  defp default_type(resource) do
-    resource
-    |> Module.split()
-    |> List.last()
-    |> Macro.underscore()
+    Config.resource_type(resource)
   end
 end

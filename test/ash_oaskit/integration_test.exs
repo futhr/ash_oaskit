@@ -169,6 +169,83 @@ defmodule AshOaskit.IntegrationTest do
       # Blog domain has routes configured
       assert is_map(spec["paths"])
     end
+
+    test "uses JSON:API type-derived display names consistently" do
+      spec = AshOaskit.spec_31(domains: [AshOaskit.Test.EdgeCaseDomain])
+      schemas = spec["components"]["schemas"]
+
+      assert Map.has_key?(schemas, "ReconciliationStateAttributes")
+      assert Map.has_key?(schemas, "ReconciliationStateResponse")
+      assert Map.has_key?(schemas, "ReconciliationStateCreateInput")
+      assert Map.has_key?(schemas, "ReconciliationStateUpdateInput")
+      refute Map.has_key?(schemas, "StateResponse")
+
+      tag_names = Enum.map(spec["tags"], & &1["name"])
+      assert "ReconciliationState" in tag_names
+      refute "State" in tag_names
+
+      create = spec["paths"]["/edge/reconciliation-states"]["post"]
+
+      assert create["operationId"] == "post_reconciliation_state_create"
+      assert create["summary"] == "Create ReconciliationState"
+      assert create["tags"] == ["ReconciliationState"]
+
+      assert get_in(create, [
+               "requestBody",
+               "content",
+               "application/vnd.api+json",
+               "schema",
+               "properties",
+               "data",
+               "properties",
+               "attributes",
+               "$ref"
+             ]) == "#/components/schemas/ReconciliationStateCreateInput"
+
+      assert get_in(create, [
+               "responses",
+               "201",
+               "content",
+               "application/vnd.api+json",
+               "schema",
+               "$ref"
+             ]) == "#/components/schemas/ReconciliationStateResponse"
+    end
+
+    test "uses JSON:API field visibility and field name mappings" do
+      spec = AshOaskit.spec_31(domains: [AshOaskit.Test.EdgeCaseDomain])
+      schemas = spec["components"]["schemas"]
+
+      attributes = schemas["MappedFieldAttributes"]["properties"]
+      assert Map.has_key?(attributes, "firstName")
+      assert Map.has_key?(attributes, "viewCount")
+      refute Map.has_key?(attributes, "first_name")
+      refute Map.has_key?(attributes, "internalScore")
+
+      create_input = schemas["MappedFieldCreateInput"]
+      create_properties = create_input["properties"]
+      assert Map.has_key?(create_properties, "firstName")
+      assert Map.has_key?(create_properties, "viewCount")
+      assert Map.has_key?(create_properties, "editorNote")
+      refute Map.has_key?(create_properties, "internalScore")
+      assert "firstName" in create_input["required"]
+      assert "editorNote" in create_input["required"]
+
+      params = spec["paths"]["/edge/mapped-fields"]["get"]["parameters"]
+      filter = Enum.find(params, &(&1["name"] == "filter"))
+      filter_properties = filter["schema"]["properties"]
+
+      assert Map.has_key?(filter_properties, "firstName")
+      assert Map.has_key?(filter_properties, "viewCount")
+      refute Map.has_key?(filter_properties, "first_name")
+      refute Map.has_key?(filter_properties, "internalScore")
+
+      sort = Enum.find(params, &(&1["name"] == "sort"))
+      assert sort["schema"]["description"] =~ "firstName"
+      assert sort["schema"]["description"] =~ "viewCount"
+      refute sort["schema"]["description"] =~ "first_name"
+      refute sort["schema"]["description"] =~ "internalScore"
+    end
   end
 
   describe "multiple domains" do

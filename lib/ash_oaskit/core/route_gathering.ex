@@ -51,6 +51,7 @@ defmodule AshOaskit.RouteGathering do
     resource_level =
       domain
       |> Ash.Domain.Info.resources()
+      |> Enum.filter(&json_api_resource?/1)
       |> Enum.flat_map(fn resource ->
         resource
         |> AshJsonApi.Resource.Info.routes()
@@ -95,4 +96,8 @@ defmodule AshOaskit.RouteGathering do
 
   defp ensure_leading_slash("/" <> _ = path), do: path
   defp ensure_leading_slash(path), do: "/" <> path
+
+  defp json_api_resource?(resource) do
+    AshJsonApi.Resource in Spark.extensions(resource)
+  end
 end

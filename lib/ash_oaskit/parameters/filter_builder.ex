@@ -179,7 +179,7 @@ defmodule AshOaskit.FilterBuilder do
     resource
     |> get_filterable_attributes()
     |> Map.new(fn attr ->
-      {to_string(attr.name), build_attribute_filter_schema(attr)}
+      {Config.json_field_name(resource, attr.name), build_attribute_filter_schema(attr)}
     end)
   end
 
@@ -221,6 +221,7 @@ defmodule AshOaskit.FilterBuilder do
   defp get_filterable_attributes(resource) do
     resource
     |> Ash.Resource.Info.public_attributes()
+    |> Enum.filter(&Config.show_field?(resource, &1))
     |> Enum.reject(fn attr -> Map.get(attr, :filterable?, true) == false end)
   end
 

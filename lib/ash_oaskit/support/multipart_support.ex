@@ -180,7 +180,7 @@ defmodule AshOaskit.MultipartSupport do
     content =
       if has_file_upload?(action) do
         Map.put(content, "multipart/form-data", %{
-          schema: build_multipart_schema(action, opts)
+          schema: build_multipart_schema(action, Keyword.put(opts, :resource, resource))
         })
       else
         content
@@ -220,20 +220,21 @@ defmodule AshOaskit.MultipartSupport do
 
   """
   @spec build_multipart_schema(map() | struct(), keyword()) :: map()
-  def build_multipart_schema(action, _) do
+  def build_multipart_schema(action, opts) do
+    resource = Keyword.get(opts, :resource)
     file_args = file_arguments(action)
     non_file_args = non_file_arguments(action)
 
     # Build properties for file arguments
     file_properties =
       Map.new(file_args, fn arg ->
-        {arg.name, build_file_property(arg)}
+        {argument_name(resource, action, arg), build_file_property(arg)}
       end)
 
     # Build properties for non-file arguments as JSON data
     data_properties =
       Map.new(non_file_args, fn arg ->
-        {arg.name, %{type: :string}}
+        {argument_name(resource, action, arg), %{type: :string}}
       end)
 
     # Combine with standard JSON:API data envelope
@@ -251,7 +252,7 @@ defmodule AshOaskit.MultipartSupport do
     required =
       file_args
       |> Enum.filter(fn arg -> !Map.get(arg, :allow_nil?, true) end)
-      |> Enum.map(fn arg -> to_string(arg.name) end)
+      |> Enum.map(fn arg -> resource |> argument_name(action, arg) |> to_string() end)
 
     schema = %{
       type: :object,
@@ -374,5 +375,11 @@ defmodule AshOaskit.MultipartSupport do
       _ ->
         base_schema
     end
+  end
+
+  defp argument_name(nil, _, arg), do: arg.name
+
+  defp argument_name(resource, action, arg) do
+    Config.json_argument_name(resource, action.name, arg.name)
   end
 end

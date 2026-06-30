@@ -68,6 +68,10 @@ defmodule AshOaskit.ConfigTest do
     test "falls back to the module short name for non-resource modules" do
       assert Config.resource_display_name(MyApp.Blog.Post) == "Post"
     end
+
+    test "falls back to the module short name for resources without AshJsonApi" do
+      assert Config.resource_display_name(AshOaskit.Test.NoDomainResource) == "NoDomainResource"
+    end
   end
 
   describe "derive_filter?/1" do

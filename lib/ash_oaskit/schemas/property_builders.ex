@@ -124,8 +124,13 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
       ...> PropertyBuilders.build_attribute_properties(%{version: "3.1"}, attrs)
       %{title: %{"type" => "string"}}
   """
-  @spec build_attribute_properties(map(), [map()]) :: map()
-  def build_attribute_properties(builder, attributes) do
+  @spec build_attribute_properties(map(), [map()], keyword()) :: map()
+  def build_attribute_properties(builder, attributes, opts \\ []) do
+    action_name = opt(opts, :action_name, nil)
+    argument_names = opt(opts, :argument_names, [])
+    field_name_fn = opt(opts, :field_name_fn, &default_name/1)
+    argument_name_fn = opt(opts, :argument_name_fn, field_name_fn)
+
     Map.new(attributes, fn attr ->
       schema =
         if builder.version == "3.1" do
@@ -134,7 +139,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
           TypeMapper.to_json_schema_30(attr)
         end
 
-      {attr.name, schema}
+      {property_name(attr, action_name, argument_names, field_name_fn, argument_name_fn), schema}
     end)
   end
 
@@ -155,8 +160,14 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
 
   A tuple of `{properties_map, updated_builder}`.
   """
-  @spec build_attribute_properties_with_embedded(map(), [map()], function()) :: {map(), map()}
-  def build_attribute_properties_with_embedded(builder, attributes, embedded_handler) do
+  @spec build_attribute_properties_with_embedded(map(), [map()], function(), keyword()) ::
+          {map(), map()}
+  def build_attribute_properties_with_embedded(builder, attributes, embedded_handler, opts \\ []) do
+    action_name = opt(opts, :action_name, nil)
+    argument_names = opt(opts, :argument_names, [])
+    field_name_fn = opt(opts, :field_name_fn, &default_name/1)
+    argument_name_fn = opt(opts, :argument_name_fn, field_name_fn)
+
     Enum.reduce(attributes, {%{}, builder}, fn attr, {props, bldr} ->
       # Check if this attribute is an embedded type
       bldr = embedded_handler.(bldr, attr.type)
@@ -168,7 +179,11 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
           TypeMapper.to_json_schema_30(attr)
         end
 
-      {Map.put(props, attr.name, schema), bldr}
+      {Map.put(
+         props,
+         property_name(attr, action_name, argument_names, field_name_fn, argument_name_fn),
+         schema
+       ), bldr}
     end)
   end
 
@@ -188,11 +203,13 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
 
   A map of calculation names (strings) to JSON Schema definitions.
   """
-  @spec build_calculation_properties(map(), [map()]) :: map()
-  def build_calculation_properties(builder, calculations) do
+  @spec build_calculation_properties(map(), [map()], keyword()) :: map()
+  def build_calculation_properties(builder, calculations, opts \\ []) do
+    field_name_fn = opt(opts, :field_name_fn, &default_name/1)
+
     Map.new(calculations, fn calc ->
       schema = calculation_to_schema(builder, calc)
-      {calc.name, schema}
+      {field_name(calc.name, field_name_fn), schema}
     end)
   end
 
@@ -236,11 +253,13 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
 
   A map of aggregate names (strings) to JSON Schema definitions.
   """
-  @spec build_aggregate_properties(map(), [map()]) :: map()
-  def build_aggregate_properties(builder, aggregates) do
+  @spec build_aggregate_properties(map(), [map()], keyword()) :: map()
+  def build_aggregate_properties(builder, aggregates, opts \\ []) do
+    field_name_fn = opt(opts, :field_name_fn, &default_name/1)
+
     Map.new(aggregates, fn agg ->
       schema = aggregate_to_schema(builder, agg)
-      {agg.name, schema}
+      {field_name(agg.name, field_name_fn), schema}
     end)
   end
 
@@ -383,4 +402,31 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   end
 
   defp dynamic_aggregate_schema(_, _), do: %{}
+
+  defp property_name(attr, action_name, argument_names, field_name_fn, argument_name_fn) do
+    json_name =
+      if action_name && attr.name in argument_names do
+        argument_name_fn.(attr.name)
+      else
+        field_name_fn.(attr.name)
+      end
+
+    json_property_key(attr.name, json_name)
+  end
+
+  defp field_name(name, field_name_fn) do
+    json_property_key(name, field_name_fn.(name))
+  end
+
+  defp json_property_key(name, json_name) when is_atom(name) do
+    if json_name == to_string(name), do: name, else: json_name
+  end
+
+  defp json_property_key(_, json_name), do: json_name
+
+  defp default_name(name), do: name
+
+  defp opt([{key, value} | _], key, _), do: value
+  defp opt([_ | rest], key, default), do: opt(rest, key, default)
+  defp opt([], _, default), do: default
 end

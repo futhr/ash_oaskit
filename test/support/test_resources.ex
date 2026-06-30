@@ -232,6 +232,59 @@ defmodule AshOaskit.Test.Nested.State do
 
   actions do
     defaults [:read]
+
+    create :create do
+      accept [:status]
+    end
+
+    update :update do
+      accept [:status]
+    end
+  end
+end
+
+defmodule AshOaskit.Test.MappedFieldResource do
+  @moduledoc false
+  use Ash.Resource,
+    domain: AshOaskit.Test.EdgeCaseDomain,
+    extensions: [AshJsonApi.Resource]
+
+  json_api do
+    type "mapped-field"
+    field_names :camelize
+    argument_names :camelize
+    hide_fields [:internal_score]
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :first_name, :string do
+      public? true
+      allow_nil? false
+    end
+
+    attribute :view_count, :integer do
+      public? true
+      default 0
+    end
+
+    attribute :internal_score, :integer do
+      public? true
+    end
+  end
+
+  actions do
+    defaults [:read]
+
+    create :create do
+      accept [:first_name, :view_count, :internal_score]
+
+      argument :editor_note, :string do
+        public? true
+        allow_nil? false
+      end
+    end
   end
 end
 
@@ -245,6 +298,7 @@ defmodule AshOaskit.Test.EdgeCaseDomain do
     resource AshOaskit.Test.NoTypeResource
     resource AshOaskit.Test.NilTypeResource
     resource AshOaskit.Test.Nested.State
+    resource AshOaskit.Test.MappedFieldResource
   end
 
   json_api do
@@ -253,6 +307,19 @@ defmodule AshOaskit.Test.EdgeCaseDomain do
     routes do
       base_route "/no-type", AshOaskit.Test.NoTypeResource do
         index :read
+      end
+
+      base_route "/reconciliation-states", AshOaskit.Test.Nested.State do
+        get :read
+        index :read
+        post :create
+        patch :update
+      end
+
+      base_route "/mapped-fields", AshOaskit.Test.MappedFieldResource do
+        get :read
+        index :read
+        post :create
       end
     end
   end

@@ -48,6 +48,8 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemas do
 
   import AshOaskit.Schemas.Nullable, only: [make_nullable_oneof: 2]
 
+  alias AshOaskit.Config
+
   @doc """
   Adds the relationships schema for a resource if it has any.
 
@@ -230,7 +232,9 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemas do
   """
   @spec get_public_relationships(module()) :: [map()]
   def get_public_relationships(resource) do
-    Ash.Resource.Info.public_relationships(resource)
+    resource
+    |> Ash.Resource.Info.public_relationships()
+    |> Enum.filter(&Config.show_field?(resource, &1))
   end
 
   @doc """
@@ -271,9 +275,6 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemas do
   """
   @spec get_json_api_type(module()) :: String.t()
   def get_json_api_type(resource) do
-    case AshJsonApi.Resource.Info.type(resource) do
-      nil -> resource |> Module.split() |> List.last() |> Macro.underscore()
-      type -> type
-    end
+    Config.resource_type(resource)
   end
 end
