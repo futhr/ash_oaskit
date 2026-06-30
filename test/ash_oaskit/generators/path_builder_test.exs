@@ -256,6 +256,50 @@ defmodule AshOaskit.Generators.PathBuilderTest do
         assert is_binary(operation_id)
       end
     end
+
+    test "route maps without method use route type fallback for operation IDs" do
+      cases = [
+        {:index, :read, "/posts", "get_post_read_list"},
+        {:get, :read, "/posts/:id", "get_post_read"},
+        {:post, :create, "/posts", "post_post_create"},
+        {:patch, :update, "/posts/:id", "patch_post_update"},
+        {:delete, :destroy, "/posts/:id", "delete_post_destroy"}
+      ]
+
+      for {type, action, path, operation_id} <- cases do
+        route = %{
+          type: type,
+          resource: AshOaskit.Test.Post,
+          action: action,
+          name: action,
+          route: path,
+          relationship: nil
+        }
+
+        operation = PathBuilder.build_operation(route, version: "3.1")
+        assert operation[:operationId] == operation_id
+      end
+    end
+
+    test "generic route query params use attribute schemas and string fallback" do
+      route = %{
+        type: :route,
+        method: :get,
+        resource: AshOaskit.Test.Gadget,
+        action: :activate,
+        name: :activate,
+        route: "/gadgets/status",
+        query_params: [:status, :unknown],
+        relationship: nil
+      }
+
+      operation = PathBuilder.build_operation(route, version: "3.1")
+
+      params_by_name = Map.new(operation[:parameters], &{&1[:name], &1})
+
+      assert params_by_name["status"][:schema]["enum"] == ["idle", "active"]
+      assert params_by_name["unknown"][:schema] == %{type: :string}
+    end
   end
 
   describe "extract_path_prefix and pluralize" do
@@ -287,6 +331,35 @@ defmodule AshOaskit.Generators.PathBuilderTest do
 
       operation = PathBuilder.build_operation(route, version: "3.1")
       assert operation[:operationId] =~ "user_groups"
+    end
+
+    test "plural resource names ending in s are treated as top-level paths" do
+      route = %{
+        type: :get,
+        resource: AshOaskit.Test.Address,
+        action: :missing,
+        name: :missing,
+        route: "/addresses/:id",
+        relationship: nil
+      }
+
+      operation = PathBuilder.build_operation(route, version: "3.1")
+      assert operation[:operationId] == "get_address_missing"
+      refute Map.has_key?(operation, :description)
+    end
+
+    test "parameter-only paths do not add a prefix" do
+      route = %{
+        type: :get,
+        resource: AshOaskit.Test.Post,
+        action: :read,
+        name: :read,
+        route: "/:id",
+        relationship: nil
+      }
+
+      operation = PathBuilder.build_operation(route, version: "3.1")
+      assert operation[:operationId] == "get_post_read"
     end
   end
 

@@ -74,6 +74,16 @@ defmodule AshOaskit.ConfigTest do
     end
   end
 
+  describe "JSON:API name helpers" do
+    test "plain Ash resources keep field and argument names unchanged" do
+      resource = AshOaskit.Test.NoDomainResource
+
+      assert Config.json_field_name(resource, :display_name) == "display_name"
+      assert Config.json_argument_name(resource, :create, :force_refresh) == "force_refresh"
+      assert Config.show_field?(resource, :internal_score)
+    end
+  end
+
   describe "derive_filter?/1" do
     # Tests for filter derivation setting
 
