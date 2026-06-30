@@ -92,7 +92,7 @@ defmodule AshOaskit.RouterTest do
   describe "default route" do
     test "serves spec at /openapi.json" do
       conn = conn(:get, "/openapi.json")
-      conn = TestRouter.call(conn, [])
+      conn = __MODULE__.TestRouter.call(conn, [])
 
       assert conn.status == 200
       assert conn |> get_resp_header("content-type") |> hd() =~ "application/json"
@@ -100,7 +100,7 @@ defmodule AshOaskit.RouterTest do
 
     test "returns valid OpenAPI spec" do
       conn = conn(:get, "/openapi.json")
-      conn = TestRouter.call(conn, [])
+      conn = __MODULE__.TestRouter.call(conn, [])
 
       spec = Jason.decode!(conn.resp_body)
       assert spec["openapi"] =~ "3.1"
@@ -112,7 +112,7 @@ defmodule AshOaskit.RouterTest do
   describe "version-specific routes" do
     test "serves OpenAPI 3.0 at /openapi/3.0.json" do
       conn = conn(:get, "/openapi/3.0.json")
-      conn = TestRouter.call(conn, [])
+      conn = __MODULE__.TestRouter.call(conn, [])
 
       assert conn.status == 200
       spec = Jason.decode!(conn.resp_body)
@@ -121,7 +121,7 @@ defmodule AshOaskit.RouterTest do
 
     test "serves OpenAPI 3.1 at /openapi/3.1.json" do
       conn = conn(:get, "/openapi/3.1.json")
-      conn = TestRouter.call(conn, [])
+      conn = __MODULE__.TestRouter.call(conn, [])
 
       assert conn.status == 200
       spec = Jason.decode!(conn.resp_body)
@@ -131,7 +131,7 @@ defmodule AshOaskit.RouterTest do
     test "both versions are available by default" do
       for version <- ["3.0", "3.1"] do
         conn = conn(:get, "/openapi/#{version}.json")
-        conn = TestRouter.call(conn, [])
+        conn = __MODULE__.TestRouter.call(conn, [])
 
         assert conn.status == 200
         spec = Jason.decode!(conn.resp_body)
@@ -143,7 +143,7 @@ defmodule AshOaskit.RouterTest do
   describe "nullable handling differs by version" do
     test "OpenAPI 3.0 uses nullable: true" do
       conn = conn(:get, "/openapi/3.0.json")
-      conn = TestRouter.call(conn, [])
+      conn = __MODULE__.TestRouter.call(conn, [])
 
       spec = Jason.decode!(conn.resp_body)
 
@@ -159,7 +159,7 @@ defmodule AshOaskit.RouterTest do
 
     test "OpenAPI 3.1 uses type arrays for nullable" do
       conn = conn(:get, "/openapi/3.1.json")
-      conn = TestRouter.call(conn, [])
+      conn = __MODULE__.TestRouter.call(conn, [])
 
       spec = Jason.decode!(conn.resp_body)
 
@@ -172,12 +172,12 @@ defmodule AshOaskit.RouterTest do
     test "only serves configured version" do
       # 3.1 should work
       conn = conn(:get, "/openapi/3.1.json")
-      conn = TestRouterSingleVersion.call(conn, [])
+      conn = __MODULE__.TestRouterSingleVersion.call(conn, [])
       assert conn.status == 200
 
       # 3.0 should not be available (404)
       conn = conn(:get, "/openapi/3.0.json")
-      conn = TestRouterSingleVersion.call(conn, [])
+      conn = __MODULE__.TestRouterSingleVersion.call(conn, [])
       assert conn.status == 404
     end
   end
@@ -215,7 +215,7 @@ defmodule AshOaskit.RouterTest do
     @tag :yaml
     test "serves YAML at /openapi.yaml when format enabled" do
       conn = conn(:get, "/openapi.yaml")
-      conn = TestRouterWithYaml.call(conn, [])
+      conn = __MODULE__.TestRouterWithYaml.call(conn, [])
 
       # Status depends on Ymlr availability
       assert conn.status in [200, 404]

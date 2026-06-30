@@ -150,7 +150,7 @@ defmodule AshOaskit.SpecBuilderTest do
   describe "custom spec_builder with Router" do
     test "uses custom builder to generate spec" do
       conn = conn(:get, "/openapi.json")
-      conn = TestRouterWithCustomBuilder.call(conn, [])
+      conn = __MODULE__.TestRouterWithCustomBuilder.call(conn, [])
 
       assert conn.status == 200
       spec = Jason.decode!(conn.resp_body)
@@ -165,7 +165,7 @@ defmodule AshOaskit.SpecBuilderTest do
 
     test "custom builder works with OpenAPI 3.0" do
       conn = conn(:get, "/openapi/3.0.json")
-      conn = TestRouterWithCustomBuilder.call(conn, [])
+      conn = __MODULE__.TestRouterWithCustomBuilder.call(conn, [])
 
       assert conn.status == 200
       spec = Jason.decode!(conn.resp_body)
@@ -176,7 +176,7 @@ defmodule AshOaskit.SpecBuilderTest do
 
     test "custom builder works with OpenAPI 3.1" do
       conn = conn(:get, "/openapi/3.1.json")
-      conn = TestRouterWithCustomBuilder.call(conn, [])
+      conn = __MODULE__.TestRouterWithCustomBuilder.call(conn, [])
 
       assert conn.status == 200
       spec = Jason.decode!(conn.resp_body)
@@ -189,7 +189,7 @@ defmodule AshOaskit.SpecBuilderTest do
   describe "default spec_builder with Router" do
     test "uses Default builder when spec_builder not specified" do
       conn = conn(:get, "/openapi.json")
-      conn = TestRouterWithDefaultBuilder.call(conn, [])
+      conn = __MODULE__.TestRouterWithDefaultBuilder.call(conn, [])
 
       assert conn.status == 200
       spec = Jason.decode!(conn.resp_body)

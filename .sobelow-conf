@@ -2,6 +2,6 @@
   verbose: false,
   private: false,
   skip: false,
-  router: "",
+  router: "lib/ash_oaskit/router.ex",
   exit: "low"
 ]

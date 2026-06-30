@@ -50,7 +50,7 @@ defmodule AshOaskit.RouterKitchenSinkTest do
 
   defp call_router(method, path) do
     conn = conn(method, path)
-    PhoenixRouter.call(conn, PhoenixRouter.init([]))
+    __MODULE__.PhoenixRouter.call(conn, __MODULE__.PhoenixRouter.init([]))
   end
 
   describe "Phoenix Router default route" do

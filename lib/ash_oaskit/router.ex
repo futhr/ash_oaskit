@@ -186,13 +186,19 @@ defmodule AshOaskit.Router do
     quote bind_quoted: [opts: opts] do
       require Phoenix.Router
 
-      # credo:disable-for-next-line
-      IO.warn(
-        "use AshOaskit.Router with :domains is deprecated; define a spec module " <>
-          "with `use AshOaskit, domains: [...]` and pass it as spec: MySpec " <>
-          "to gain caching, Redoc, and oaskit integration",
-        Macro.Env.stacktrace(__ENV__)
-      )
+      unless Application.compile_env(
+               :ash_oaskit,
+               :suppress_router_deprecation_warnings,
+               false
+             ) do
+        # credo:disable-for-next-line
+        IO.warn(
+          "use AshOaskit.Router with :domains is deprecated; define a spec module " <>
+            "with `use AshOaskit, domains: [...]` and pass it as spec: MySpec " <>
+            "to gain caching, Redoc, and oaskit integration",
+          Macro.Env.stacktrace(__ENV__)
+        )
+      end
 
       base_path = Keyword.fetch!(opts, :open_api)
       openapi_versions = Keyword.get(opts, :openapi_versions, ["3.0", "3.1"])
@@ -232,13 +238,19 @@ defmodule AshOaskit.Router do
 
   defp build_plug_quoted(opts) do
     quote bind_quoted: [opts: opts] do
-      # credo:disable-for-next-line
-      IO.warn(
-        "use AshOaskit.Router with :domains is deprecated; define a spec module " <>
-          "with `use AshOaskit, domains: [...]` and pass it as spec: MySpec " <>
-          "to gain caching, Redoc, and oaskit integration",
-        Macro.Env.stacktrace(__ENV__)
-      )
+      unless Application.compile_env(
+               :ash_oaskit,
+               :suppress_router_deprecation_warnings,
+               false
+             ) do
+        # credo:disable-for-next-line
+        IO.warn(
+          "use AshOaskit.Router with :domains is deprecated; define a spec module " <>
+            "with `use AshOaskit, domains: [...]` and pass it as spec: MySpec " <>
+            "to gain caching, Redoc, and oaskit integration",
+          Macro.Env.stacktrace(__ENV__)
+        )
+      end
 
       base_path = Keyword.fetch!(opts, :open_api)
       openapi_versions = Keyword.get(opts, :openapi_versions, ["3.0", "3.1"])

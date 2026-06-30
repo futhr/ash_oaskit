@@ -29,7 +29,7 @@ defmodule AshOaskit.ControllerTest do
           domains: [AshOaskit.Test.SimpleDomain]
         )
 
-      result = Controller.spec(conn, %{})
+      result = call_controller(:spec, conn)
 
       assert result.status == 200
       assert get_resp_header(result, "content-type") == ["application/json; charset=utf-8"]
@@ -45,7 +45,7 @@ defmodule AshOaskit.ControllerTest do
           title: "My API"
         )
 
-      result = Controller.spec(conn, %{})
+      result = call_controller(:spec, conn)
       body = Jason.decode!(result.resp_body)
 
       assert body["info"]["title"] == "My API"
@@ -58,7 +58,7 @@ defmodule AshOaskit.ControllerTest do
           api_version: "2.0.0"
         )
 
-      result = Controller.spec(conn, %{})
+      result = call_controller(:spec, conn)
       body = Jason.decode!(result.resp_body)
 
       assert body["info"]["version"] == "2.0.0"
@@ -70,7 +70,7 @@ defmodule AshOaskit.ControllerTest do
           domains: [AshOaskit.Test.SimpleDomain]
         )
 
-      result = Controller.spec(conn, %{})
+      result = call_controller(:spec, conn)
 
       # Pretty-printed JSON has newlines
       assert String.contains?(result.resp_body, "\n")
@@ -84,7 +84,7 @@ defmodule AshOaskit.ControllerTest do
           domains: [AshOaskit.Test.SimpleDomain]
         )
 
-      result = Controller.spec_30(conn, %{})
+      result = call_controller(:spec_30, conn)
       body = Jason.decode!(result.resp_body)
 
       assert body["openapi"] == "3.0.3"
@@ -97,7 +97,7 @@ defmodule AshOaskit.ControllerTest do
           version: "3.1"
         )
 
-      result = Controller.spec_30(conn, %{})
+      result = call_controller(:spec_30, conn)
       body = Jason.decode!(result.resp_body)
 
       # Should still be 3.0 because spec_30 forces it
@@ -110,7 +110,7 @@ defmodule AshOaskit.ControllerTest do
           domains: [AshOaskit.Test.SimpleDomain]
         )
 
-      result = Controller.spec_30(conn, %{})
+      result = call_controller(:spec_30, conn)
 
       assert result.status == 200
     end
@@ -123,7 +123,7 @@ defmodule AshOaskit.ControllerTest do
           domains: [AshOaskit.Test.SimpleDomain]
         )
 
-      result = Controller.spec_31(conn, %{})
+      result = call_controller(:spec_31, conn)
       body = Jason.decode!(result.resp_body)
 
       assert body["openapi"] == "3.1.0"
@@ -136,7 +136,7 @@ defmodule AshOaskit.ControllerTest do
           version: "3.0"
         )
 
-      result = Controller.spec_31(conn, %{})
+      result = call_controller(:spec_31, conn)
       body = Jason.decode!(result.resp_body)
 
       # Should still be 3.1 because spec_31 forces it
@@ -149,7 +149,7 @@ defmodule AshOaskit.ControllerTest do
           domains: [AshOaskit.Test.SimpleDomain]
         )
 
-      result = Controller.spec_31(conn, %{})
+      result = call_controller(:spec_31, conn)
 
       assert result.status == 200
     end
@@ -162,7 +162,7 @@ defmodule AshOaskit.ControllerTest do
           domains: [AshOaskit.Test.SimpleDomain]
         )
 
-      result = Controller.spec(conn, %{})
+      result = call_controller(:spec, conn)
       body = Jason.decode!(result.resp_body)
 
       # Info should not have nil values
@@ -175,7 +175,7 @@ defmodule AshOaskit.ControllerTest do
       conn = conn(:get, "/api/openapi.json")
 
       assert_raise ArgumentError, ~r/at least one domain must be specified/, fn ->
-        Controller.spec(conn, %{})
+        call_controller(:spec, conn)
       end
     end
 
@@ -187,10 +187,14 @@ defmodule AshOaskit.ControllerTest do
           title: "Route Title"
         )
 
-      result = Controller.spec(conn, %{})
+      result = call_controller(:spec, conn)
       body = Jason.decode!(result.resp_body)
 
       assert body["info"]["title"] == "Route Title"
     end
+  end
+
+  defp call_controller(action, conn) do
+    apply(Controller, action, [conn, %{}])
   end
 end
