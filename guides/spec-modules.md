@@ -38,6 +38,7 @@ All options:
 | `:modify_open_api` | function/MFA | `nil` | Post-generation hook |
 | `:spec_builder` | `module()` | `nil` | `AshOaskit.SpecBuilder` implementation |
 | `:cache` | `boolean()` | `true` | Cache the generated spec |
+| `:resource_scope` | `:all` or `:routed` | `:all` | Use `:routed` to seed schemas/tags only from routed resources |
 
 ## Serving the spec
 

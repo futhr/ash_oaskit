@@ -45,6 +45,7 @@ Rules:
 - One spec module = one OpenAPI version; define two modules for dual-version output.
 - Only `public? true` attributes/calculations/aggregates/relationships appear in specs.
 - Request body schemas follow the routed action's `accept` list plus its public arguments.
+- Use `resource_scope: :routed` when a listed domain contains internal resources that should not seed public schemas/tags.
 
 ## Programmatic API
 
@@ -64,7 +65,8 @@ AshOaskit.spec(
   servers: [%{"url" => "https://api.example.com"}],
   contact: %{"name" => "Support", "email" => "api@example.com"},
   license: %{"name" => "MIT"},
-  security: [%{"bearerAuth" => []}]
+  security: [%{"bearerAuth" => []}],
+  resource_scope: :routed
 )
 ```
 

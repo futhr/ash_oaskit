@@ -173,6 +173,7 @@ config :ash_oaskit,
 | `:license` | `map()` | License information |
 | `:terms_of_service` | `String.t()` | Terms of service URL |
 | `:security` | `[map()]` | Security requirements |
+| `:resource_scope` | `:all` or `:routed` | Schema/tag seed scope. Use `:routed` to omit unrouted, unreferenced internal resources |
 
 ## API Reference
 
