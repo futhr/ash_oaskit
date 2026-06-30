@@ -43,6 +43,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- changelog -->
 
+## [v0.3.0](https://github.com/futhr/ash_oaskit/compare/v0.2.1...v0.3.0) (2026-06-30)
+
+
+
+
+### Features:
+
+* scope generated schemas and tags to routed resources via :resource_scope by futhr
+
+### Bug Fixes:
+
+* honor JSON:API names and visibility in specs by futhr
+
+* derive schema and tag names from the JSON:API type by futhr
+
 ## [v0.2.1](https://github.com/futhr/ash_oaskit/compare/v0.2.0...v0.2.1) (2026-06-10)
 
 
