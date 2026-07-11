@@ -356,16 +356,9 @@ defmodule AshOaskit.FilterBuilder do
     }
   end
 
-  # Checks if filtering should be derived for a resource
   @spec derive_filter?(module()) :: boolean()
-  defp derive_filter?(resource) do
-    case AshJsonApi.Resource.Info.derive_filter?(resource) do
-      nil -> true
-      value -> value
-    end
-  end
+  defp derive_filter?(resource), do: Config.derive_filter?(resource)
 
-  # Gets the resource name for descriptions
   @spec resource_name(module()) :: String.t()
   defp resource_name(resource) do
     Config.resource_display_name(resource)

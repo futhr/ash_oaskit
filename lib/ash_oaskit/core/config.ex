@@ -1,49 +1,11 @@
 defmodule AshOaskit.Config do
   @moduledoc """
-  Retrieves and normalizes configuration from AshJsonApi DSL.
+  Reads the Ash and AshJsonApi metadata used during spec generation.
 
-  This module provides a unified interface for accessing configuration options
-  defined in Ash domains and resources through the AshJsonApi DSL.
-
-  ## Domain-Level Configuration
-
-  Domain-level configuration is retrieved via `AshJsonApi.Domain.Info`:
-
-  - `tag/1` - Custom OpenAPI tag for the domain
-  - `group_by/1` - How operations should be grouped (e.g., by resource)
-  - `prefix/1` - Route prefix for all resources in the domain
-
-  ## Resource-Level Configuration
-
-  Resource-level configuration is retrieved via `AshJsonApi.Resource.Info`:
-
-  - `type/1` - JSON:API type name (defaults to underscored resource name)
-  - `derive_filter?/1` - Whether to auto-generate filter schemas
-  - `derive_sort?/1` - Whether to auto-generate sort schemas
-  - `default_fields/1` - Default fields to include in responses
-  - `includes/1` - Available relationship includes
-
-  ## Usage
-
-      # Get the JSON:API type for a resource
-      type = Config.resource_type(MyApp.Post)
-      # => "post"
-
-      # Check if filtering should be derived
-      if Config.derive_filter?(MyApp.Post) do
-        # Generate filter schema
-      end
-
-      # Get route prefix for a domain
-      prefix = Config.route_prefix(MyApp.Blog)
-      # => "/api/v1"
-
-  ## Error Handling
-
-  Functions in this module follow the "let it crash" philosophy. If called
-  with an invalid module (not an Ash resource or domain), they will raise
-  an error. This is intentional - configuration errors should fail loudly
-  rather than silently returning defaults.
+  AshJsonApi is optional. Plain Ash resources keep their Elixir field names,
+  filters and sorting remain enabled, and domains without `AshJsonApi.Domain`
+  contribute no routes. Invalid resource or domain modules still raise through
+  Ash's introspection APIs so configuration mistakes are visible early.
   """
 
   @doc """
@@ -172,7 +134,11 @@ defmodule AshOaskit.Config do
   """
   @spec derive_filter?(module()) :: boolean()
   def derive_filter?(resource) do
-    AshJsonApi.Resource.Info.derive_filter?(resource)
+    if json_api_resource?(resource) do
+      AshJsonApi.Resource.Info.derive_filter?(resource) != false
+    else
+      true
+    end
   end
 
   @doc """
@@ -197,7 +163,11 @@ defmodule AshOaskit.Config do
   """
   @spec derive_sort?(module()) :: boolean()
   def derive_sort?(resource) do
-    AshJsonApi.Resource.Info.derive_sort?(resource)
+    if json_api_resource?(resource) do
+      AshJsonApi.Resource.Info.derive_sort?(resource) != false
+    else
+      true
+    end
   end
 
   @doc """
@@ -225,7 +195,9 @@ defmodule AshOaskit.Config do
   """
   @spec default_fields(module()) :: [atom()] | nil
   def default_fields(resource) do
-    AshJsonApi.Resource.Info.default_fields(resource)
+    if json_api_resource?(resource) do
+      AshJsonApi.Resource.Info.default_fields(resource)
+    end
   end
 
   @doc """
@@ -250,7 +222,9 @@ defmodule AshOaskit.Config do
   """
   @spec includes(module()) :: [atom() | String.t()] | nil
   def includes(resource) do
-    AshJsonApi.Resource.Info.includes(resource)
+    if json_api_resource?(resource) do
+      AshJsonApi.Resource.Info.includes(resource)
+    end
   end
 
   @doc """
@@ -297,7 +271,9 @@ defmodule AshOaskit.Config do
   """
   @spec domain_tag(module()) :: String.t() | nil
   def domain_tag(domain) do
-    AshJsonApi.Domain.Info.tag(domain)
+    if json_api_domain?(domain) do
+      AshJsonApi.Domain.Info.tag(domain)
+    end
   end
 
   @doc """
@@ -324,7 +300,11 @@ defmodule AshOaskit.Config do
   """
   @spec route_prefix(module()) :: String.t()
   def route_prefix(domain) do
-    AshJsonApi.Domain.Info.prefix(domain) || ""
+    if json_api_domain?(domain) do
+      AshJsonApi.Domain.Info.prefix(domain) || ""
+    else
+      ""
+    end
   end
 
   @doc """
@@ -348,7 +328,9 @@ defmodule AshOaskit.Config do
   """
   @spec group_by(module()) :: atom() | nil
   def group_by(domain) do
-    AshJsonApi.Domain.Info.group_by(domain)
+    if json_api_domain?(domain) do
+      AshJsonApi.Domain.Info.group_by(domain)
+    end
   end
 
   @doc """
@@ -492,7 +474,14 @@ defmodule AshOaskit.Config do
   end
 
   defp json_api_resource?(resource) do
-    Ash.Resource.Info.resource?(resource) and AshJsonApi.Resource in Spark.extensions(resource)
+    Code.ensure_loaded?(AshJsonApi.Resource.Info) and
+      Ash.Resource.Info.resource?(resource) and
+      AshJsonApi.Resource in Spark.extensions(resource)
+  end
+
+  defp json_api_domain?(domain) do
+    Code.ensure_loaded?(AshJsonApi.Domain.Info) and
+      AshJsonApi.Domain in Spark.extensions(domain)
   end
 
   defp default_type(resource) do

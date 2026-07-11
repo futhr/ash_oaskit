@@ -10,6 +10,9 @@ defmodule AshOaskit.MixProject do
       version: @version,
       elixir: "~> 1.16",
       elixirc_paths: elixirc_paths(Mix.env()),
+      elixirc_options: [
+        no_warn_undefined: [AshJsonApi.Domain.Info, AshJsonApi.Resource.Info]
+      ],
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),

@@ -38,6 +38,7 @@ defmodule AshOaskit.SortBuilder do
   AshJsonApi resource DSL. When disabled, this module returns `nil`.
   """
 
+  alias Ash.Resource.Info, as: ResourceInfo
   alias AshOaskit.Config
 
   @doc """
@@ -236,25 +237,18 @@ defmodule AshOaskit.SortBuilder do
     }
   end
 
-  # Private functions
-
-  defp derive_sort?(resource) do
-    case AshJsonApi.Resource.Info.derive_sort?(resource) do
-      nil -> true
-      value -> value
-    end
-  end
+  defp derive_sort?(resource), do: Config.derive_sort?(resource)
 
   defp get_sortable_attributes(resource) do
     resource
-    |> Ash.Resource.Info.public_attributes()
+    |> ResourceInfo.public_attributes()
     |> Enum.filter(&Config.show_field?(resource, &1))
     |> Enum.map(& &1.name)
   end
 
   defp get_sortable_calculations(resource) do
     resource
-    |> Ash.Resource.Info.public_calculations()
+    |> ResourceInfo.public_calculations()
     |> Enum.filter(&(Config.show_field?(resource, &1) and sortable_calculation?(&1)))
     |> Enum.map(& &1.name)
   end
@@ -272,7 +266,7 @@ defmodule AshOaskit.SortBuilder do
 
   defp get_sortable_aggregates(resource) do
     resource
-    |> Ash.Resource.Info.public_aggregates()
+    |> ResourceInfo.public_aggregates()
     |> Enum.filter(&Config.show_field?(resource, &1))
     |> Enum.map(& &1.name)
   end

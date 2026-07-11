@@ -43,7 +43,12 @@ defmodule AshOaskit.RouteGathering do
   """
   @spec domain_routes(module()) :: [struct()]
   def domain_routes(domain) do
-    domain_level = AshJsonApi.Domain.Info.routes(domain)
+    domain_level =
+      if json_api_domain?(domain) do
+        AshJsonApi.Domain.Info.routes(domain)
+      else
+        []
+      end
 
     # Resource-level route entities carry resource: nil (AshJsonApi
     # resolves it from context); fill it in so downstream builders can
@@ -98,6 +103,12 @@ defmodule AshOaskit.RouteGathering do
   defp ensure_leading_slash(path), do: "/" <> path
 
   defp json_api_resource?(resource) do
-    AshJsonApi.Resource in Spark.extensions(resource)
+    Code.ensure_loaded?(AshJsonApi.Resource.Info) and
+      AshJsonApi.Resource in Spark.extensions(resource)
+  end
+
+  defp json_api_domain?(domain) do
+    Code.ensure_loaded?(AshJsonApi.Domain.Info) and
+      AshJsonApi.Domain in Spark.extensions(domain)
   end
 end

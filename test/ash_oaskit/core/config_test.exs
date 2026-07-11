@@ -105,6 +105,10 @@ defmodule AshOaskit.ConfigTest do
 
       assert is_boolean(result)
     end
+
+    test "defaults to true for resources without AshJsonApi" do
+      assert Config.derive_filter?(AshOaskit.Test.NoDomainResource)
+    end
   end
 
   describe "derive_sort?/1" do
@@ -127,6 +131,10 @@ defmodule AshOaskit.ConfigTest do
 
       assert is_boolean(result)
     end
+
+    test "defaults to true for resources without AshJsonApi" do
+      assert Config.derive_sort?(AshOaskit.Test.NoDomainResource)
+    end
   end
 
   describe "default_fields/1" do
@@ -144,6 +152,10 @@ defmodule AshOaskit.ConfigTest do
 
       assert is_nil(result) or is_list(result)
     end
+
+    test "returns nil for resources without AshJsonApi" do
+      assert Config.default_fields(AshOaskit.Test.NoDomainResource) == nil
+    end
   end
 
   describe "includes/1" do
@@ -159,6 +171,10 @@ defmodule AshOaskit.ConfigTest do
       result = Config.includes(AshOaskit.Test.Comment)
 
       assert is_list(result)
+    end
+
+    test "returns nil for resources without AshJsonApi" do
+      assert Config.includes(AshOaskit.Test.NoDomainResource) == nil
     end
   end
 
@@ -284,6 +300,10 @@ defmodule AshOaskit.ConfigTest do
         assert Map.has_key?(route, :type)
         assert Map.has_key?(route, :route)
       end)
+    end
+
+    test "returns no routes for a domain without AshJsonApi" do
+      assert Config.domain_routes(AshOaskit.Test.SimpleDomain) == []
     end
   end
 
