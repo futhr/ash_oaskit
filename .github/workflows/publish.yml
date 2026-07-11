@@ -37,7 +37,7 @@ jobs:
         run: mix deps.get
 
       - name: Compile
-        run: mix compile
+        run: mix compile --warnings-as-errors
 
       - name: Run tests
         run: mix test
@@ -52,7 +52,7 @@ jobs:
         run: mix doctor
 
       - name: Generate documentation
-        run: mix docs
+        run: mix docs --warnings-as-errors
 
       - name: Publish to Hex.pm
         env:

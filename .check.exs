@@ -4,9 +4,11 @@
 
   ## Don't print summary
   skipped: false,
-
   tools: [
     {:compiler, "mix compile --warnings-as-errors"},
+    {:optional_deps,
+     command: "mix compile --no-optional-deps --warnings-as-errors",
+     env: %{"MIX_ENV" => "no_optional"}},
     {:formatter, "mix format --check-formatted"},
     {:credo, "mix credo --strict"},
     {:ex_unit, false},

@@ -73,6 +73,38 @@ jobs:
       - name: Run Credo
         run: mix credo --strict
 
+  optional-deps:
+    name: Compile without optional dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.20"
+          otp-version: "28"
+
+      - name: Restore dependencies cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-optional-deps-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-optional-deps-
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Compile without optional dependencies
+        run: mix compile --no-optional-deps --warnings-as-errors
+        env:
+          MIX_ENV: no_optional
+
   test:
     name: Test (Elixir ${{matrix.elixir}} / OTP ${{matrix.otp}})
     runs-on: ubuntu-latest
@@ -280,10 +312,7 @@ jobs:
         run: mix doctor --summary
 
       - name: Generate documentation
-        run: mix docs
-
-      - name: Check for documentation warnings
-        run: mix docs 2>&1 | grep -i warning && exit 1 || exit 0
+        run: mix docs --warnings-as-errors
 
       - name: Verify hex package builds
         run: mix hex.build
