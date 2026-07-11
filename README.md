@@ -6,7 +6,7 @@
 [![Coverage](https://codecov.io/gh/futhr/ash_oaskit/branch/main/graph/badge.svg)](https://codecov.io/gh/futhr/ash_oaskit)
 [![License](https://img.shields.io/github/license/futhr/ash_oaskit.svg)](LICENSE.md)
 
-**Dual-version OpenAPI specification generator for [Ash Framework](https://ash-hq.org/)**
+OpenAPI 3.0 and 3.1 specification generation for [Ash Framework](https://ash-hq.org/).
 
 [Installation](#installation) |
 [Quick Start](#quick-start) |
@@ -18,7 +18,8 @@
 
 ## Overview
 
-AshOaskit generates OpenAPI specifications from your Ash domains, supporting both 3.0 and 3.1 versions.
+AshOaskit derives OpenAPI documents from Ash resources and AshJsonApi routes. It
+can emit OpenAPI 3.0 and 3.1 from the same domain definitions.
 
 ## Background
 
@@ -50,7 +51,7 @@ AshOaskit provides:
 | Feature | OpenAPI 3.0 | OpenAPI 3.1 |
 |---------|-------------|-------------|
 | Nullable Types | `nullable: true` | `type: ["string", "null"]` |
-| JSON Schema | Draft 04 subset | Draft 2020-12 |
+| JSON Schema | Extended Wright Draft 00 subset | Draft 2020-12 |
 | Tool Support | Wider compatibility | Modern validation |
 
 ## Installation
@@ -58,9 +59,9 @@ AshOaskit provides:
 Add `ash_oaskit` to your dependencies in `mix.exs`:
 
 ```elixir
-def deps do
+defp deps do
   [
-    {:ash_oaskit, "~> 0.2"},
+    {:ash_oaskit, "~> 0.3.0"},
     # Optional: For YAML output
     {:ymlr, "~> 5.0", optional: true}
   ]

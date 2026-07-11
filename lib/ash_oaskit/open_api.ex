@@ -1,17 +1,10 @@
 defmodule AshOaskit.OpenApi do
   @moduledoc """
-  Core OpenAPI spec generator for Ash domains.
+  Generates and validates OpenAPI documents for Ash domains.
 
-  This module provides the main entry point for generating OpenAPI specifications
-  from Ash domains. It routes to version-specific generators based on configuration.
-
-  ## Overview
-
-  The OpenApi module acts as a facade that:
-
-  1. Validates input options (domains must be provided)
-  2. Determines the target OpenAPI version (3.0 or 3.1)
-  3. Delegates to the appropriate version-specific generator
+  Most applications should call the equivalent functions on `AshOaskit` or define
+  a cached spec module with `use AshOaskit`. This lower-level module owns version
+  selection and Oaskit normalization.
 
   ## Version Selection
 
@@ -23,38 +16,12 @@ defmodule AshOaskit.OpenApi do
        └── version: "3.0" ──▶ V30.generate/2
   ```
 
-  The version can be specified via:
-  - `:version` option in the function call
-  - Application config: `config :ash_oaskit, version: "3.1"`
-  - Default: "3.1"
+  Pass `:version` explicitly or configure `config :ash_oaskit, version: "3.1"`.
+  OpenAPI 3.1 is the default.
 
-  ## Generated Spec Structure
+  ## Example
 
-  Both versions produce a map with this structure:
-
-  - `openapi` - Version string ("3.0.3" or "3.1.0")
-  - `info` - Title, version, description, contact, license
-  - `servers` - List of server objects
-  - `paths` - API endpoints from AshJsonApi routes
-  - `components` - Schemas, parameters, responses
-  - `tags` - Grouping tags for operations
-
-  ## Usage Examples
-
-      # Basic usage with defaults
       spec = AshOaskit.OpenApi.spec(domains: [MyApp.Blog])
-
-      # With full options
-      spec = AshOaskit.OpenApi.spec(
-        domains: [MyApp.Blog, MyApp.Accounts],
-        version: "3.1",
-        title: "My API",
-        api_version: "2.0.0",
-        description: "API for managing blogs and accounts",
-        servers: ["https://api.example.com"]
-      )
-
-      # Convert to JSON
       json = Oaskit.SpecDumper.to_json!(spec, pretty: true)
 
   ## Version-Specific Differences
@@ -63,7 +30,7 @@ defmodule AshOaskit.OpenApi do
   |---------|-------------|-------------|
   | Nullable | `nullable: true` | `type: ["string", "null"]` |
   | Examples | `example` only | `example` and `examples` |
-  | JSON Schema | Draft 5 subset | Draft 2020-12 aligned |
+  | JSON Schema | Extended Wright Draft 00 subset | Draft 2020-12 aligned |
   """
 
   alias AshOaskit.Generators.{V30, V31}

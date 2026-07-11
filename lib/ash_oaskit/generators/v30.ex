@@ -1,22 +1,14 @@
 defmodule AshOaskit.Generators.V30 do
   @moduledoc """
-  OpenAPI 3.0 spec generator.
+  Generates OpenAPI 3.0.3 documents.
 
-  Generates OpenAPI 3.0.3 specifications from Ash domains and resources,
-  providing backwards compatibility for tools and code generators that do
-  not yet support OpenAPI 3.1. Key differences from the 3.1 output:
-
-  - **Nullable fields** — uses `"nullable": true` instead of type arrays
-  - **No `$schema` keyword** — JSON Schema draft-07 subset, not 2020-12
-  - **`exclusiveMinimum` / `exclusiveMaximum`** — boolean form, not numeric
-    (not currently generated; Ash does not expose exclusive constraints)
-  - **No `const` keyword** — single-value enums use `"enum": ["value"]`
-    (not currently generated; Ash does not expose const constraints)
+  Use this version for consumers that do not support OpenAPI 3.1. Nullable
+  schemas use `nullable: true`, and references are wrapped where OpenAPI 3.0
+  does not permit useful `$ref` siblings.
 
   ## When to Use 3.0
 
-  Choose 3.0 when your consumers rely on tooling that has not adopted 3.1,
-  such as older versions of Swagger UI, swagger-codegen, or openapi-generator.
+  Choose 3.0 only when a consumer requires it; new integrations should prefer 3.1.
   If all consumers support 3.1, prefer `AshOaskit.Generators.V31` instead.
 
   ## Relationship to Other Modules

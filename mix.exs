@@ -117,12 +117,8 @@ defmodule AshOaskit.MixProject do
     ]
   end
 
-  defp description do
-    """
-    OpenAPI 3.0 and 3.1 spec generator for Ash Framework resources.
-    Supports dual-version output for migration scenarios.
-    """
-  end
+  defp description,
+    do: "OpenAPI 3.0 and 3.1 specification generator for Ash Framework domains"
 
   defp package do
     [

@@ -1,6 +1,6 @@
 # Contributing to AshOaskit
 
-Thank you for your interest in contributing to AshOaskit! This guide will help you get started.
+Bug fixes, documentation improvements, and focused feature proposals are welcome.
 
 ## How Can I Contribute?
 
@@ -43,6 +43,7 @@ mix test
 mix test            # Run tests
 mix coveralls.html  # Run tests with coverage
 mix check           # Run full quality suite
+MIX_ENV=no_optional mix compile --no-optional-deps --warnings-as-errors
 mix docs            # Generate documentation
 mix dialyzer        # Run dialyzer
 mix credo --strict  # Run credo
@@ -57,7 +58,7 @@ All contributions must:
 - Pass `mix dialyzer`
 - Have 100% test coverage for new code
 - Include `@spec` for all public functions
-- Include `@doc` with examples for public functions
+- Document public functions where the name and types do not tell the whole story
 
 ## Commit Messages
 
@@ -105,24 +106,17 @@ lib/
 - Use property-based assertions when exact output varies
 - Test both success and error cases
 
-Example test structure:
+Keep tests focused on observable behavior:
 
 ```elixir
 describe "feature_name/1" do
-  test "handles normal input" do
-    # Arrange
-    input = ...
-
-    # Act
-    result = Module.feature_name(input)
-
-    # Assert
-    assert result == expected
+  test "uses the configured JSON:API field name" do
+    assert Config.json_field_name(Post, :published_at) == "publishedAt"
   end
 
-  test "raises on invalid input" do
+  test "rejects an unsupported OpenAPI version" do
     assert_raise ArgumentError, fn ->
-      Module.feature_name(invalid_input)
+      AshOaskit.spec(domains: [Blog], version: "2.0")
     end
   end
 end
@@ -131,9 +125,9 @@ end
 ## Documentation
 
 - All public modules must have `@moduledoc`
-- All public functions must have `@doc` and `@spec`
-- Include usage examples in documentation
-- Use markdown formatting in docs
+- Write module documentation around the reader's task, not the source layout
+- Add examples where they clarify behavior or configuration
+- Keep implementation details out of public documentation unless callers rely on them
 
 ## Release Process
 

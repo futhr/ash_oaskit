@@ -1,17 +1,10 @@
 defmodule AshOaskit.Generators.V31 do
   @moduledoc """
-  OpenAPI 3.1 spec generator.
+  Generates OpenAPI 3.1.0 documents.
 
-  Generates OpenAPI 3.1.0 specifications from Ash domains and resources.
-  This is the recommended version for new projects, as it aligns with
-  JSON Schema 2020-12 and supports features not available in 3.0:
-
-  - **Nullable types via type arrays** — `"type": ["string", "null"]` instead of `"nullable": true`
-  - **`$schema` keyword** — explicit JSON Schema dialect declaration
-    (not currently generated; reserved for future use)
-  - **`const` keyword** — for single-value enumerations
-    (not currently generated; Ash does not expose const constraints)
-  - **Webhooks** — top-level `webhooks` object (not yet generated, but structurally valid)
+  This is the default for new integrations. Schemas follow the OpenAPI 3.1
+  JSON Schema dialect, including type arrays such as
+  `"type": ["string", "null"]` for nullable values.
 
   ## Relationship to Other Modules
 

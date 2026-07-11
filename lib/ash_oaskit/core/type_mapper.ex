@@ -157,7 +157,6 @@ defmodule AshOaskit.TypeMapper do
     |> maybe_add_default(attr)
   end
 
-  # Resolve the effective type for an attribute.
   # For Ash.Type.NewType subtypes of Ash.Type.Union, the actual union variant
   # types are in the attribute's constraints[:types], not discoverable from
   # the type module's constraints/0 (which returns constraint definitions).
@@ -173,14 +172,12 @@ defmodule AshOaskit.TypeMapper do
 
   defp resolve_type(%{type: type}), do: type
 
-  # Check if a type module is a NewType subtype of Ash.Type.Union
   defp union_newtype?(type) do
     Code.ensure_loaded?(type) and
       function_exported?(type, :subtype_of, 0) and
       type.subtype_of() == Ash.Type.Union
   end
 
-  # Map of simple types to their JSON Schema representation
   @simple_type_schemas %{
     string: %{"type" => "string"},
     ci_string: %{"type" => "string"},
@@ -220,17 +217,14 @@ defmodule AshOaskit.TypeMapper do
     }
   }
 
-  # Convert Ash type to base JSON Schema
   defp ash_type_to_base_schema(type) do
     normalized = normalize_type(type)
     simple_type_schema(normalized) || complex_type_schema(normalized)
   end
 
-  # Handle simple atom types via map lookup
   defp simple_type_schema(type) when is_atom(type), do: Map.get(@simple_type_schemas, type)
   defp simple_type_schema(_), do: nil
 
-  # Handle complex/tuple types
   defp complex_type_schema({:array, inner_type}) do
     %{"type" => "array", "items" => ash_type_to_base_schema(inner_type)}
   end
@@ -246,7 +240,6 @@ defmodule AshOaskit.TypeMapper do
   defp complex_type_schema({:custom, custom_schema}), do: custom_schema
   defp complex_type_schema(_), do: %{"type" => "string"}
 
-  # Build union type schema using anyOf
   defp build_union_schema(types) when is_list(types) do
     any_of =
       Enum.map(types, fn
@@ -267,7 +260,6 @@ defmodule AshOaskit.TypeMapper do
 
   defp build_union_schema(_), do: %{}
 
-  # Build struct type schema
   defp build_struct_schema(module) when is_atom(module) do
     if Code.ensure_loaded?(module) and function_exported?(module, :__struct__, 0) do
       fields = module.__struct__() |> Map.keys() |> Enum.reject(&(&1 == :__struct__))
@@ -318,13 +310,11 @@ defmodule AshOaskit.TypeMapper do
     end
   end
 
-  # Known basic atom types
   @basic_types ~w(string ci_string integer float decimal boolean date time time_usec
                   datetime utc_datetime utc_datetime_usec naive_datetime duration uuid
                   uuid_v7 binary url_encoded_binary map keyword tuple atom module term
                   function vector file duration_name)a
 
-  # Map of Ash.Type.* modules to their atom equivalents
   @ash_type_to_atom %{
     Ash.Type.String => :string,
     Ash.Type.CiString => :ci_string,
@@ -356,16 +346,9 @@ defmodule AshOaskit.TypeMapper do
     Ash.Type.DurationName => :duration_name
   }
 
-  # Handle union types
   defp normalize_type({:union, types}), do: {:union, types}
-
-  # Handle struct types
   defp normalize_type({:struct, module}), do: {:struct, module}
-
-  # Handle embedded types (produced by recursive normalization)
   defp normalize_type({:embedded, module}), do: {:embedded, module}
-
-  # Handle array types
   defp normalize_type({:array, inner}), do: {:array, normalize_type(inner)}
 
   # Handle tuple types (legacy format) - first element is the type module
@@ -373,7 +356,6 @@ defmodule AshOaskit.TypeMapper do
     Map.get(@ash_type_to_atom, elem(type, 0), :string)
   end
 
-  # Check if a type is a basic atom, Ash.Type module, embedded resource, or custom type
   defp normalize_type(type) when is_atom(type) do
     cond do
       type in @basic_types -> type
@@ -382,14 +364,13 @@ defmodule AshOaskit.TypeMapper do
     end
   end
 
-  # Fallback for unknown types
   defp normalize_type(_), do: :string
 
   # Handle complex type checking for embedded resources, custom types, unions,
   # Ash.Type.Enum implementors, and NewType wrappers
   defp normalize_complex_type(type) do
     cond do
-      # make sure callback always take priority
+      # Custom types own their schema even when they also wrap a built-in type.
       has_json_schema_callback?(type) ->
         {:custom, get_custom_json_schema(type)}
 
@@ -421,7 +402,6 @@ defmodule AshOaskit.TypeMapper do
     end
   end
 
-  # Check if a type uses Ash.Type.Enum (e.g. `use Ash.Type.Enum, values: [...]`)
   defp enum_type?(type) do
     Code.ensure_loaded?(type) and Spark.implements_behaviour?(type, Ash.Type.Enum)
   end
@@ -436,13 +416,10 @@ defmodule AshOaskit.TypeMapper do
     Code.ensure_loaded?(type) and NewType.new_type?(type)
   end
 
-  # Check if a type has a json_schema/1 callback
-  # Only called from normalize_complex_type which guarantees type is an atom
   defp has_json_schema_callback?(type) do
     Code.ensure_loaded?(type) and function_exported?(type, :json_schema, 1)
   end
 
-  # Get the JSON schema from a custom type's json_schema/1 callback
   defp get_custom_json_schema(type) do
     type.json_schema([])
   rescue
@@ -466,7 +443,6 @@ defmodule AshOaskit.TypeMapper do
     end
   end
 
-  # Checks if a type is an embedded Ash resource
   @spec embedded_resource?(atom()) :: boolean()
   defp embedded_resource?(type) when is_atom(type) do
     Code.ensure_loaded?(type) and
@@ -475,12 +451,9 @@ defmodule AshOaskit.TypeMapper do
       ash_embedded?(type)
   end
 
-  # Checks if a resource is embedded using Ash.Resource.Info.embedded?/1
-  # Called only after confirming the resource is a valid Ash.Resource via Spark.Dsl.is?
   @spec ash_embedded?(atom()) :: boolean()
   defp ash_embedded?(resource), do: Ash.Resource.Info.embedded?(resource)
 
-  # Check if attribute allows nil
   defp allow_nil?(%{allow_nil?: allow_nil?}), do: allow_nil?
   defp allow_nil?(_), do: true
 
@@ -514,7 +487,6 @@ defmodule AshOaskit.TypeMapper do
     Map.put(schema, "nullable", true)
   end
 
-  # Add constraints from Ash attribute
   defp maybe_add_constraints(schema, %{constraints: constraints}) when is_list(constraints) do
     Enum.reduce(constraints, schema, fn
       {:min_length, min}, acc ->
@@ -537,7 +509,6 @@ defmodule AshOaskit.TypeMapper do
         Map.put(acc, "pattern", pattern_string)
 
       {:one_of, values}, acc ->
-        # Convert atom values to strings for JSON Schema compatibility
         string_values = Enum.map(values, &to_string/1)
         Map.put(acc, "enum", string_values)
 
@@ -548,7 +519,6 @@ defmodule AshOaskit.TypeMapper do
 
   defp maybe_add_constraints(schema, _), do: schema
 
-  # Add description
   defp maybe_add_description(schema, %{description: desc}) when is_binary(desc) do
     Map.put(schema, "description", desc)
   end
@@ -563,7 +533,6 @@ defmodule AshOaskit.TypeMapper do
 
   defp maybe_add_default(schema, _), do: schema
 
-  # Convert non-JSON-serializable defaults to JSON-safe values
   defp sanitize_default(%Decimal{} = d), do: Decimal.to_float(d)
 
   defp sanitize_default(value) when is_atom(value) and value not in [true, false],
@@ -571,7 +540,6 @@ defmodule AshOaskit.TypeMapper do
 
   defp sanitize_default(value), do: value
 
-  # Ensures a value is a number (for minimum/maximum constraints)
   defp to_number(value) when is_number(value), do: value
   defp to_number(%Decimal{} = value), do: Decimal.to_float(value)
 
