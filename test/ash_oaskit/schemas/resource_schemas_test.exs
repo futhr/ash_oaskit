@@ -1,23 +1,5 @@
 defmodule AshOaskit.SchemaBuilder.ResourceSchemasTest do
-  @moduledoc """
-  Tests for the `AshOaskit.SchemaBuilder.ResourceSchemas` module.
-
-  Verifies resource-level schema generation including attributes, response
-  wrappers, input schemas, and resource naming conventions.
-
-  ## Test categories
-
-    - `resource_schema_name/1` — Schema name extraction from module
-    - `get_public_attributes/1` — Public attribute filtering
-    - `get_public_calculations/1` — Public calculation filtering
-    - `get_public_aggregates/1` — Public aggregate filtering
-    - `get_writable_attributes/1` — Writable attribute filtering
-    - `create_required_attribute?/1` — Required field detection
-    - `add_resource_schemas/3` — Full schema generation pipeline
-    - `add_attributes_schema/4` — Attributes-only schema
-    - `add_response_schema/4` — JSON:API response wrapper
-    - `add_input_schemas/4` — Create/update input schemas
-  """
+  @moduledoc false
   use ExUnit.Case, async: true
 
   alias AshOaskit.SchemaBuilder

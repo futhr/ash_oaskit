@@ -1,20 +1,5 @@
 defmodule AshOaskit.SpecModifierTest do
-  @moduledoc """
-  Tests for AshOaskit.SpecModifier module.
-
-  This test module verifies the spec modification functionality, including:
-
-  - Function callback application
-  - MFA tuple callback application
-  - Multiple modifier chaining
-  - Extension field addition
-  - Header addition to operations
-  - Server configuration
-  - Tag management
-  - Schema and component modifications
-  - Webhook definitions
-  - Rate limiting and deprecation helpers
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 

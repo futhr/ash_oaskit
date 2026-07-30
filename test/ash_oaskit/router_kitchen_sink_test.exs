@@ -1,11 +1,5 @@
 defmodule AshOaskit.RouterKitchenSinkTest do
-  @moduledoc """
-  Kitchen sink test for `AshOaskit.Router` in a Phoenix Router context.
-
-  Exercises a realistic Phoenix Router setup with multiple domains, pipelines,
-  scopes, and `use AshOaskit.Router` generating OpenAPI spec routes alongside
-  regular application routes.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 

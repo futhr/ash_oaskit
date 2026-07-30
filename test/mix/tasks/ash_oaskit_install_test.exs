@@ -1,33 +1,5 @@
 defmodule Mix.Tasks.AshOaskit.InstallTest do
-  @moduledoc """
-  Tests for the `mix ash_oaskit.install` task.
-
-  This mix task handles initial setup of AshOaskit in a project using Igniter
-  for code generation. It configures dependencies, sets up basic configuration,
-  and provides a smooth onboarding experience.
-
-  ## What We Test
-
-  - **Module definition** - Task is properly defined with shortdoc and moduledoc
-  - **Igniter integration** - When Igniter is available, returns proper task info
-    with correct group and dependency declarations
-  - **Graceful degradation** - When Igniter is unavailable, shows helpful error
-    message instead of crashing
-
-  ## How We Test
-
-  Tests verify module attributes and documentation exist. For Igniter integration,
-  we create test Igniter structs and verify the install task returns properly
-  configured Igniter results. We use compile-time checks (`Code.ensure_loaded?`)
-  to conditionally test Igniter-dependent functionality.
-
-  ## Why These Tests Matter
-
-  The install task is a user's first interaction with AshOaskit. A broken
-  installer creates a poor first impression and blocks adoption. These tests
-  ensure the task is discoverable (`mix help`), documented, and works correctly
-  whether or not optional dependencies like Igniter are present.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: false
 
@@ -66,7 +38,6 @@ defmodule Mix.Tasks.AshOaskit.InstallTest do
         # Run the install task
         result = Install.igniter(igniter)
 
-        # Should return an Igniter struct
         assert %Igniter{} = result
       end
 

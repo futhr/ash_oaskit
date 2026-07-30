@@ -1,17 +1,5 @@
 defmodule AshOaskit.CrossVersionContaminationTest do
-  @moduledoc """
-  Tests that OpenAPI 3.0 output never contains 3.1-only features and vice versa.
-
-  These tests walk the full generated spec recursively to ensure no version-specific
-  features leak across version boundaries. This catches bugs where version-aware code
-  paths produce output for the wrong version.
-
-  ## What's Tested
-
-  - **3.0 output**: No type arrays, no JSON Schema 2020-12 features
-  - **3.1 output**: No `nullable` keyword anywhere
-  - Both tested against SimpleDomain and Blog domains
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 

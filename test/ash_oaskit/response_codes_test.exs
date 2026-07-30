@@ -1,28 +1,5 @@
 defmodule AshOaskit.ResponseCodesTest do
-  @moduledoc """
-  Tests for HTTP response code generation in OpenAPI specs.
-
-  These tests verify that HTTP response codes are properly generated in
-  OpenAPI specifications according to REST conventions and OpenAPI spec.
-
-  Reference: https://spec.openapis.org/oas/v3.1.0#responses-object
-
-  ## Response Code Categories
-
-  - **2xx Success** - 200 OK, 201 Created, 204 No Content
-  - **4xx Client Errors** - 400, 401, 403, 404, 409, 422
-  - **5xx Server Errors** - 500 Internal Server Error
-
-  ## Response Codes by Operation
-
-  | Operation | Success | Common Errors |
-  |-----------|---------|---------------|
-  | GET (read) | 200 | 404 |
-  | GET (list) | 200 | - |
-  | POST | 201 | 400, 422 |
-  | PATCH | 200 | 400, 404, 422 |
-  | DELETE | 200/204 | 404 |
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -248,7 +225,6 @@ defmodule AshOaskit.ResponseCodesTest do
 
             Enum.each(responses, fn {_, response} ->
               if content = response["content"] do
-                # Should use appropriate content type
                 assert Map.has_key?(content, "application/vnd.api+json") or
                          Map.has_key?(content, "application/json"),
                        "Response should have JSON content type"

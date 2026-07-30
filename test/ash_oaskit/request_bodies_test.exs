@@ -1,12 +1,5 @@
 defmodule AshOaskit.RequestBodiesTest do
-  @moduledoc """
-  Integration tests for request body generation.
-
-  Request bodies must reference the action-derived input schemas
-  (`{Resource}{Action}Input`) inside a JSON:API envelope — not the
-  response `Attributes` schema — and components must contain exactly
-  the input schemas that operations reference (no orphans).
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 

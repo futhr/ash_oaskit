@@ -1,32 +1,11 @@
 defmodule AshOaskit.ErrorSchemasTest do
-  @moduledoc """
-  Comprehensive tests for the AshOaskit.ErrorSchemas module.
-
-  This test module verifies that JSON:API compliant error schemas are
-  generated correctly, including:
-
-  - Error object schema structure
-  - Error response envelope
-  - Status code-specific responses
-  - Operation type error responses
-  - Component schema generation
-
-  ## Test Categories
-
-  - **Error Object Schema** - Tests for single error object structure
-  - **Error Response Schema** - Tests for errors array envelope
-  - **Status Code Responses** - Tests for specific HTTP status codes
-  - **Operation Responses** - Tests for CRUD operation error sets
-  - **Component Integration** - Tests for adding to components
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
   alias AshOaskit.ErrorSchemas
 
   describe "error_object_schema/0" do
-    # Tests for single error object structure
-
     test "returns object type schema" do
       schema = ErrorSchemas.error_object_schema()
 
@@ -93,8 +72,6 @@ defmodule AshOaskit.ErrorSchemasTest do
   end
 
   describe "error_response_schema/0" do
-    # Tests for error response envelope
-
     test "returns object type schema" do
       schema = ErrorSchemas.error_response_schema()
 
@@ -140,8 +117,6 @@ defmodule AshOaskit.ErrorSchemasTest do
   end
 
   describe "error_response/1" do
-    # Tests for status code-specific responses
-
     test "returns response with description" do
       response = ErrorSchemas.error_response("404")
 
@@ -213,8 +188,6 @@ defmodule AshOaskit.ErrorSchemasTest do
   end
 
   describe "error_responses/1" do
-    # Tests for multiple status code responses
-
     test "returns map of responses" do
       responses = ErrorSchemas.error_responses(["400", "404"])
 
@@ -240,8 +213,6 @@ defmodule AshOaskit.ErrorSchemasTest do
   end
 
   describe "all_error_responses/0" do
-    # Tests for all standard error responses
-
     test "includes all common error codes" do
       responses = ErrorSchemas.all_error_responses()
 
@@ -260,8 +231,6 @@ defmodule AshOaskit.ErrorSchemasTest do
   end
 
   describe "read_error_responses/0" do
-    # Tests for read operation errors
-
     test "includes 400, 401, 403, 404" do
       responses = ErrorSchemas.read_error_responses()
 
@@ -279,8 +248,6 @@ defmodule AshOaskit.ErrorSchemasTest do
   end
 
   describe "create_error_responses/0" do
-    # Tests for create operation errors
-
     test "includes 400, 401, 403, 409, 422" do
       responses = ErrorSchemas.create_error_responses()
 
@@ -299,8 +266,6 @@ defmodule AshOaskit.ErrorSchemasTest do
   end
 
   describe "update_error_responses/0" do
-    # Tests for update operation errors
-
     test "includes 400, 401, 403, 404, 409, 422" do
       responses = ErrorSchemas.update_error_responses()
 
@@ -314,8 +279,6 @@ defmodule AshOaskit.ErrorSchemasTest do
   end
 
   describe "delete_error_responses/0" do
-    # Tests for delete operation errors
-
     test "includes 401, 403, 404" do
       responses = ErrorSchemas.delete_error_responses()
 
@@ -333,8 +296,6 @@ defmodule AshOaskit.ErrorSchemasTest do
   end
 
   describe "add_error_components/1" do
-    # Tests for component integration
-
     test "adds JsonApiError schema" do
       components = ErrorSchemas.add_error_components(%{schemas: %{}})
 
@@ -364,8 +325,6 @@ defmodule AshOaskit.ErrorSchemasTest do
   end
 
   describe "responses_for_operation/1" do
-    # Tests for operation type mapping
-
     test "read returns read_error_responses" do
       responses = ErrorSchemas.responses_for_operation(:read)
 
@@ -428,8 +387,6 @@ defmodule AshOaskit.ErrorSchemasTest do
   end
 
   describe "inline_error_response/1" do
-    # Tests for inline error schemas
-
     test "includes inline schema instead of $ref" do
       response = ErrorSchemas.inline_error_response("400")
 
@@ -447,8 +404,6 @@ defmodule AshOaskit.ErrorSchemasTest do
   end
 
   describe "edge cases" do
-    # Tests for edge cases
-
     test "all schemas are valid maps" do
       assert is_map(ErrorSchemas.error_object_schema())
       assert is_map(ErrorSchemas.error_response_schema())

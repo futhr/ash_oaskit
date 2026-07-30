@@ -1,16 +1,5 @@
 defmodule AshOaskit.Core.SchemaRefTest do
-  @moduledoc """
-  Tests for the `AshOaskit.Core.SchemaRef` module.
-
-  Verifies that `$ref` objects and path strings are constructed correctly
-  for component schema references. Includes doctests to validate the
-  inline examples in the module documentation.
-
-  ## Test categories
-
-    - `schema_ref/1` — Builds `%{"$ref" => ...}` maps with string keys
-    - `schema_ref_path/1` — Builds `#/components/schemas/...` path strings
-  """
+  @moduledoc false
   use ExUnit.Case, async: true
 
   alias AshOaskit.Core.SchemaRef

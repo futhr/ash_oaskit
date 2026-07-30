@@ -1,34 +1,5 @@
 defmodule Mix.Tasks.AshOaskit.GenerateTest do
-  @moduledoc """
-  Tests for the `mix ash_oaskit.generate` task.
-
-  This mix task is the primary CLI interface for generating OpenAPI specifications
-  from Ash domains. It supports multiple output formats, OpenAPI versions, and
-  various customization options.
-
-  ## What We Test
-
-  - **Version selection** - Generates OpenAPI 3.0 or 3.1 specs via `--version`
-  - **Output formats** - JSON (default) and YAML via `--format`
-  - **File output** - Custom paths via `--output`, default naming based on version
-  - **API metadata** - Custom title and version via `--title` and `--api-version`
-  - **Domain parsing** - Single domain, comma-separated list, multiple `--domains`
-  - **Formatting** - Pretty-printed (default) or compact via `--no-pretty`
-  - **CLI aliases** - Short flags (`-d`, `-v`, `-o`) for common options
-
-  ## How We Test
-
-  Tests run the mix task with various argument combinations, capturing IO output.
-  We use `@moduletag :tmp_dir` for isolated file system operations. Generated
-  specs are parsed and validated for correct structure and option handling.
-
-  ## Why These Tests Matter
-
-  The generate task is how users integrate AshOaskit into their build process.
-  Incorrect argument parsing, file output, or format handling breaks CI pipelines
-  and developer workflows. These tests ensure reliable spec generation across
-  all supported options and edge cases.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: false
 
@@ -131,7 +102,6 @@ defmodule Mix.Tasks.AshOaskit.GenerateTest do
       content = File.read!(output_file)
       spec = Jason.decode!(content)
 
-      # Should have schemas from both domains
       assert is_map(spec["components"]["schemas"])
     end
 

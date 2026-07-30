@@ -1,23 +1,5 @@
 defmodule AshOaskit.Generators.GeneratorTest do
-  @moduledoc """
-  Tests for the AshOaskit.Generators.Generator module.
-
-  This module tests the main OpenAPI specification generator that orchestrates
-  all builders (info, paths, schemas, components) into a complete spec.
-
-  ## Test Categories
-
-  - **Hook application** - `modify_open_api` function and MFA callbacks
-  - **Version routing** - Dispatching to V30 or V31 generators
-  - **Option forwarding** - Title, version, servers, and other configuration
-  - **Complete generation** - End-to-end spec generation from Ash domains
-
-  ## Why These Tests Matter
-
-  The Generator is the central orchestrator. It must correctly combine output
-  from InfoBuilder, PathBuilder, SchemaBuilder, and version-specific generators
-  while applying user-defined hooks in the right order.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 

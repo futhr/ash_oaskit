@@ -1,30 +1,5 @@
 defmodule AshOaskit.ParameterStylesTest do
-  @moduledoc """
-  Tests for OpenAPI parameter serialization styles.
-
-  These tests verify that OpenAPI parameter serialization styles are properly
-  understood and documented according to the OpenAPI 3.1 specification.
-
-  Reference: https://spec.openapis.org/oas/v3.1.0#parameter-object
-  Reference: https://swagger.io/docs/specification/serialization/
-
-  ## Parameter Styles by Location
-
-  | Location | Default Style | Explode | Example |
-  |----------|---------------|---------|---------|
-  | path | simple | false | /users/3,4,5 |
-  | query | form | true | ?id=3&id=4&id=5 |
-  | header | simple | false | X-IDs: 3,4,5 |
-  | cookie | form | false | ids=3,4,5 |
-
-  ## Style Options
-
-  - **simple** - Comma-separated values
-  - **form** - Query string format (ampersand or comma)
-  - **label** - Dot-prefixed values
-  - **matrix** - Semicolon-prefixed key=value
-  - **deepObject** - Nested object bracket notation
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 

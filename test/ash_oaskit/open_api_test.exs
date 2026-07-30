@@ -1,22 +1,5 @@
 defmodule AshOaskit.OpenApiTest do
-  @moduledoc """
-  Tests for the AshOaskit.OpenApi module.
-
-  This module tests the core OpenAPI specification generation,
-  including version routing, option handling, and output structure.
-
-  ## Test Coverage
-
-  - **Version Handling** - Tests for 3.0 and 3.1 version strings
-  - **Option Validation** - Ensures required options are checked
-  - **Info Section** - Tests title, version, description propagation
-  - **Servers** - Tests server configuration and defaults
-  - **Struct Conversion** - Tests to_map/1 for struct handling
-
-  ## Test Fixtures
-
-  Uses `AshOaskit.Test.Blog` as a real Ash domain for testing.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
   doctest AshOaskit.OpenApi

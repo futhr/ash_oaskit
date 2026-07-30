@@ -1,32 +1,5 @@
 defmodule AshOaskit.FormatStringsTest do
-  @moduledoc """
-  Tests for JSON Schema format string support.
-
-  These tests verify support for JSON Schema format strings beyond
-  the basic types, covering the full range of formats defined in
-  the OpenAPI Format Registry.
-
-  Reference: https://spec.openapis.org/registry/format/
-  Reference: https://json-schema.org/understanding-json-schema/reference/string.html#format
-
-  ## Format Categories
-
-  - **Integer Formats** - int32, int64
-  - **Number Formats** - float, double
-  - **String Formats** - date, time, date-time, duration
-  - **Identifier Formats** - uuid, uri, email
-  - **Binary Formats** - byte (base64), binary
-
-  ## Ash Type to Format Mapping
-
-  | Ash Type | JSON Schema Type | Format |
-  |----------|------------------|--------|
-  | :uuid | string | uuid |
-  | :date | string | date |
-  | :datetime | string | date-time |
-  | :decimal | number | double |
-  | :float | number | float |
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -324,7 +297,6 @@ defmodule AshOaskit.FormatStringsTest do
           end)
         end)
 
-      # Should have at least one UUID field (primary keys are usually UUIDs)
       assert is_list(uuid_properties)
     end
   end

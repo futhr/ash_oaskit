@@ -1,62 +1,5 @@
 defmodule AshOaskit.CalculationsAggregatesTest do
-  @moduledoc """
-  Comprehensive tests for calculation and aggregate schema generation.
-
-  These tests verify that ash_oaskit correctly includes calculations and
-  aggregates in the generated OpenAPI schemas, matching the functionality
-  of AshJsonApi.OpenApi.
-
-  ## Calculations
-
-  Calculations are computed values derived from resource data using expressions.
-  They appear in output schemas (attributes) but NOT in input schemas.
-
-  ### Calculation Types Tested
-  - String calculations (e.g., `full_name`)
-  - Integer calculations (e.g., `article_count`)
-  - Boolean calculations
-  - Date/time calculations
-  - Calculations referencing relationships
-
-  ### Calculation Schema Properties
-  - Type mapping from Ash type to JSON Schema
-  - Always nullable (calculations may not be loaded)
-  - Description inclusion
-
-  ## Aggregates
-
-  Aggregates are computed values that summarize related data. They use
-  different kinds (count, sum, avg, etc.) which affect the output type.
-
-  ### Aggregate Kinds Tested
-  - `:count` - Returns integer
-  - `:sum` - Returns number
-  - `:avg` - Returns number
-  - `:min` / `:max` - Returns field type or number
-  - `:first` - Returns field type
-  - `:list` - Returns array of field type
-  - `:exists` - Returns boolean
-
-  ### Aggregate Schema Properties
-  - Type inference from aggregate kind
-  - Always nullable (aggregates may not be loaded)
-  - Description inclusion
-
-  ## OpenAPI Version Differences
-
-  ### OpenAPI 3.0
-  - Nullable values use `nullable: true`
-
-  ### OpenAPI 3.1
-  - Nullable values use type arrays `["type", "null"]`
-
-  ## Test Resources
-
-  Tests use resources from `test/support/relationship_resources.ex`:
-  - `Author` - has `full_name` calculation, `total_articles` aggregate
-  - `Article` - has `author_name` calculation, multiple aggregates
-  - `Category` - has `full_path` calculation, `total_children` aggregate
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -410,7 +353,6 @@ defmodule AshOaskit.CalculationsAggregatesTest do
 
       schema = SchemaBuilder.get_schema(builder, "ArticleAttributes")
 
-      # Should still generate schema even without description
       assert Map.has_key?(schema[:properties], :review_count)
     end
 

@@ -1,18 +1,5 @@
 defmodule AshOaskit.ResponseLinksTest do
-  @moduledoc """
-  Tests for AshOaskit.ResponseLinks module.
-
-  This test module verifies the generation of JSON:API response link schemas
-  for OpenAPI specifications, including:
-
-  - Resource self links
-  - Collection links with pagination
-  - Relationship links (self and related)
-  - Document-level links
-  - Flexible links for various response types
-  - OpenAPI 3.0 vs 3.1 nullable handling
-  - Link objects with meta support
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 

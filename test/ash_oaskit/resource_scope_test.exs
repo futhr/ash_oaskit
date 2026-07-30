@@ -1,20 +1,5 @@
 defmodule AshOaskit.ResourceScopeTest do
-  @moduledoc """
-  Tests for the `:resource_scope` option.
-
-  The Scoped fixture domain (test/support/resource_scope_resources.ex)
-  routes only Device; Site is unrouted but referenced by Device's
-  relationship; AuditLog is unrouted and unreferenced.
-
-  ## Test Coverage
-
-  - `:all` (default) seeds every domain resource into schemas and tags
-  - `:routed` drops unrouted, unreferenced resources from schemas and tags
-  - `:routed` keeps unrouted resources referenced through relationships
-    (transitive closure via the schema builder)
-  - The option validates at `use AshOaskit` time
-  - A `:routed` spec still validates against the OpenAPI schema
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 

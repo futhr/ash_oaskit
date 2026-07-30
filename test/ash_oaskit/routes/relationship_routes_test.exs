@@ -1,39 +1,5 @@
 defmodule AshOaskit.RelationshipRoutesTest do
-  @moduledoc """
-  Tests for the AshOaskit.RelationshipRoutes module.
-
-  JSON:API defines two types of relationship endpoints: related resource routes
-  that return full resource objects, and relationship routes that return or
-  manipulate resource identifier linkages. This module tests OpenAPI operation
-  generation for both types.
-
-  ## What We Test
-
-  - **Route detection** - Distinguishing relationship routes from standard CRUD
-    routes based on route type (`:related`, `:relationship`, `:post_to_relationship`,
-    `:patch_relationship`, `:delete_from_relationship`)
-  - **Related routes** - `GET /posts/:id/comments` returns full Comment resources
-    with pagination, filtering, and inclusion support
-  - **Relationship routes** - `GET/POST/PATCH/DELETE /posts/:id/relationships/comments`
-    manipulates resource identifier linkages `{type, id}` without full resources
-  - **Cardinality** - To-one relationships return nullable single identifiers,
-    to-many return arrays; affects both response and request body schemas
-  - **Resource identifiers** - Schema generation for `{type: "comments", id: "1"}`
-    objects used in relationship linkage
-
-  ## How We Test
-
-  Tests use mock route structs simulating AshJsonApi route structures, then call
-  `RelationshipRoutes.build_operation/2` and related functions. We verify correct
-  HTTP methods, operationIds, request/response schemas, and parameter handling.
-
-  ## Why These Tests Matter
-
-  Relationship routes have complex semantics: POST to a to-many relationship
-  adds linkages, PATCH replaces them, DELETE removes specific ones. Incorrect
-  schemas cause client confusion and invalid API requests. These tests ensure
-  the generated OpenAPI spec accurately documents JSON:API relationship behavior.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -110,8 +76,6 @@ defmodule AshOaskit.RelationshipRoutesTest do
   end
 
   describe "relationship_route?/1" do
-    # Tests for route type detection
-
     test "returns true for :related routes" do
       assert RelationshipRoutes.relationship_route?(mock_related_route())
     end
@@ -153,8 +117,6 @@ defmodule AshOaskit.RelationshipRoutesTest do
   end
 
   describe "route_method/1" do
-    # Tests for HTTP method mapping
-
     test "related routes use GET" do
       assert RelationshipRoutes.route_method(mock_related_route()) == "get"
     end
@@ -188,8 +150,6 @@ defmodule AshOaskit.RelationshipRoutesTest do
   end
 
   describe "build_operation/2" do
-    # Tests for operation object generation
-
     test "generates operation for related route" do
       operation = RelationshipRoutes.build_operation(mock_related_route())
 
@@ -283,8 +243,6 @@ defmodule AshOaskit.RelationshipRoutesTest do
   end
 
   describe "build_resource_identifier_schema/1" do
-    # Tests for resource identifier schema generation
-
     test "generates object type schema" do
       schema = RelationshipRoutes.build_resource_identifier_schema("comment")
 
@@ -324,8 +282,6 @@ defmodule AshOaskit.RelationshipRoutesTest do
   end
 
   describe "build_relationship_linkage_schema/2" do
-    # Tests for relationship linkage schema generation (to-one vs to-many)
-
     # Mock relationship structs
     defp mock_has_many_relationship do
       %{
@@ -421,8 +377,6 @@ defmodule AshOaskit.RelationshipRoutesTest do
   end
 
   describe "build_relationship_response_schema/2" do
-    # Tests for full relationship response schema
-
     defp mock_relationship_for_response do
       %{
         type: :has_many,
@@ -486,8 +440,6 @@ defmodule AshOaskit.RelationshipRoutesTest do
   end
 
   describe "build_related_response_schema/2" do
-    # Tests for related resources response schema
-
     defp mock_to_many_relationship do
       %{
         type: :has_many,
@@ -541,7 +493,6 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      # Should reference a response schema, not be an array
       refute schema[:properties]["data"][:type] == :array
     end
 
@@ -571,8 +522,6 @@ defmodule AshOaskit.RelationshipRoutesTest do
   end
 
   describe "operation response codes" do
-    # Tests for correct HTTP response codes
-
     test "related route has 200 and 404 responses" do
       operation = RelationshipRoutes.build_operation(mock_related_route())
 
@@ -599,8 +548,6 @@ defmodule AshOaskit.RelationshipRoutesTest do
   end
 
   describe "path parameter extraction" do
-    # Tests for extracting path parameters from route paths
-
     test "extracts single path parameter" do
       operation = RelationshipRoutes.build_operation(mock_related_route())
 
@@ -631,8 +578,6 @@ defmodule AshOaskit.RelationshipRoutesTest do
   end
 
   describe "edge cases" do
-    # Tests for edge cases and unusual scenarios
-
     test "handles route without relationship field" do
       route = %{
         type: :related,
@@ -681,8 +626,6 @@ defmodule AshOaskit.RelationshipRoutesTest do
   end
 
   describe "version compatibility" do
-    # Tests for OpenAPI 3.0 vs 3.1 compatibility
-
     test "3.1 version generates valid schema" do
       operation = RelationshipRoutes.build_operation(mock_related_route(), version: "3.1")
 
@@ -766,8 +709,6 @@ defmodule AshOaskit.RelationshipRoutesTest do
   end
 
   describe "unknown route type fallbacks" do
-    # Tests for fallback branches with unknown route types
-
     test "unknown route type uses fallback operationId" do
       route = %{
         type: :custom_operation,
@@ -780,7 +721,6 @@ defmodule AshOaskit.RelationshipRoutesTest do
 
       operation = RelationshipRoutes.build_operation(route)
 
-      # Should use fallback format
       assert operation[:operationId] =~ "post_comments"
     end
 
@@ -796,7 +736,6 @@ defmodule AshOaskit.RelationshipRoutesTest do
 
       operation = RelationshipRoutes.build_operation(route)
 
-      # Should use fallback summary
       assert operation[:summary] =~ "operation"
     end
 

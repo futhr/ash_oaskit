@@ -1,68 +1,5 @@
 defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
-  @moduledoc """
-  Comprehensive tests for relationship schema generation.
-
-  These tests verify that ash_oaskit correctly generates OpenAPI schemas for
-  all Ash relationship types, matching the functionality of AshJsonApi.OpenApi.
-
-  ## Relationship Types Tested
-
-  ### belongs_to
-  - Single resource identifier (to-one)
-  - Nullable handling for optional relationships
-  - Non-nullable handling for required relationships
-  - Foreign key attribute inclusion
-
-  ### has_many
-  - Array of resource identifiers (to-many)
-  - Empty array default
-  - Relationship links generation
-
-  ### has_one
-  - Single resource identifier (to-one)
-  - Similar to belongs_to but inverse direction
-
-  ### many_to_many
-  - Array of resource identifiers (to-many)
-  - Through resource handling
-
-  ### Self-referential
-  - Cycle detection
-  - $ref generation for recursive types
-  - Parent/children pattern
-
-  ## Schema Structure Tests
-
-  ### Resource Identifier
-  - `id` property (string)
-  - `type` property (enum with JSON:API type)
-  - Required fields
-
-  ### Relationship Object
-  - `data` property with identifier(s)
-  - `links` property with `self` and `related`
-
-  ### Cardinality
-  - To-one: Single object or null
-  - To-many: Array of objects
-
-  ## OpenAPI Version Differences
-
-  ### OpenAPI 3.0
-  - Nullable relationships use `nullable: true`
-
-  ### OpenAPI 3.1
-  - Nullable relationships use `oneOf` with null type
-
-  ## Test Resources
-
-  Tests use resources from `test/support/relationship_resources.ex`:
-  - `Author` - has_many articles, embedded profile
-  - `Article` - belongs_to author, has_many reviews, many_to_many tags
-  - `Review` - belongs_to article
-  - `Tag` - many_to_many articles
-  - `Category` - self-referential parent/children
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -79,7 +16,6 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
   end
 
   describe "has_many relationship schemas" do
-    # Tests for has_many relationship schema generation (Author -> Articles).
     # Relationship schemas use atom keys throughout (from RelationshipSchemas).
 
     test "generates relationships schema for resource with has_many", %{builder_31: builder} do
@@ -130,8 +66,6 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
   end
 
   describe "belongs_to relationship schemas" do
-    # Tests for belongs_to relationship schema generation (Article -> Author).
-
     setup do
       base = SchemaBuilder.new(version: "3.1")
       builder = SchemaBuilder.add_resource_schemas(base, AshOaskit.Test.Article)
@@ -193,8 +127,6 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
   end
 
   describe "many_to_many relationship schemas" do
-    # Tests for many_to_many relationship schema generation (Article <-> Tags).
-
     setup do
       base = SchemaBuilder.new(version: "3.1")
       builder = SchemaBuilder.add_resource_schemas(base, AshOaskit.Test.Article)
@@ -223,8 +155,6 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
   end
 
   describe "self-referential relationship schemas" do
-    # Tests for self-referential relationships (Category parent/children).
-
     setup do
       base = SchemaBuilder.new(version: "3.1")
       builder = SchemaBuilder.add_resource_schemas(base, AshOaskit.Test.Category)
@@ -293,8 +223,6 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
   end
 
   describe "OpenAPI 3.0 nullable handling for relationships" do
-    # Tests for OpenAPI 3.0 specific nullable handling in relationships.
-
     test "optional belongs_to uses nullable: true in 3.0" do
       base = SchemaBuilder.new(version: "3.0")
       builder = SchemaBuilder.add_resource_schemas(base, AshOaskit.Test.Category)
@@ -309,8 +237,6 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
   end
 
   describe "OpenAPI 3.1 nullable handling for relationships" do
-    # Tests for OpenAPI 3.1 specific nullable handling in relationships.
-
     test "optional belongs_to uses oneOf with null in 3.1" do
       base = SchemaBuilder.new(version: "3.1")
       builder = SchemaBuilder.add_resource_schemas(base, AshOaskit.Test.Category)
@@ -322,7 +248,6 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
       # In 3.1, nullable relationships should use oneOf
       assert Map.has_key?(data_schema, :oneOf)
 
-      # Should have null type option
       null_option = Enum.find(data_schema[:oneOf], &(&1[:type] == :null))
       assert null_option != nil
     end
@@ -349,8 +274,6 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
   end
 
   describe "resource without relationships" do
-    # Tests for resources that have no relationships.
-
     setup do
       base = SchemaBuilder.new(version: "3.1")
       builder = SchemaBuilder.add_resource_schemas(base, AshOaskit.Test.Comment)
@@ -371,8 +294,6 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
   end
 
   describe "resource with multiple relationship types" do
-    # Tests for Article which has belongs_to, has_many, and many_to_many.
-
     setup do
       base = SchemaBuilder.new(version: "3.1")
       builder = SchemaBuilder.add_resource_schemas(base, AshOaskit.Test.Article)
@@ -419,8 +340,6 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
   end
 
   describe "relationship links" do
-    # Tests for relationship links structure.
-
     test "links have URI format", %{builder_31: builder} do
       schema = SchemaBuilder.get_schema(builder, "AuthorRelationships")
 
@@ -443,14 +362,11 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
   end
 
   describe "edge cases" do
-    # Tests for edge cases in relationship handling.
-
     test "handles circular references without infinite loop" do
       # Category references itself, should not cause infinite recursion
       base = SchemaBuilder.new(version: "3.1")
       builder = SchemaBuilder.add_resource_schemas(base, AshOaskit.Test.Category)
 
-      # Should complete without hanging
       assert SchemaBuilder.has_schema?(builder, "CategoryAttributes")
       assert SchemaBuilder.has_schema?(builder, "CategoryRelationships")
     end
@@ -460,7 +376,6 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
       base = SchemaBuilder.new(version: "3.1")
       builder = SchemaBuilder.add_resource_schemas(base, AshOaskit.Test.Author)
 
-      # Should generate all schemas in the chain
       assert SchemaBuilder.has_schema?(builder, "AuthorAttributes")
       assert SchemaBuilder.has_schema?(builder, "ArticleAttributes")
       assert SchemaBuilder.has_schema?(builder, "ReviewAttributes")
@@ -475,7 +390,6 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
       names = SchemaBuilder.schema_names(builder)
       author_schemas = Enum.filter(names, &String.starts_with?(&1, "Author"))
 
-      # Should have exactly one of each
       assert Enum.count(author_schemas, &(&1 == "AuthorAttributes")) == 1
       assert Enum.count(author_schemas, &(&1 == "AuthorResponse")) == 1
       assert Enum.count(author_schemas, &(&1 == "AuthorRelationships")) == 1

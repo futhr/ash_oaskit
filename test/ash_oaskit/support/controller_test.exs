@@ -1,22 +1,5 @@
 defmodule AshOaskit.ControllerTest do
-  @moduledoc """
-  Tests for the AshOaskit.Controller module.
-
-  This module tests the Phoenix controller that serves OpenAPI specs
-  as JSON or YAML responses directly from your application.
-
-  ## Test Coverage
-
-  - **spec/2** - JSON response generation with proper content-type
-  - **spec_yaml/2** - YAML response generation
-  - **Configuration** - Domain and option passing via conn.private
-  - **Content Negotiation** - Proper headers and formatting
-
-  ## Setup
-
-  Uses `AshOaskit.ConnCase` for Plug.Test helpers and
-  `AshOaskit.Test.SimpleDomain` as a minimal test domain.
-  """
+  @moduledoc false
 
   use AshOaskit.ConnCase, async: false
 
@@ -100,7 +83,6 @@ defmodule AshOaskit.ControllerTest do
       result = call_controller(:spec_30, conn)
       body = Jason.decode!(result.resp_body)
 
-      # Should still be 3.0 because spec_30 forces it
       assert body["openapi"] == "3.0.3"
     end
 
@@ -139,7 +121,6 @@ defmodule AshOaskit.ControllerTest do
       result = call_controller(:spec_31, conn)
       body = Jason.decode!(result.resp_body)
 
-      # Should still be 3.1 because spec_31 forces it
       assert body["openapi"] == "3.1.0"
     end
 

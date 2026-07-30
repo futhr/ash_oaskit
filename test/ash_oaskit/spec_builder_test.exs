@@ -1,32 +1,5 @@
 defmodule AshOaskit.SpecBuilderTest do
-  @moduledoc """
-  Tests for the `AshOaskit.SpecBuilder` behaviour and its integration with
-  `AshOaskit.Router`.
-
-  Defines two inline spec builders to exercise the customisation surface:
-
-  - `CustomSpecBuilder` — adds a vendor extension (`x-custom`) and a
-    `bearerAuth` security scheme to every generated spec
-  - `FeatureFlagSpecBuilder` — conditionally injects `x-features` based on
-    an `:api_version` option, demonstrating option pass-through
-
-  Two test routers wire these builders into the Router macro so the full
-  request path (HTTP request -> Router -> Plug -> SpecBuilder -> spec) is
-  covered end-to-end.
-
-  ## Test Categories
-
-  - **SpecBuilder.Default** — verifies the zero-configuration builder produces
-    a standard spec without vendor extensions and correctly forwards all
-    info-level options (title, version, description, servers)
-  - **Custom spec_builder with Router** — confirms that a custom builder's
-    additions (extensions, security schemes) appear in the served JSON for
-    both OpenAPI 3.0 and 3.1 routes
-  - **Default spec_builder with Router** — ensures that omitting the
-    `:spec_builder` option falls back to `SpecBuilder.Default`
-  - **Router.Plug.generate_spec/1** — unit-tests the low-level generation
-    function directly, verifying builder selection without HTTP round-trips
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -194,10 +167,8 @@ defmodule AshOaskit.SpecBuilderTest do
       assert conn.status == 200
       spec = Jason.decode!(conn.resp_body)
 
-      # Should NOT have custom extensions
       refute Map.has_key?(spec, "x-custom")
 
-      # Should have standard spec
       assert spec["info"]["title"] == "Default API"
     end
   end

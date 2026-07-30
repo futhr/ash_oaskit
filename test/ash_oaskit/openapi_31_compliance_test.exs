@@ -1,28 +1,5 @@
 defmodule AshOaskit.OpenAPI31ComplianceTest do
-  @moduledoc """
-  OpenAPI 3.1.0 Specification Compliance Tests.
-
-  These tests verify that ash_oaskit generates specs compliant with the
-  OpenAPI 3.1.0 specification, particularly focusing on JSON Schema 2020-12
-  alignment and features new or changed in 3.1.
-
-  Reference: https://spec.openapis.org/oas/v3.1.0
-
-  ## Key 3.1 Features Tested
-
-  - **Type Arrays** - `type: ["string", "null"]` instead of `nullable: true`
-  - **JSON Schema Alignment** - Full JSON Schema 2020-12 compatibility
-  - **Examples** - Both `example` and `examples` keywords
-  - **Webhooks** - New webhooks object support
-
-  ## 3.0 vs 3.1 Differences
-
-  | Feature | 3.0 | 3.1 |
-  |---------|-----|-----|
-  | Nullable | `nullable: true` | `type: [T, "null"]` |
-  | Schema | OpenAPI subset | JSON Schema 2020-12 |
-  | Examples | `example` only | `example` + `examples` |
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -122,7 +99,6 @@ defmodule AshOaskit.OpenAPI31ComplianceTest do
 
       schema = TypeMapper.to_json_schema_31(attr)
 
-      # Should only have "null" once
       null_count = Enum.count(schema["type"], &(&1 == "null"))
       assert null_count == 1
     end

@@ -1,42 +1,11 @@
 defmodule AshOaskit.QueryParametersTest do
-  @moduledoc """
-  Tests for the AshOaskit.QueryParameters module.
-
-  JSON:API defines several standard query parameters for filtering, sorting,
-  pagination, sparse fieldsets, and relationship inclusion. This module tests
-  that AshOaskit generates correct OpenAPI parameter schemas for these.
-
-  ## What We Test
-
-  - **Page parameter** - Pagination with offset/limit or keyset (after/before)
-    cursors, including count option and configurable limits
-  - **Fields parameter** - Sparse fieldsets allowing clients to request only
-    specific attributes per resource type (e.g., `fields[posts]=title,body`)
-  - **Include parameter** - Relationship inclusion with dot notation for nested
-    paths (e.g., `include=author,comments.author`)
-  - **Combined parameters** - Helper functions that bundle parameters for
-    different operation types (index, show, etc.)
-
-  ## How We Test
-
-  Tests call `QueryParameters.build_*` functions and verify the returned
-  parameter objects have correct OpenAPI structure: name, location (query),
-  style (deepObject for nested params), explode settings, and schema types.
-
-  ## Why These Tests Matter
-
-  Incorrect parameter schemas cause API documentation mismatches, client SDK
-  generation failures, and validation errors. These tests ensure compliance
-  with both OpenAPI 3.x and JSON:API query parameter conventions.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
   alias AshOaskit.QueryParameters
 
   describe "build_page_parameter/1" do
-    # Tests for pagination parameter
-
     test "generates page parameter with deepObject style" do
       param = QueryParameters.build_page_parameter([])
 
@@ -123,8 +92,6 @@ defmodule AshOaskit.QueryParametersTest do
   end
 
   describe "build_fields_parameter/2" do
-    # Tests for sparse fieldsets
-
     test "generates fields parameter with deepObject style" do
       param = QueryParameters.build_fields_parameter(["post", "author"])
 
@@ -183,8 +150,6 @@ defmodule AshOaskit.QueryParametersTest do
   end
 
   describe "build_include_parameter/2" do
-    # Tests for relationship includes
-
     test "generates include parameter" do
       param = QueryParameters.build_include_parameter([:author, :comments])
 
@@ -233,8 +198,6 @@ defmodule AshOaskit.QueryParametersTest do
   end
 
   describe "all_parameters/2" do
-    # Tests for combined parameters
-
     test "returns list of parameters" do
       params = QueryParameters.all_parameters(AshOaskit.Test.Post)
 
@@ -302,8 +265,6 @@ defmodule AshOaskit.QueryParametersTest do
   end
 
   describe "basic_parameters/2" do
-    # Tests for basic parameter set
-
     test "returns list of 3 parameters" do
       params = QueryParameters.basic_parameters(AshOaskit.Test.Post)
 
@@ -335,8 +296,6 @@ defmodule AshOaskit.QueryParametersTest do
   end
 
   describe "index_parameters/2" do
-    # Tests for index operation parameters
-
     test "returns same as all_parameters" do
       index_params = QueryParameters.index_parameters(AshOaskit.Test.Post)
       all_params = QueryParameters.all_parameters(AshOaskit.Test.Post)
@@ -346,8 +305,6 @@ defmodule AshOaskit.QueryParametersTest do
   end
 
   describe "show_parameters/2" do
-    # Tests for show operation parameters
-
     test "returns 2 parameters" do
       params = QueryParameters.show_parameters(AshOaskit.Test.Post)
 
@@ -373,8 +330,6 @@ defmodule AshOaskit.QueryParametersTest do
   end
 
   describe "edge cases" do
-    # Tests for edge cases
-
     test "all parameters are valid maps" do
       params = QueryParameters.all_parameters(AshOaskit.Test.Post)
 
@@ -419,8 +374,6 @@ defmodule AshOaskit.QueryParametersTest do
   end
 
   describe "OpenAPI compliance" do
-    # Tests for OpenAPI spec compliance
-
     test "page parameter has explode: true for deepObject" do
       param = QueryParameters.build_page_parameter([])
 
@@ -524,14 +477,10 @@ defmodule AshOaskit.QueryParametersTest do
     end
   end
 
-  describe "coverage edge cases" do
-    # Tests to cover remaining branches
-
+  describe "pagination fallbacks" do
     test "pagination properties fallback for unknown strategy" do
-      # build_pagination_properties with unknown atom should fall back to :both
       param = QueryParameters.build_page_parameter(pagination_strategy: :unknown_strategy)
 
-      # Should have all pagination properties (falls back to :both)
       props = param.schema.properties
       assert Map.has_key?(props, "limit")
       assert Map.has_key?(props, "offset")
@@ -574,7 +523,6 @@ defmodule AshOaskit.QueryParametersTest do
       # NoTypeResource has no relationships
       params = QueryParameters.all_parameters(AshOaskit.Test.NoTypeResource)
 
-      # Should return valid parameters
       assert is_list(params)
     end
 

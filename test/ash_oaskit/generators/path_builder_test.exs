@@ -1,25 +1,5 @@
 defmodule AshOaskit.Generators.PathBuilderTest do
-  @moduledoc """
-  Tests for the AshOaskit.Generators.PathBuilder module.
-
-  This module tests the generation of OpenAPI path objects and operations
-  from Ash domain route definitions and Phoenix controller routes.
-
-  ## Test Categories
-
-  - **Path building** - Generating paths from single and multiple domains
-  - **Deep merge** - Overlapping controller routes merging with Ash routes
-  - **Operation building** - Index, get, post, patch, delete operations
-  - **Humanize** - Converting underscore strings to title case
-  - **Domain paths** - Relationship paths, edge case domains, self-referential routes
-  - **Response codes** - Standard error codes (400, 401, 404, 422) on operations
-
-  ## How It Works
-
-  The PathBuilder collects routes from AshJsonApi domain configuration,
-  builds OpenAPI operation objects for each route, and optionally merges
-  in paths from a Phoenix router implementing the OpenApiController behaviour.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 

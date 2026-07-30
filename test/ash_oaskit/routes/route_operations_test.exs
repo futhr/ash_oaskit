@@ -1,20 +1,5 @@
 defmodule AshOaskit.RelationshipRoutes.RouteOperationsTest do
-  @moduledoc """
-  Tests for the `AshOaskit.RelationshipRoutes.RouteOperations` module.
-
-  Verifies OpenAPI operation object generation for JSON:API relationship
-  endpoints, including operation IDs, summaries, descriptions, tags,
-  and parameters.
-
-  ## Test categories
-
-    - `build_operation_id/1` — Unique operation ID generation per route type
-    - `build_summary/1` — Human-readable summary text
-    - `build_description/1` — Detailed description per route type
-    - `build_tags/1` — Resource-based tag assignment
-    - `build_parameters/1` — Path and query parameter extraction
-    - `build_operation/2` — Complete operation object assembly
-  """
+  @moduledoc false
   use ExUnit.Case, async: true
 
   alias AshOaskit.RelationshipRoutes.RouteOperations

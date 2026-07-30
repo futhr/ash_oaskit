@@ -1,16 +1,5 @@
 defmodule AshOaskit.TagBuilderTest do
-  @moduledoc """
-  Tests for AshOaskit.TagBuilder module.
-
-  This test module verifies the tag generation functionality, including:
-
-  - Resource-based grouping (default)
-  - Domain-based grouping
-  - Custom tag configuration
-  - Tag descriptions and external docs
-  - Operation tag assignment
-  - Tag merging
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -102,7 +91,6 @@ defmodule AshOaskit.TagBuilderTest do
     test "handles missing resource gracefully" do
       route = %{}
 
-      # Should not raise, returns nil-safe result
       result = TagBuilder.operation_tag(route)
       assert is_binary(result) or is_nil(result)
     end
@@ -222,7 +210,6 @@ defmodule AshOaskit.TagBuilderTest do
     test "respects group_by: :domain option" do
       tags = TagBuilder.build_tags([AshOaskit.Test.Blog], group_by: :domain)
 
-      # Should have domain tag, not resource tags
       tag_names = Enum.map(tags, & &1[:name])
       assert "Blog" in tag_names
     end
@@ -392,7 +379,6 @@ defmodule AshOaskit.TagBuilderTest do
       unless Enum.empty?(tags) do
         tag = hd(tags)
         url = tag[:externalDocs][:url]
-        # Should be lowercase
         assert url == String.downcase(url)
       end
     end
@@ -470,7 +456,6 @@ defmodule AshOaskit.TagBuilderTest do
 
       tag = TagBuilder.operation_tag(route, group_by: :domain)
 
-      # Should try to get domain tag
       assert is_binary(tag) or is_nil(tag)
     end
 
@@ -493,7 +478,6 @@ defmodule AshOaskit.TagBuilderTest do
     test "get_default_grouping with real domain" do
       result = TagBuilder.get_default_grouping([AshOaskit.Test.Publishing])
 
-      # Should return :resource as default (domain not configured with group_by)
       assert result == :resource
     end
   end
@@ -534,7 +518,6 @@ defmodule AshOaskit.TagBuilderTest do
 
       merged = TagBuilder.merge_tags(generated, custom)
 
-      # Should have Blog (custom), Publishing (generated), Webhooks (custom)
       assert length(merged) == 3
 
       blog = Enum.find(merged, &(&1[:name] == "Blog"))

@@ -1,26 +1,5 @@
 defmodule AshOaskit.Router.PlugTest do
-  @moduledoc """
-  Tests for the AshOaskit.Router.Plug module.
-
-  This module tests the Plug that serves OpenAPI specifications via HTTP.
-  The plug is used internally by the `AshOaskit.Router` macro to handle
-  requests to the OpenAPI endpoint.
-
-  ## Test Categories
-
-  - **Initialization** - Verifies `init/1` passes options through unchanged
-  - **JSON serving** - Tests that specs are served as JSON with correct content type
-  - **YAML serving** - Tests YAML output when Ymlr is available
-  - **Format fallback** - Verifies unknown formats fall back to JSON
-  - **Error handling** - Tests 500 response when no domains are configured
-  - **Spec generation** - Tests the `generate_spec/1` helper function
-
-  ## How It Works
-
-  The plug reads configuration from `conn.private[:ash_oaskit]` which is set
-  by the Router macro. It generates the spec on each request using the configured
-  domains and version, then serializes to the requested format.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 

@@ -1,19 +1,5 @@
 defmodule AshOaskit.SecurityTest do
-  @moduledoc """
-  Tests for AshOaskit.Security module.
-
-  This test module verifies the generation of OpenAPI security schemes
-  and requirements, including:
-
-  - Bearer token authentication
-  - API key authentication
-  - Basic HTTP authentication
-  - OAuth2 authentication
-  - OpenID Connect authentication
-  - Security requirements (OR and AND relationships)
-  - Operation-level security
-  - Public vs authenticated routes
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -603,8 +589,6 @@ defmodule AshOaskit.SecurityTest do
   end
 
   describe "build_security_schemes tuple patterns" do
-    # Tests for tuple patterns with options to cover lines 369-371
-
     test "api_key with options tuple" do
       schemes = Security.build_security_schemes([{:api_key, key_name: "X-Custom-Key"}])
 
@@ -647,7 +631,6 @@ defmodule AshOaskit.SecurityTest do
     test "unknown scheme type is ignored" do
       schemes = Security.build_security_schemes([:bearer, :unknown_scheme])
 
-      # Should only have bearer, unknown is ignored
       assert Map.has_key?(schemes, "bearerAuth")
       refute Map.has_key?(schemes, "unknownAuth")
     end

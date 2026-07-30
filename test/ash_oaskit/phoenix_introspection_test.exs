@@ -1,25 +1,5 @@
 defmodule AshOaskit.PhoenixIntrospectionTest do
-  @moduledoc """
-  Tests for the AshOaskit.PhoenixIntrospection module.
-
-  This module tests the extraction of OpenAPI path information from Phoenix
-  routers that implement the `AshOaskit.OpenApiController` behaviour. It
-  bridges Phoenix routing with OpenAPI spec generation.
-
-  ## Test Categories
-
-  - **Route extraction** - Discovering routes from Phoenix router modules
-  - **Path conversion** - Converting Phoenix `:param` syntax to OpenAPI `{param}`
-  - **Parameter injection** - Auto-adding missing path parameters to operations
-  - **Operation merging** - Combining controller-defined operations with route metadata
-  - **Multi-segment paths** - Handling paths with multiple dynamic segments
-
-  ## Why These Tests Matter
-
-  Phoenix introspection allows users to define custom OpenAPI operations via
-  controllers while AshOaskit handles Ash-generated routes. Incorrect path
-  extraction or parameter injection breaks the combined spec.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -216,7 +196,6 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
     test "extracts routes from controllers implementing OpenApiController" do
       routes = PhoenixIntrospection.extract_routes(TestRouter)
 
-      # Should exclude TestPlainController (no behaviour)
       controllers = Enum.map(routes, & &1.controller)
       refute TestPlainController in controllers
       assert TestHealthController in controllers
@@ -448,7 +427,7 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
   end
 
   describe "multi-segment path parameter injection" do
-    defmodule CoverageTestController do
+    defmodule MultiSegmentController do
       @behaviour AshOaskit.OpenApiController
 
       @impl true
@@ -462,14 +441,14 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
       end
     end
 
-    defmodule CoverageTestRouter do
+    defmodule MultiSegmentRouter do
       @spec __routes__() :: [map()]
       def __routes__ do
         [
           %{
             path: "/items/:item_id/sub/:sub_id",
             verb: :get,
-            plug: CoverageTestController,
+            plug: MultiSegmentController,
             plug_opts: :show
           }
         ]
@@ -477,7 +456,7 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
     end
 
     test "auto-adds missing path parameters from multi-segment route path" do
-      routes = PhoenixIntrospection.extract_routes(CoverageTestRouter)
+      routes = PhoenixIntrospection.extract_routes(MultiSegmentRouter)
       route = hd(routes)
       params = route.operation[:parameters]
       names = Enum.map(params, & &1[:name])
@@ -491,7 +470,7 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
     test "converts multi-segment route to OpenAPI path format" do
       paths =
         PhoenixIntrospection.routes_to_paths(
-          PhoenixIntrospection.extract_routes(CoverageTestRouter)
+          PhoenixIntrospection.extract_routes(MultiSegmentRouter)
         )
 
       assert Map.has_key?(paths, "/items/{item_id}/sub/{sub_id}")

@@ -1,20 +1,5 @@
 defmodule AshOaskit.SchemaBuilder.PropertyBuildersTest do
-  @moduledoc """
-  Tests for the `AshOaskit.SchemaBuilder.PropertyBuilders` module.
-
-  Verifies the conversion of Ash resource properties (attributes, calculations,
-  aggregates) into OpenAPI JSON Schema property definitions.
-
-  ## Test categories
-
-    - `type_to_schema/1` — Ash type to JSON Schema mapping
-    - `normalize_type/1` — Ash.Type.* module to atom normalization
-    - `build_attribute_properties/2` — Attribute property generation
-    - `build_calculation_properties/2` — Calculation property generation (always nullable)
-    - `build_aggregate_properties/2` — Aggregate property generation by kind
-    - `aggregate_kind_to_schema/2` — Aggregate kind to schema mapping
-    - `maybe_add_description/2` — Optional description merging
-  """
+  @moduledoc false
   use ExUnit.Case, async: true
 
   alias AshOaskit.SchemaBuilder.PropertyBuilders

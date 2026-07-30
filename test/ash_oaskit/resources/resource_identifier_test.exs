@@ -1,17 +1,5 @@
 defmodule AshOaskit.ResourceIdentifierTest do
-  @moduledoc """
-  Tests for AshOaskit.ResourceIdentifier module.
-
-  This test module verifies the generation of JSON:API resource identifier
-  schemas for OpenAPI specifications, including:
-
-  - Basic resource identifier objects
-  - Nullable identifiers for to-one relationships
-  - To-many relationship arrays
-  - Complete relationship objects with links and meta
-  - Polymorphic identifiers
-  - OpenAPI 3.0 vs 3.1 nullable handling
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -95,14 +83,12 @@ defmodule AshOaskit.ResourceIdentifierTest do
     test "returns nullable schema when not required" do
       schema = ResourceIdentifier.build_to_one_linkage_schema("author", required: false)
 
-      # Should be nullable (oneOf with null in 3.1)
       assert Map.has_key?(schema, :oneOf) or Map.has_key?(schema, :nullable)
     end
 
     test "returns non-nullable schema when required" do
       schema = ResourceIdentifier.build_to_one_linkage_schema("author", required: true)
 
-      # Should not have nullable indicators
       refute Map.has_key?(schema, :oneOf)
       refute Map.has_key?(schema, :nullable)
       assert schema[:type] == :object
@@ -422,7 +408,6 @@ defmodule AshOaskit.ResourceIdentifierTest do
 
       rel_schema = ResourceIdentifier.build_relationships_object_schema(relationships)
 
-      # Should have all three relationships
       assert map_size(rel_schema[:properties]) == 3
 
       # Author is to-one (nullable by default)
@@ -458,7 +443,6 @@ defmodule AshOaskit.ResourceIdentifierTest do
       # A comment can belong to either a post or a page
       schema = ResourceIdentifier.build_polymorphic_identifier_schema(["posts", "pages"])
 
-      # Should accept either type
       assert "posts" in schema[:properties][:type][:enum]
       assert "pages" in schema[:properties][:type][:enum]
     end

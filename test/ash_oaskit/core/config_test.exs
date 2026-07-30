@@ -1,21 +1,5 @@
 defmodule AshOaskit.ConfigTest do
-  @moduledoc """
-  Comprehensive tests for the AshOaskit.Config module.
-
-  This test module verifies that configuration is correctly retrieved from
-  AshJsonApi DSL.
-
-  ## Test Categories
-
-  - **Resource Configuration** - Tests for resource-level settings like
-     type, derive_filter?, derive_sort?, default_fields, includes
-  - **Domain Configuration** - Tests for domain-level settings like
-     tag, prefix, group_by
-  - **Action Configuration** - Tests for retrieving resource actions
-  - **Attribute Configuration** - Tests for retrieving attributes and
-     relationships
-  - **Type Consistency** - Tests that return types are consistent
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -24,8 +8,6 @@ defmodule AshOaskit.ConfigTest do
   # Using the test_resources.ex fixtures (Post, Comment in SimpleDomain/Blog)
 
   describe "resource_type/1" do
-    # Tests for JSON:API type retrieval
-
     test "returns configured type for resource with json_api" do
       # Post has json_api configured with type "post"
       type = Config.resource_type(AshOaskit.Test.Post)
@@ -85,8 +67,6 @@ defmodule AshOaskit.ConfigTest do
   end
 
   describe "derive_filter?/1" do
-    # Tests for filter derivation setting
-
     test "returns boolean for Post" do
       result = Config.derive_filter?(AshOaskit.Test.Post)
 
@@ -112,8 +92,6 @@ defmodule AshOaskit.ConfigTest do
   end
 
   describe "derive_sort?/1" do
-    # Tests for sort derivation setting
-
     test "returns boolean for Post" do
       result = Config.derive_sort?(AshOaskit.Test.Post)
 
@@ -138,8 +116,6 @@ defmodule AshOaskit.ConfigTest do
   end
 
   describe "default_fields/1" do
-    # Tests for default fields configuration
-
     test "returns nil or list for Post" do
       result = Config.default_fields(AshOaskit.Test.Post)
 
@@ -159,8 +135,6 @@ defmodule AshOaskit.ConfigTest do
   end
 
   describe "includes/1" do
-    # Tests for includable relationships
-
     test "returns list for Post" do
       result = Config.includes(AshOaskit.Test.Post)
 
@@ -179,8 +153,6 @@ defmodule AshOaskit.ConfigTest do
   end
 
   describe "primary_key/1" do
-    # Tests for primary key retrieval
-
     test "returns list of primary key fields" do
       result = Config.primary_key(AshOaskit.Test.Post)
 
@@ -203,8 +175,6 @@ defmodule AshOaskit.ConfigTest do
   end
 
   describe "domain_tag/1" do
-    # Tests for domain tag configuration
-
     test "returns string or nil for Blog domain" do
       result = Config.domain_tag(AshOaskit.Test.Blog)
 
@@ -219,8 +189,6 @@ defmodule AshOaskit.ConfigTest do
   end
 
   describe "route_prefix/1" do
-    # Tests for domain route prefix
-
     test "returns string for Blog domain" do
       result = Config.route_prefix(AshOaskit.Test.Blog)
 
@@ -235,8 +203,6 @@ defmodule AshOaskit.ConfigTest do
   end
 
   describe "group_by/1" do
-    # Tests for operation grouping strategy
-
     test "returns atom for Blog domain" do
       result = Config.group_by(AshOaskit.Test.Blog)
 
@@ -251,8 +217,6 @@ defmodule AshOaskit.ConfigTest do
   end
 
   describe "domain_resources/1" do
-    # Tests for retrieving domain resources
-
     test "returns list of resources for Blog domain" do
       result = Config.domain_resources(AshOaskit.Test.Blog)
 
@@ -279,8 +243,6 @@ defmodule AshOaskit.ConfigTest do
   end
 
   describe "domain_routes/1" do
-    # Tests for retrieving domain routes
-
     test "returns list of routes for Blog domain" do
       result = Config.domain_routes(AshOaskit.Test.Blog)
 
@@ -308,8 +270,6 @@ defmodule AshOaskit.ConfigTest do
   end
 
   describe "resource_actions/1" do
-    # Tests for retrieving resource actions
-
     test "returns list of actions for Post" do
       result = Config.resource_actions(AshOaskit.Test.Post)
 
@@ -332,8 +292,6 @@ defmodule AshOaskit.ConfigTest do
   end
 
   describe "resource_action/2" do
-    # Tests for retrieving specific action
-
     test "returns action by name" do
       result = Config.resource_action(AshOaskit.Test.Post, :read)
 
@@ -356,8 +314,6 @@ defmodule AshOaskit.ConfigTest do
   end
 
   describe "public_attributes/1" do
-    # Tests for retrieving public attributes
-
     test "returns list of attributes for Post" do
       result = Config.public_attributes(AshOaskit.Test.Post)
 
@@ -390,8 +346,6 @@ defmodule AshOaskit.ConfigTest do
   end
 
   describe "relationships/1" do
-    # Tests for retrieving relationships
-
     test "returns list for Post" do
       result = Config.relationships(AshOaskit.Test.Post)
 
@@ -406,8 +360,6 @@ defmodule AshOaskit.ConfigTest do
   end
 
   describe "relationship/2" do
-    # Tests for retrieving specific relationship
-
     test "returns nil for non-existent relationship" do
       result = Config.relationship(AshOaskit.Test.Post, :nonexistent)
 

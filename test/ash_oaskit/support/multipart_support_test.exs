@@ -1,24 +1,5 @@
 defmodule AshOaskit.MultipartSupportTest do
-  @moduledoc """
-  Comprehensive tests for the AshOaskit.MultipartSupport module.
-
-  This test module verifies that file upload and multipart/form-data
-  request schemas are generated correctly, including:
-
-  - File upload detection in action arguments
-  - Multipart schema generation
-  - Mixed file and non-file argument handling
-  - Encoding specification generation
-  - Array of files support
-
-  ## Test Categories
-
-  - **File Detection** - Tests for identifying file type arguments
-  - **Schema Generation** - Tests for multipart schema structure
-  - **Request Body** - Tests for complete request body with multipart
-  - **Encoding** - Tests for encoding specifications
-  - **Edge Cases** - Tests for unusual scenarios
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -99,8 +80,6 @@ defmodule AshOaskit.MultipartSupportTest do
   end
 
   describe "has_file_upload?/1" do
-    # Tests for file upload detection
-
     test "returns true for action with file argument" do
       assert MultipartSupport.has_file_upload?(mock_action_with_file())
     end
@@ -134,8 +113,6 @@ defmodule AshOaskit.MultipartSupportTest do
   end
 
   describe "file_arguments/1" do
-    # Tests for extracting file arguments
-
     test "returns file arguments only" do
       args = MultipartSupport.file_arguments(mock_action_with_file())
 
@@ -166,8 +143,6 @@ defmodule AshOaskit.MultipartSupportTest do
   end
 
   describe "build_multipart_schema/2" do
-    # Tests for multipart schema generation
-
     test "generates object type schema" do
       schema = MultipartSupport.build_multipart_schema(mock_action_with_file(), [])
 
@@ -227,8 +202,6 @@ defmodule AshOaskit.MultipartSupportTest do
   end
 
   describe "build_multipart_schema/2 with array of files" do
-    # Tests for array of files handling
-
     test "generates array type for array of files" do
       schema = MultipartSupport.build_multipart_schema(mock_action_with_multiple_files(), [])
 
@@ -248,8 +221,6 @@ defmodule AshOaskit.MultipartSupportTest do
   end
 
   describe "build_request_body/3" do
-    # Tests for complete request body generation
-
     test "includes both JSON:API and multipart content types" do
       request_body =
         MultipartSupport.build_request_body(
@@ -311,8 +282,6 @@ defmodule AshOaskit.MultipartSupportTest do
   end
 
   describe "build_encoding/1" do
-    # Tests for encoding specification generation
-
     test "generates encoding for file arguments" do
       encoding = MultipartSupport.build_encoding(mock_action_with_file())
 
@@ -343,8 +312,6 @@ defmodule AshOaskit.MultipartSupportTest do
   end
 
   describe "build_multipart_content/2" do
-    # Tests for complete multipart content specification
-
     test "includes both schema and encoding" do
       content = MultipartSupport.build_multipart_content(mock_action_with_file(), [])
 
@@ -372,8 +339,6 @@ defmodule AshOaskit.MultipartSupportTest do
   end
 
   describe "edge cases" do
-    # Tests for edge cases and unusual scenarios
-
     test "handles action with only file arguments" do
       action = %{
         arguments: [

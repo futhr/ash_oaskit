@@ -1,10 +1,5 @@
 defmodule AshOaskit.Generators.SharedTest do
-  @moduledoc """
-  Tests for the AshOaskit.Generators.Shared module.
-
-  The Shared module delegates to `Generator.generate/2` as the single
-  entry point for spec generation.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 

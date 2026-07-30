@@ -1,34 +1,5 @@
 defmodule AshOaskit.ComponentsTest do
-  @moduledoc """
-  Tests for OpenAPI Components Object generation.
-
-  These tests verify that the OpenAPI Components Object is properly
-  structured according to the OpenAPI 3.1 specification.
-
-  Reference: https://spec.openapis.org/oas/v3.1.0#components-object
-
-  ## Test Coverage
-
-  - **schemas** - Resource attribute and response schemas
-  - **parameters** - Reusable query parameters
-  - **responses** - Standard error responses
-  - **Schema References** - Proper $ref usage for deduplication
-
-  ## Components Structure
-
-  ```
-  components:
-    schemas:
-      PostAttributes: {...}
-      PostResponse: {...}
-      Error: {...}
-    parameters:
-      filterParam: {...}
-      sortParam: {...}
-    responses:
-      NotFound: {...}
-  ```
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -46,7 +17,6 @@ defmodule AshOaskit.ComponentsTest do
 
       schemas = spec["components"]["schemas"]
 
-      # Should have at least some schemas from our test resources
       assert map_size(schemas) > 0
     end
 
@@ -156,7 +126,6 @@ defmodule AshOaskit.ComponentsTest do
 
       schemas = spec["components"]["schemas"] || %{}
 
-      # Should have schemas from both domains
       assert map_size(schemas) > 0
     end
 

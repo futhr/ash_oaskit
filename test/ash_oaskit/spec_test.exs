@@ -1,13 +1,5 @@
 defmodule AshOaskit.SpecTest do
-  @moduledoc """
-  Tests for spec modules defined with `use AshOaskit`.
-
-  Covers spec generation, option validation, persistent_term caching
-  (including the per-module and global kill switches, and
-  `cache_variant/0` keying), the `modify_spec/1` hook, and the deep
-  oaskit-alignment regression: generated specs must survive
-  `Oaskit.build_spec!/2` (Normalizer + JSV operation building).
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: false
 

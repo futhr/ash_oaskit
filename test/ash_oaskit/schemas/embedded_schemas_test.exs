@@ -1,62 +1,11 @@
 defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
-  @moduledoc """
-  Comprehensive tests for embedded resource schema generation.
-
-  These tests verify that ash_oaskit correctly generates OpenAPI schemas for
-  embedded Ash resources, including nested embedded types and cycle detection.
-
-  ## Embedded Resources Overview
-
-  Embedded resources are Ash resources with `data_layer: :embedded`. They are
-  stored inline within their parent resource rather than in a separate table.
-
-  ## Test Scenarios
-
-  ### Simple Embedded Resources
-  - Single-level embedding (Author has Profile)
-  - Embedded resource schema generation
-  - $ref references in parent schema
-
-  ### Nested Embedded Resources
-  - Multi-level embedding (Profile has Address)
-  - Recursive schema generation
-  - All levels generate proper schemas
-
-  ### Cycle Detection
-  - Self-referential embedded types
-  - Mutual references between embedded types
-  - Proper $ref generation to prevent infinite loops
-
-  ### Attribute Handling
-  - All embedded attributes included
-  - Type mapping for embedded attributes
-  - Constraints preserved
-  - Descriptions included
-  - Required fields detected
-
-  ## OpenAPI Version Differences
-
-  ### OpenAPI 3.0
-  - Nullable embedded fields use `nullable: true`
-
-  ### OpenAPI 3.1
-  - Nullable embedded fields use type array or oneOf
-
-  ## Test Resources
-
-  Tests use resources from `test/support/relationship_resources.ex`:
-  - `Address` - Simple embedded resource with address fields
-  - `Profile` - Embedded resource containing nested Address
-  - `Author` - Regular resource with embedded Profile attribute
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
   alias AshOaskit.SchemaBuilder
 
   describe "simple embedded resource detection" do
-    # Tests for detecting and generating schemas for embedded resources.
-
     test "embedded resource schema is generated" do
       builder =
         SchemaBuilder.add_resource_schemas(
@@ -124,8 +73,6 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
   end
 
   describe "nested embedded resources" do
-    # Tests for embedded resources that contain other embedded resources.
-
     test "nested embedded schema is generated" do
       builder =
         SchemaBuilder.add_resource_schemas(
@@ -182,7 +129,6 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
   end
 
   describe "embedded resource attributes" do
-    # Tests for attribute handling in embedded resources.
     # Embedded attribute VALUES come from TypeMapper (string keys).
 
     setup do
@@ -290,7 +236,6 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
         |> SchemaBuilder.add_resource_schemas(AshOaskit.Test.Author)
         |> SchemaBuilder.add_resource_schemas(AshOaskit.Test.Author)
 
-      # Should still only have one of each schema
       names = SchemaBuilder.schema_names(builder)
       assert Enum.count(names, &(&1 == "Profile")) == 1
       assert Enum.count(names, &(&1 == "Address")) == 1
@@ -298,8 +243,6 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
   end
 
   describe "embedded resources in OpenAPI 3.0" do
-    # Tests for OpenAPI 3.0 specific handling.
-
     test "nullable embedded fields use nullable: true" do
       builder =
         SchemaBuilder.add_resource_schemas(
@@ -317,8 +260,6 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
   end
 
   describe "embedded resources in OpenAPI 3.1" do
-    # Tests for OpenAPI 3.1 specific handling.
-
     test "nullable embedded fields use type array or oneOf" do
       builder =
         SchemaBuilder.add_resource_schemas(
@@ -456,8 +397,6 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
   end
 
   describe "edge cases" do
-    # Tests for edge cases in embedded resource handling.
-
     test "resource without embedded attributes works" do
       builder =
         SchemaBuilder.add_resource_schemas(
@@ -465,7 +404,6 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
           AshOaskit.Test.Comment
         )
 
-      # Should generate schema without embedded handling
       assert SchemaBuilder.has_schema?(builder, "CommentAttributes")
     end
 
@@ -493,7 +431,6 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
       address = SchemaBuilder.get_schema(builder, "Address")
 
       # Outer structure uses atom keys
-      # Should be a proper object schema
       assert address[:type] == :object
       assert is_map(address[:properties])
       assert map_size(address[:properties]) > 0

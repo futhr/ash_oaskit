@@ -1,17 +1,5 @@
 defmodule AshOaskit.IncludedResourcesTest do
-  @moduledoc """
-  Tests for AshOaskit.IncludedResources module.
-
-  This test module verifies the generation of JSON:API `included` array
-  schemas for OpenAPI specifications, including:
-
-  - Basic included array schema generation
-  - oneOf schemas for multiple resource types
-  - Discriminator support for better tooling
-  - Empty included arrays
-  - Include path resolution
-  - Response schema integration
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -570,7 +558,6 @@ defmodule AshOaskit.IncludedResourcesTest do
 
       schema = IncludedResources.build_included_schema_with_discriminator(type_mappings)
 
-      # Should have discriminator
       assert schema[:items][:discriminator][:propertyName] == "type"
 
       # Mapping should have all types

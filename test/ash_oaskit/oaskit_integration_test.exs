@@ -1,12 +1,5 @@
 defmodule AshOaskit.OaskitIntegrationTest do
-  @moduledoc """
-  Integration tests for serving spec modules through the oaskit stack.
-
-  Covers the `use AshOaskit.Router` spec-module mode (JSON serving via
-  `Oaskit.SpecController`, multi-version routes, Redoc UI, response
-  headers) in both Plug.Router and Phoenix.Router, plus the
-  `Oaskit.Plugs.SpecProvider` pipeline pattern.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 

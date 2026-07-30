@@ -1,17 +1,5 @@
 defmodule AshOaskit.ResponseMetaTest do
-  @moduledoc """
-  Tests for AshOaskit.ResponseMeta module.
-
-  This test module verifies the generation of JSON:API response meta schemas
-  for OpenAPI specifications, including:
-
-  - Pagination meta (count, page info)
-  - Resource meta (application-specific)
-  - Document-level meta
-  - JSON:API version object
-  - OpenAPI 3.0 vs 3.1 nullable handling
-  - Different pagination strategies (offset, keyset, both)
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -442,7 +430,6 @@ defmodule AshOaskit.ResponseMetaTest do
     test "PageInfo schema has pagination properties" do
       schemas = ResponseMeta.build_meta_component_schemas()
 
-      # Should have both offset and keyset properties
       assert Map.has_key?(schemas["PageInfo"][:properties], :offset)
       assert Map.has_key?(schemas["PageInfo"][:properties], :after)
     end

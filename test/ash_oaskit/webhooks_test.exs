@@ -1,35 +1,5 @@
 defmodule AshOaskit.WebhooksTest do
-  @moduledoc """
-  Tests for OpenAPI 3.1 Webhook support.
-
-  Webhooks are a new feature in OpenAPI 3.1, allowing APIs to describe
-  incoming requests that the API provider initiates (server-to-client).
-
-  Reference: https://spec.openapis.org/oas/v3.1.0#openapi-object
-  Reference: https://redocly.com/blog/document-webhooks-with-openapi
-
-  ## Webhook Structure
-
-  ```yaml
-  webhooks:
-    newUser:
-      post:
-        summary: New user created
-        requestBody:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        responses:
-          '200':
-            description: Webhook processed
-  ```
-
-  ## Webhooks vs Callbacks
-
-  - **Webhooks** - Top-level, standalone event notifications
-  - **Callbacks** - Operation-level, tied to specific API calls
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 

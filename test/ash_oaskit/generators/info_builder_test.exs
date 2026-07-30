@@ -1,16 +1,5 @@
 defmodule AshOaskit.Generators.InfoBuilderTest do
-  @moduledoc """
-  Tests for the `AshOaskit.Generators.InfoBuilder` module.
-
-  Verifies the generation of OpenAPI Info objects, server configurations,
-  and resource tags from Ash domains.
-
-  ## Test categories
-
-    - `build_info/1` — Info object with title, version, description, contact, license
-    - `build_servers/1` — Server array from URL strings and server objects
-    - `build_tags/1` — Tag generation from domain resources
-  """
+  @moduledoc false
   use ExUnit.Case, async: true
 
   alias AshOaskit.Generators.InfoBuilder

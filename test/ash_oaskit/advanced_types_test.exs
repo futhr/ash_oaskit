@@ -1,24 +1,5 @@
 defmodule AshOaskit.AdvancedTypesTest do
-  @moduledoc """
-  Comprehensive tests for advanced type support in AshOaskit.TypeMapper.
-
-  This test module verifies that advanced Ash types are correctly mapped
-  to their OpenAPI/JSON Schema representations, including:
-
-  - Union types (using anyOf)
-  - Struct types (object with properties)
-  - File types (binary format)
-  - Duration name types (string with enum)
-  - Custom types with json_schema/1 callback
-
-  ## Test Categories
-
-  - **Union Type Mapping** - Tests for anyOf schema generation
-  - **Struct Type Mapping** - Tests for object schema with properties
-  - **File Type Mapping** - Tests for binary file representation
-  - **Duration Type Mapping** - Tests for duration enum values
-  . **Custom Type Callback** - Tests for json_schema/1 support
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -36,8 +17,6 @@ defmodule AshOaskit.AdvancedTypesTest do
   end
 
   describe "file type mapping" do
-    # Tests for Ash.Type.File
-
     test "file type generates binary format string (3.1)" do
       attr = mock_attr(:file)
       schema = TypeMapper.to_json_schema_31(attr)
@@ -72,8 +51,6 @@ defmodule AshOaskit.AdvancedTypesTest do
   end
 
   describe "duration_name type mapping" do
-    # Tests for Ash.Type.DurationName
-
     test "duration_name generates string with enum (3.1)" do
       attr = mock_attr(:duration_name)
       schema = TypeMapper.to_json_schema_31(attr)
@@ -102,14 +79,11 @@ defmodule AshOaskit.AdvancedTypesTest do
   end
 
   describe "union type mapping" do
-    # Tests for union types using anyOf
-
     test "union type generates anyOf schema" do
       # Simulate a union type with explicit types tuple
       attr = mock_attr({:union, [text: [type: :string], number: [type: :integer]]})
       schema = TypeMapper.to_json_schema_31(attr)
 
-      # Should have anyOf
       assert Map.has_key?(schema, "anyOf") or Map.has_key?(schema, "type")
     end
 
@@ -136,8 +110,6 @@ defmodule AshOaskit.AdvancedTypesTest do
   end
 
   describe "struct type mapping" do
-    # Tests for struct types
-
     test "struct type generates object schema" do
       # Use a known struct type
       attr = mock_attr({:struct, Date})
@@ -174,8 +146,6 @@ defmodule AshOaskit.AdvancedTypesTest do
   end
 
   describe "array of advanced types" do
-    # Tests for arrays containing advanced types
-
     test "array of file type" do
       attr = mock_attr({:array, :file}, allow_nil?: false)
       schema = TypeMapper.to_json_schema_31(attr)
@@ -195,8 +165,6 @@ defmodule AshOaskit.AdvancedTypesTest do
   end
 
   describe "version compatibility" do
-    # Tests for OpenAPI 3.0 vs 3.1 compatibility
-
     test "file type valid in both versions" do
       attr = mock_attr(:file, allow_nil?: false)
 
@@ -219,8 +187,6 @@ defmodule AshOaskit.AdvancedTypesTest do
   end
 
   describe "edge cases" do
-    # Tests for edge cases
-
     test "handles nil type gracefully" do
       attr = mock_attr(nil)
       schema = TypeMapper.to_json_schema_31(attr)
@@ -264,8 +230,6 @@ defmodule AshOaskit.AdvancedTypesTest do
   end
 
   describe "constraint handling for advanced types" do
-    # Tests for constraint application on advanced types
-
     test "file type with description constraint" do
       attr = mock_attr(:file, description: "Upload your profile picture")
       schema = TypeMapper.to_json_schema_31(attr)

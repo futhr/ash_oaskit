@@ -1,36 +1,5 @@
 defmodule AshOaskit.IntegrationTest do
-  @moduledoc """
-  Integration tests for end-to-end OpenAPI spec generation.
-
-  These tests verify that complete, valid OpenAPI specifications
-  are generated from real Ash domains, and that the output can
-  be serialized to JSON/YAML without issues.
-
-  ## Test Coverage
-
-  - **Full Spec Generation** - Complete spec from Ash domains
-  - **JSON Serialization** - Encode/decode roundtrip
-  - **Spec Structure** - Required OpenAPI fields present
-  - **Multi-Domain** - Combining multiple domains
-
-  ## Integration Flow
-
-  ```
-  Ash Domain(s)
-       │
-       ▼
-  AshOaskit.spec/1
-       │
-       ▼
-  OpenAPI Spec (map)
-       │
-       ▼
-  Jason.encode!/1
-       │
-       ▼
-  Valid JSON String
-  ```
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: false
 
@@ -48,7 +17,6 @@ defmodule AshOaskit.IntegrationTest do
     test "spec is valid JSON that can be encoded and decoded" do
       spec = AshOaskit.spec(domains: [AshOaskit.Test.SimpleDomain])
 
-      # Should be able to encode to JSON and decode back
       json = Jason.encode!(spec)
       decoded = Jason.decode!(json)
 
@@ -58,7 +26,6 @@ defmodule AshOaskit.IntegrationTest do
       assert is_map(decoded["paths"])
       assert is_map(decoded["components"])
 
-      # Should be able to encode again without error
       assert {:ok, _} = Jason.encode(decoded)
     end
 
@@ -85,11 +52,9 @@ defmodule AshOaskit.IntegrationTest do
 
       schemas = spec["components"]["schemas"]
 
-      # Should have Post schemas
       assert Map.has_key?(schemas, "PostAttributes")
       assert Map.has_key?(schemas, "PostResponse")
 
-      # Should have Comment schemas
       assert Map.has_key?(schemas, "CommentAttributes")
       assert Map.has_key?(schemas, "CommentResponse")
     end
@@ -99,11 +64,9 @@ defmodule AshOaskit.IntegrationTest do
 
       post_attrs = spec["components"]["schemas"]["PostAttributes"]
 
-      # Should have properties from the Post resource
       props = post_attrs["properties"]
       assert is_map(props)
 
-      # Should include some of our test attributes
       assert Map.has_key?(props, "title")
       assert Map.has_key?(props, "body")
     end
@@ -255,7 +218,6 @@ defmodule AshOaskit.IntegrationTest do
 
       schemas = spec["components"]["schemas"]
 
-      # Should have schemas from both domains
       assert Map.has_key?(schemas, "PostAttributes")
       assert Map.has_key?(schemas, "CommentAttributes")
     end

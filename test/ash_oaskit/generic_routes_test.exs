@@ -1,13 +1,5 @@
 defmodule AshOaskit.GenericRoutesTest do
-  @moduledoc """
-  Tests for generic action routes (`route :method, "path", :action`).
-
-  Generic routes declare their HTTP method in the DSL and expose Ash
-  generic actions. Operations are derived from the action: query
-  parameters from `query_params` + action arguments, and the response
-  schema from the action's `returns` type (honoring `wrap_in_result?`),
-  mirroring how AshJsonApi serializes generic action results.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 

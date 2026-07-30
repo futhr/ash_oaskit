@@ -1,19 +1,5 @@
 defmodule AshOaskit.Generators.V31Test do
-  @moduledoc """
-  Tests for the AshOaskit.Generators.V31 module.
-
-  This module tests the OpenAPI 3.1 specification generator, which produces
-  specs compliant with the 3.1.x standard featuring full JSON Schema 2020-12
-  alignment. Key differences from 3.0 include type arrays for nullable fields
-  (`"type": ["string", "null"]`) and webhooks support.
-
-  ## Test Categories
-
-  - **Basic structure** - OpenAPI version, info, servers, paths, components
-  - **Option forwarding** - Title, API version, server configuration
-  - **Nullable handling** - 3.1-style type arrays for nullable fields
-  - **Domain integration** - Generating from Ash domain configurations
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -108,7 +94,6 @@ defmodule AshOaskit.Generators.V31Test do
 
       schemas = result[:components][:schemas]
       assert is_map(schemas)
-      # Should have Post and Comment schemas
       assert Map.has_key?(schemas, "PostAttributes") or map_size(schemas) > 0
     end
 
@@ -128,7 +113,6 @@ defmodule AshOaskit.Generators.V31Test do
 
       schemas = result[:components][:schemas]
 
-      # Should have *Attributes and *Response schemas for each resource
       attribute_schemas = Enum.filter(Map.keys(schemas), &String.ends_with?(&1, "Attributes"))
       response_schemas = Enum.filter(Map.keys(schemas), &String.ends_with?(&1, "Response"))
 
@@ -206,14 +190,12 @@ defmodule AshOaskit.Generators.V31Test do
     test "uses default title from config when not provided" do
       result = V31.generate([AshOaskit.Test.SimpleDomain], [])
 
-      # Should have some title (either from config or default)
       assert is_binary(result[:info][:title])
     end
 
     test "uses default api_version from config when not provided" do
       result = V31.generate([AshOaskit.Test.SimpleDomain], [])
 
-      # Should have some version (either from config or default)
       assert is_binary(result[:info][:version])
     end
 

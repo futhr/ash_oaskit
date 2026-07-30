@@ -1,27 +1,5 @@
 defmodule AshOaskit.OpenAPI30ComplianceTest do
-  @moduledoc """
-  OpenAPI 3.0.3 Specification Compliance Tests.
-
-  These tests verify that ash_oaskit generates specs compliant with the
-  OpenAPI 3.0.3 specification, focusing on the differences from 3.1.
-
-  Reference: https://spec.openapis.org/oas/v3.0.3
-
-  ## Key 3.0 Features Tested
-
-  - **Nullable flag** - `nullable: true` instead of type arrays
-  - **Type is always a string** - Never an array
-  - **No JSON Schema 2020-12** - Draft 5 subset only
-  - **Version string** - Must be "3.0.3"
-
-  ## 3.0 vs 3.1 Differences
-
-  | Feature | 3.0 | 3.1 |
-  |---------|-----|-----|
-  | Nullable | `nullable: true` | `type: [T, "null"]` |
-  | Schema | OpenAPI subset | JSON Schema 2020-12 |
-  | exclusiveMin | boolean | numeric |
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 

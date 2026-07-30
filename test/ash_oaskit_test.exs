@@ -1,24 +1,5 @@
 defmodule AshOaskitTest do
-  @moduledoc """
-  Tests for the main AshOaskit module.
-
-  This module tests the public API of AshOaskit, which provides the primary
-  entry points for generating OpenAPI specifications from Ash domains.
-
-  ## Test Coverage
-
-  The tests verify:
-
-  - `spec/1` generates OpenAPI 3.1 specs by default
-  - `spec_30/1` generates OpenAPI 3.0 specs
-  - `spec_31/1` generates OpenAPI 3.1 specs
-  - Options are properly passed through to the generator
-  - The generated specs have the correct structure
-
-  ## Test Fixtures
-
-  Uses `AshOaskit.Test.Blog` as a real Ash domain for testing.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
   doctest AshOaskit

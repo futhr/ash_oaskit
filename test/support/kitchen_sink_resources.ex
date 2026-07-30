@@ -1,27 +1,5 @@
-# KitchenSink test resources for edge-case coverage
-#
-# These resources exercise types and features NOT covered by the existing
-# test_resources.ex and relationship_resources.ex, specifically:
-#
-# - Deeply nested embedded resources (3+ levels)
-# - Array of embedded resources
-# - Union types as attributes (via Ash.Type.NewType)
-# - Typed structs (Ash.TypedStruct), direct and as discriminated-union variants
-# - Read-only attributes (writable?: false) — excluded from input schemas
-# - DurationName type in a real resource
-# - Custom type with json_schema/1 callback in a real resource
-
-# ===========================================================================
-# Custom Union Type (Ash.Type.NewType-style with constraints/0)
-# ===========================================================================
-
 defmodule AshOaskit.Test.ContentBlock do
-  @moduledoc """
-  Union type representing different content block types.
-
-  Exercises the `{:union, types}` path in TypeMapper when used as
-  an attribute type in a real resource.
-  """
+  @moduledoc false
   use Ash.Type.NewType,
     subtype_of: :union,
     constraints: [
@@ -45,15 +23,11 @@ defmodule AshOaskit.Test.ContentBlock do
     ]
 end
 
-# ===========================================================================
 # Typed Structs and a Discriminated Union of them (regression: these
 # previously degraded to "string" schemas)
-# ===========================================================================
 
 defmodule AshOaskit.Test.Person do
-  @moduledoc """
-  TypedStruct for Person variant.
-  """
+  @moduledoc false
 
   use Ash.TypedStruct
 
@@ -66,9 +40,7 @@ defmodule AshOaskit.Test.Person do
 end
 
 defmodule AshOaskit.Test.Company do
-  @moduledoc """
-  TypedStruct for Company variant.
-  """
+  @moduledoc false
 
   use Ash.TypedStruct
 
@@ -81,9 +53,7 @@ defmodule AshOaskit.Test.Company do
 end
 
 defmodule AshOaskit.Test.Actor do
-  @moduledoc """
-  Union type for Actor (person or company) with discriminator.
-  """
+  @moduledoc false
 
   use Ash.Type.NewType,
     subtype_of: :union,
@@ -103,16 +73,10 @@ defmodule AshOaskit.Test.Actor do
     ]
 end
 
-# ===========================================================================
 # Custom type with json_schema/1 callback
-# ===========================================================================
 
 defmodule AshOaskit.Test.Coordinate do
-  @moduledoc """
-  Custom type that implements json_schema/1 for OpenAPI generation.
-
-  Returns an object schema with latitude/longitude properties.
-  """
+  @moduledoc false
   use Ash.Type
 
   @impl Ash.Type
@@ -143,9 +107,7 @@ defmodule AshOaskit.Test.Coordinate do
   end
 end
 
-# ===========================================================================
 # Deeply Nested Embedded Resources (3+ levels)
-# ===========================================================================
 
 defmodule AshOaskit.Test.GeoPoint do
   @moduledoc "Level 3: deepest embedded resource (lat/lng)."
@@ -207,24 +169,10 @@ defmodule AshOaskit.Test.Venue do
   end
 end
 
-# ===========================================================================
 # Main KitchenSink Resource
-# ===========================================================================
 
 defmodule AshOaskit.Test.KitchenSink do
-  @moduledoc """
-  Resource that exercises every edge-case type and attribute option.
-
-  Covers gaps identified in test resource analysis:
-  - Union type attribute (ContentBlock)
-  - Typed struct attribute (Person) and a discriminated union of typed
-    structs (Actor: Person or Company)
-  - Custom type with json_schema/1 (Coordinate)
-  - Deeply nested embedded (Venue → Location → GeoPoint, 3 levels)
-  - Array of embedded resources
-  - Read-only attribute (slug) — should appear in output, NOT in input
-  - DurationName type attribute
-  """
+  @moduledoc false
   use Ash.Resource,
     domain: AshOaskit.Test.Lab,
     data_layer: Ash.DataLayer.Ets,
@@ -317,14 +265,10 @@ defmodule AshOaskit.Test.KitchenSink do
   end
 end
 
-# ===========================================================================
 # Domain
-# ===========================================================================
 
 defmodule AshOaskit.Test.Lab do
-  @moduledoc """
-  Domain for KitchenSink edge-case testing.
-  """
+  @moduledoc false
   use Ash.Domain,
     validate_config_inclusion?: false,
     extensions: [AshJsonApi.Domain]

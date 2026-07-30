@@ -1,29 +1,5 @@
 defmodule AshOaskit.RouteResponsesTest do
-  @moduledoc """
-  Tests for the AshOaskit.RelationshipRoutes.RouteResponses module.
-
-  This module tests the generation of OpenAPI response schemas for JSON:API
-  relationship endpoints, including resource identifier schemas, linkage
-  schemas, and full response wrappers.
-
-  ## Test Categories
-
-  - **Resource identifiers** - Type/id schema generation with enum constraints
-  - **Linkage schemas** - To-one (nullable) and to-many (array) linkage
-  - **Response schemas** - Full response objects with data, links, and meta
-  - **Related responses** - Schemas for related resource endpoints
-  - **Request bodies** - Input schemas for relationship modification
-  - **Cardinality detection** - belongs_to/has_one vs has_many/many_to_many
-  - **Version differences** - OpenAPI 3.0 nullable flag vs 3.1 type arrays
-  - **Route integration** - Building responses from actual route definitions
-
-  ## Why These Tests Matter
-
-  Relationship endpoints are complex in JSON:API. The response format varies
-  by cardinality (to-one vs to-many), operation type (read vs modify), and
-  OpenAPI version (3.0 nullable vs 3.1 type arrays). These tests ensure all
-  combinations produce valid schemas.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 

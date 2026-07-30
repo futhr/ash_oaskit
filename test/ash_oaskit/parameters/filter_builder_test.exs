@@ -1,57 +1,11 @@
 defmodule AshOaskit.FilterBuilderTest do
-  @moduledoc """
-  Comprehensive tests for the FilterBuilder module.
-
-  The FilterBuilder generates OpenAPI schemas for JSON:API filter parameters,
-  supporting all standard filter operators and boolean logic.
-
-  ## Test Categories
-
-  ### Parameter Structure
-  - Query parameter configuration (name, location, style)
-  - deepObject style with explode
-  - Schema structure
-
-  ### Attribute Filters
-  - Filterable attribute detection
-  - Private attribute exclusion
-  - Type-specific operator availability
-
-  ### Operator Schemas
-  - Equality operators (eq, ne)
-  - Comparison operators (gt, gte, lt, lte)
-  - Set operators (in, not_in)
-  - String operators (contains, starts_with, ends_with, etc.)
-  - Null check (is_nil)
-  - Array operators (has_any, has_all)
-
-  ### Boolean Operators
-  - and (all conditions)
-  - or (any condition)
-  - not (negation)
-
-  ### Type Mapping
-  - String types -> string operators
-  - Numeric types -> comparison operators
-  - Boolean types -> equality only
-  - Array types -> array operators
-  - Date/time types -> comparison operators
-
-  ## Test Resources
-
-  Tests use resources from test support files:
-  - `AshOaskit.Test.Post` - Various attribute types
-  - `AshOaskit.Test.Author` - Resource with relationships
-  - `AshOaskit.Test.Article` - Resource with multiple types
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
   alias AshOaskit.FilterBuilder
 
   describe "build_filter_parameter/2" do
-    # Tests for the complete filter parameter structure.
-
     test "returns parameter with correct name" do
       param = FilterBuilder.build_filter_parameter(AshOaskit.Test.Post)
 
@@ -98,8 +52,6 @@ defmodule AshOaskit.FilterBuilderTest do
   end
 
   describe "build_filter_schema/2" do
-    # Tests for the filter schema structure.
-
     test "returns object type" do
       schema = FilterBuilder.build_filter_schema(AshOaskit.Test.Post)
 
@@ -129,8 +81,6 @@ defmodule AshOaskit.FilterBuilderTest do
   end
 
   describe "build_attribute_filters/1" do
-    # Tests for attribute filter generation.
-
     test "includes public attributes" do
       filters = FilterBuilder.build_attribute_filters(AshOaskit.Test.Post)
 
@@ -160,8 +110,6 @@ defmodule AshOaskit.FilterBuilderTest do
   end
 
   describe "build_attribute_filter_schema/1" do
-    # Tests for individual attribute filter schemas.
-
     test "allows direct value" do
       attr = %{name: :title, type: :string}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
@@ -184,8 +132,6 @@ defmodule AshOaskit.FilterBuilderTest do
   end
 
   describe "string type operators" do
-    # Tests for string-specific filter operators.
-
     setup do
       attr = %{name: :title, type: :string}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
@@ -233,8 +179,6 @@ defmodule AshOaskit.FilterBuilderTest do
   end
 
   describe "numeric type operators" do
-    # Tests for numeric-specific filter operators.
-
     setup do
       attr = %{name: :count, type: :integer}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
@@ -261,8 +205,6 @@ defmodule AshOaskit.FilterBuilderTest do
   end
 
   describe "boolean type operators" do
-    # Tests for boolean-specific filter operators.
-
     setup do
       attr = %{name: :active, type: :boolean}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
@@ -283,8 +225,6 @@ defmodule AshOaskit.FilterBuilderTest do
   end
 
   describe "date/time type operators" do
-    # Tests for date/time-specific filter operators.
-
     setup do
       attr = %{name: :created_at, type: :utc_datetime}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
@@ -305,8 +245,6 @@ defmodule AshOaskit.FilterBuilderTest do
   end
 
   describe "array type operators" do
-    # Tests for array-specific filter operators.
-
     setup do
       attr = %{name: :tags, type: {:array, :string}}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
@@ -330,8 +268,6 @@ defmodule AshOaskit.FilterBuilderTest do
   end
 
   describe "boolean filter operators (and/or/not)" do
-    # Tests for logical filter operators.
-
     test "and operator is array of objects" do
       schema = FilterBuilder.build_filter_schema(AshOaskit.Test.Post)
 
@@ -364,8 +300,6 @@ defmodule AshOaskit.FilterBuilderTest do
   end
 
   describe "type mapping" do
-    # Tests for correct JSON Schema type mapping.
-
     test "maps Ash.Type.String" do
       attr = %{name: :name, type: Ash.Type.String}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
@@ -416,8 +350,6 @@ defmodule AshOaskit.FilterBuilderTest do
   end
 
   describe "edge cases" do
-    # Tests for edge cases and error handling.
-
     test "handles resource with minimal attributes" do
       param = FilterBuilder.build_filter_parameter(AshOaskit.Test.Comment)
 
@@ -429,7 +361,6 @@ defmodule AshOaskit.FilterBuilderTest do
       attr = %{name: :unknown, type: :unknown_type}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
-      # Should default to string
       direct = Enum.find(schema.oneOf, &(&1.type == :string))
       assert direct != nil
     end
@@ -439,7 +370,6 @@ defmodule AshOaskit.FilterBuilderTest do
       attr = %{name: :weird, type: {:custom, "something"}}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
-      # Should default to string type
       direct = Enum.find(schema.oneOf, &(&1.type == :string))
       assert direct != nil
     end
@@ -459,7 +389,6 @@ defmodule AshOaskit.FilterBuilderTest do
       attr = %{name: :nested, type: {:array, {:array, :string}}}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
-      # Should produce array schema
       direct = Enum.find(schema.oneOf, &(&1.type == :array))
       assert direct != nil
       assert direct.items.type == :array
@@ -470,7 +399,6 @@ defmodule AshOaskit.FilterBuilderTest do
       attr = %{name: :num, type: 123}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
-      # Should fall back to string
       direct = Enum.find(schema.oneOf, &(&1.type == :string))
       assert direct != nil
     end

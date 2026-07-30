@@ -1,29 +1,5 @@
 defmodule AshOaskit.RouterTest do
-  @moduledoc """
-  Tests for the `AshOaskit.Router` macro.
-
-  Exercises the compile-time route generation and runtime spec serving provided
-  by `use AshOaskit.Router`. Three inline test routers cover the main
-  configuration axes:
-
-  - `TestRouter` — default options (both 3.0 and 3.1, JSON only)
-  - `TestRouterWithYaml` — YAML format enabled alongside JSON
-  - `TestRouterSingleVersion` — restricted to a single OpenAPI version
-
-  ## Test Categories
-
-  - **Default route** — verifies the base path (`/openapi.json`) returns a valid
-    spec with the correct default version, content type, and info fields
-  - **Version-specific routes** — ensures `/openapi/3.0.json` and `/openapi/3.1.json`
-    each return the expected OpenAPI version string
-  - **Nullable handling** — confirms that 3.0 uses `nullable: true` while 3.1 uses
-    type arrays for nullable fields
-  - **Single version configuration** — validates that unconfigured versions return 404
-  - **Error handling** — covers the empty-domains guard and unknown-format fallback in
-    `AshOaskit.Router.Plug`
-  - **YAML format** — checks YAML serving when the `:yaml` format is enabled
-    (gracefully degrades if the `Ymlr` dependency is absent)
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -222,7 +198,6 @@ defmodule AshOaskit.RouterTest do
 
       if conn.status == 200 do
         content_type = conn |> get_resp_header("content-type") |> hd()
-        # Should be YAML if Ymlr is available, JSON otherwise
         assert content_type =~ "yaml" or content_type =~ "json"
       end
     end

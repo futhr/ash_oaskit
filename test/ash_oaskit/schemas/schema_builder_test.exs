@@ -1,61 +1,5 @@
 defmodule AshOaskit.SchemaBuilderTest do
-  @moduledoc """
-  Comprehensive tests for the SchemaBuilder module.
-
-  The SchemaBuilder provides the core infrastructure for generating OpenAPI
-  schemas from Ash resources. These tests verify:
-
-  ## Test Categories
-
-  ### Builder Lifecycle
-  - Creating new builders with default and custom options
-  - Version configuration (3.0 vs 3.1)
-
-  ### Schema Management
-  - Adding schemas to the builder
-  - Checking for schema existence
-  - Getting schemas by name
-  - Listing all schema names
-  - Schema count tracking
-  - Schema deduplication (first definition wins)
-
-  ### Cycle Detection
-  - Marking types as seen
-  - Checking if types have been seen
-  - Separate tracking for input vs output schemas
-  - Preventing infinite recursion in self-referential types
-
-  ### Resource Schema Generation
-  - Attributes schema generation
-  - Response schema generation with JSON:API envelope
-  - Relationships schema generation
-  - Input schemas (create vs update with different required fields)
-
-  ### Relationship Handling
-  - To-one relationships (belongs_to, has_one)
-  - To-many relationships (has_many, many_to_many)
-  - Resource identifier schemas
-  - Relationship data and links
-
-  ### Edge Cases
-  - Resources without relationships
-  - Resources without writable attributes
-  - Private attributes (excluded)
-  - Generated attributes (excluded from input)
-  - Default values affecting required fields
-
-  ## Test Resources
-
-  Tests use resources defined in `test/support/test_resources.ex`:
-  - `AshOaskit.Test.Post` - Comprehensive attribute types
-  - `AshOaskit.Test.Comment` - Basic resource
-  - Additional test resources defined inline for specific scenarios
-
-  ## Coverage Goals
-
-  These tests aim for 100% code coverage of the SchemaBuilder module,
-  including all public functions, private helpers, and edge cases.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
   doctest AshOaskit.SchemaBuilder
@@ -63,8 +7,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   alias AshOaskit.SchemaBuilder
 
   describe "new/1" do
-    # Tests for SchemaBuilder initialization.
-
     test "creates builder with default version 3.1" do
       builder = SchemaBuilder.new()
 
@@ -100,8 +42,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "add_schema/3" do
-    # Tests for adding schemas to the builder.
-
     test "adds a schema to the builder" do
       builder = SchemaBuilder.new()
       schema = %{type: :object, properties: %{}}
@@ -164,8 +104,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "has_schema?/2" do
-    # Tests for checking schema existence.
-
     test "returns false for non-existent schema" do
       builder = SchemaBuilder.new()
 
@@ -188,8 +126,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "get_schema/2" do
-    # Tests for retrieving schemas by name.
-
     test "returns nil for non-existent schema" do
       builder = SchemaBuilder.new()
 
@@ -206,8 +142,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "schema_names/1" do
-    # Tests for listing all schema names.
-
     test "returns empty list for new builder" do
       builder = SchemaBuilder.new()
 
@@ -229,8 +163,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "schema_count/1" do
-    # Tests for counting schemas.
-
     test "returns 0 for new builder" do
       builder = SchemaBuilder.new()
 
@@ -258,8 +190,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "mark_seen/2 and seen?/2" do
-    # Tests for output schema cycle detection.
-
     test "type is not seen initially" do
       builder = SchemaBuilder.new()
 
@@ -297,8 +227,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "mark_input_seen/2 and input_seen?/2" do
-    # Tests for input schema cycle detection (separate from output).
-
     test "input type is not seen initially" do
       builder = SchemaBuilder.new()
 
@@ -328,8 +256,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "to_components/1" do
-    # Tests for converting builder to OpenAPI components.
-
     test "returns components structure with empty schemas" do
       builder = SchemaBuilder.new()
       components = SchemaBuilder.to_components(builder)
@@ -366,8 +292,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "version/1" do
-    # Tests for getting builder version.
-
     test "returns version from builder" do
       builder_31 = SchemaBuilder.new(version: "3.1")
       builder_30 = SchemaBuilder.new(version: "3.0")
@@ -378,8 +302,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "resource_schema_name/1" do
-    # Tests for generating schema names from resource modules.
-
     test "extracts last module segment" do
       assert SchemaBuilder.resource_schema_name(MyApp.Blog.Post) == "Post"
       assert SchemaBuilder.resource_schema_name(MyApp.Comment) == "Comment"
@@ -392,7 +314,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "add_resource_schemas/2 with Post resource" do
-    # Tests for generating schemas from the Post test resource.
     # Attribute property values come from TypeMapper (string keys).
 
     setup do
@@ -466,7 +387,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "add_resource_schemas/2 with version 3.0" do
-    # Tests for OpenAPI 3.0 specific schema generation.
     # Attribute values from TypeMapper use string keys.
 
     test "uses nullable: true for nullable fields" do
@@ -482,7 +402,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "add_resource_schemas/2 with version 3.1" do
-    # Tests for OpenAPI 3.1 specific schema generation.
     # Attribute values from TypeMapper use string keys.
 
     test "uses type array for nullable fields" do
@@ -499,8 +418,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "required fields in schemas" do
-    # Tests for required field detection in different schema types.
-
     test "attributes schema includes required for non-nullable fields" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Post)
 
@@ -533,8 +450,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "add_resource_schemas/2 with multiple resources" do
-    # Tests for generating schemas from multiple resources.
-
     test "generates schemas for all resources" do
       builder =
         SchemaBuilder.new()
@@ -562,8 +477,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "edge cases" do
-    # Tests for various edge cases and error conditions.
-
     test "handles resource with minimal attributes" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Comment)
 
@@ -578,7 +491,6 @@ defmodule AshOaskit.SchemaBuilderTest do
         |> SchemaBuilder.add_resource_schemas(AshOaskit.Test.Post)
         |> SchemaBuilder.add_resource_schemas(AshOaskit.Test.Post)
 
-      # Should only have one set of schemas
       names = SchemaBuilder.schema_names(builder)
       post_schemas = Enum.filter(names, &String.starts_with?(&1, "Post"))
 
@@ -666,7 +578,6 @@ defmodule AshOaskit.SchemaBuilderTest do
     test "generates related resource schemas" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Article)
 
-      # Should also have Author schemas since Article belongs_to Author
       assert SchemaBuilder.has_schema?(builder, "AuthorAttributes")
       assert SchemaBuilder.has_schema?(builder, "AuthorResponse")
     end
@@ -695,7 +606,6 @@ defmodule AshOaskit.SchemaBuilderTest do
       schema = SchemaBuilder.get_schema(builder, "AuthorAttributes")
       full_name = schema[:properties][:full_name]
 
-      # Should be nullable for 3.1 - PropertyBuilders returns atom keys
       assert :null in List.wrap(full_name[:type])
     end
 
@@ -741,7 +651,6 @@ defmodule AshOaskit.SchemaBuilderTest do
       schema = SchemaBuilder.get_schema(builder, "AuthorAttributes")
       total_articles = schema[:properties][:total_articles]
 
-      # Should have nullable: true for 3.0 - PropertyBuilders returns atom keys
       assert total_articles[:nullable] == true
     end
 
@@ -813,7 +722,6 @@ defmodule AshOaskit.SchemaBuilderTest do
     test "handles self-referential resources without infinite loop" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Category)
 
-      # Should complete without error
       assert SchemaBuilder.has_schema?(builder, "CategoryAttributes")
       assert SchemaBuilder.has_schema?(builder, "CategoryResponse")
     end
@@ -837,7 +745,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "type mapping integration" do
-    # Tests for verifying TypeMapper integration in schema building.
     # Attribute values come from TypeMapper (string keys).
 
     test "maps string type correctly" do
@@ -918,7 +825,6 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "aggregate kind schemas" do
-    # Tests for different aggregate kinds to cover dynamic_aggregate_schema branches.
     # Aggregate values come from PropertyBuilders (atom keys).
 
     test "first aggregate type" do
@@ -977,15 +883,10 @@ defmodule AshOaskit.SchemaBuilderTest do
     end
   end
 
-  describe "coverage edge cases" do
-    # Tests to cover remaining uncovered branches
-
+  describe "fallback behavior" do
     test "handles resource with NonExistentModule gracefully" do
-      # This tests the rescue branches in various functions
       builder = SchemaBuilder.new()
 
-      # Attempting to get json api type for non-existent module
-      # Should not crash, rescue branch returns default
       builder = SchemaBuilder.add_resource_schemas(builder, AshOaskit.Test.NoTypeResource)
 
       assert SchemaBuilder.has_schema?(builder, "NoTypeResourceAttributes")
