@@ -1,30 +1,5 @@
 defmodule AshOaskit.SortBuilderTest do
-  @moduledoc """
-  Comprehensive tests for the AshOaskit.SortBuilder module.
-
-  This test module verifies that sort parameter schemas are generated correctly
-  for Ash resources, including handling of:
-
-  - Sortable attributes (public, non-private fields)
-  - Sortable calculations (calculations without required arguments)
-  - Sortable aggregates (all public aggregates)
-  - Sort direction prefixes (ascending/descending)
-  - Configuration options (derive_sort? setting)
-  - OpenAPI 3.0 vs 3.1 format compatibility
-
-  ## Test Categories
-
-  1. **Basic Parameter Generation** - Tests that sort parameters are generated
-     with correct structure and metadata
-
-  2. **Field Discovery** - Tests that sortable fields are correctly identified
-     from attributes, calculations, and aggregates
-
-  3. **Schema Formats** - Tests different schema formats (string, enum, array)
-
-  4. **Edge Cases** - Tests resources with no sortable fields, all private
-     fields, etc.
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -33,8 +8,6 @@ defmodule AshOaskit.SortBuilderTest do
   # Using the test_resources.ex test fixtures (Post, Comment in SimpleDomain/Blog)
 
   describe "build_sort_parameter/2" do
-    # Tests for basic sort parameter generation
-
     test "generates sort parameter for resource with sortable fields" do
       result = SortBuilder.build_sort_parameter(AshOaskit.Test.Post)
 
@@ -80,8 +53,6 @@ defmodule AshOaskit.SortBuilderTest do
   end
 
   describe "get_sortable_fields/1" do
-    # Tests for field discovery from resources
-
     test "returns sortable attribute names for Post" do
       fields = SortBuilder.get_sortable_fields(AshOaskit.Test.Post)
 
@@ -126,6 +97,14 @@ defmodule AshOaskit.SortBuilderTest do
       assert :total_articles in fields
     end
 
+    test "excludes fields marked as non-sortable" do
+      fields = SortBuilder.get_sortable_fields(AshOaskit.Test.Author)
+
+      refute :external_label in fields
+      refute :unsortable_name in fields
+      refute :unsortable_article_count in fields
+    end
+
     test "returns sortable fields for Comment" do
       fields = SortBuilder.get_sortable_fields(AshOaskit.Test.Comment)
 
@@ -150,8 +129,6 @@ defmodule AshOaskit.SortBuilderTest do
   end
 
   describe "build_sort_schema/2" do
-    # Tests for sort schema object generation
-
     test "generates string type schema" do
       schema = SortBuilder.build_sort_schema([:title, :created_at], [])
 
@@ -197,8 +174,6 @@ defmodule AshOaskit.SortBuilderTest do
   end
 
   describe "build_sort_enum_schema/2" do
-    # Tests for enum-based sort schema generation
-
     test "generates enum with ascending and descending variants" do
       schema = SortBuilder.build_sort_enum_schema([:title], [])
 
@@ -248,8 +223,6 @@ defmodule AshOaskit.SortBuilderTest do
   end
 
   describe "build_sort_array_schema/2" do
-    # Tests for array-based sort schema generation
-
     test "generates array type schema" do
       schema = SortBuilder.build_sort_array_schema([:title], [])
 
@@ -283,8 +256,6 @@ defmodule AshOaskit.SortBuilderTest do
   end
 
   describe "version compatibility" do
-    # Tests for OpenAPI 3.0 vs 3.1 compatibility
-
     test "version 3.1 option generates valid schema" do
       result = SortBuilder.build_sort_parameter(AshOaskit.Test.Post, version: "3.1")
 
@@ -308,12 +279,9 @@ defmodule AshOaskit.SortBuilderTest do
   end
 
   describe "edge cases" do
-    # Tests for edge cases and unusual scenarios
-
     test "handles resource name extraction" do
       result = SortBuilder.build_sort_parameter(AshOaskit.Test.Post)
 
-      # Should use "Post" not full module path
       assert result.description =~ "Post"
       refute result.description =~ "AshOaskit.Test"
     end
@@ -355,11 +323,10 @@ defmodule AshOaskit.SortBuilderTest do
       assert :full_name in fields or :article_count in fields
     end
 
-    test "includes calculations regardless of argument optionality" do
-      # Ash argument structs always have a :default key, so argument_optional?
-      # returns true for all arguments in practice
+    test "excludes calculations with required arguments" do
       fields = SortBuilder.get_sortable_fields(AshOaskit.Test.Author)
-      assert :greeting in fields
+
+      refute :greeting in fields
       assert :formal_greeting in fields
     end
   end
@@ -389,8 +356,6 @@ defmodule AshOaskit.SortBuilderTest do
   end
 
   describe "integration with generators" do
-    # Tests for integration with V30 and V31 generators
-
     test "parameter structure matches OpenAPI parameter object spec" do
       result = SortBuilder.build_sort_parameter(AshOaskit.Test.Post)
 

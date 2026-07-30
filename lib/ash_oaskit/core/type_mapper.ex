@@ -69,6 +69,11 @@ defmodule AshOaskit.TypeMapper do
   | `:max` | `maximum` |
   | `:match` (Regex) | `pattern` |
   | `:one_of` | `enum` |
+  | array `:min_length` | `minItems` |
+  | array `:max_length` | `maxItems` |
+  | array `:items` | Constraints applied to `items` |
+  | array `:nil_items?` | Nullable `items` schema |
+  | UUIDv7 `:strict?` | Version 7 UUID pattern |
 
   ## Additional Schema Properties
 
@@ -81,9 +86,13 @@ defmodule AshOaskit.TypeMapper do
   # OpenAPI 3.1 schemas can have "type" as either a string or list of strings.
   @dialyzer {:nowarn_function, make_nullable_31: 1}
 
+  import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
+
   alias Ash.Type.NewType
 
   require Logger
+
+  @uuid_v7_pattern "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
 
   @doc """
   Convert an Ash attribute to a JSON Schema for OpenAPI 3.1.
@@ -108,7 +117,7 @@ defmodule AshOaskit.TypeMapper do
   """
   @spec to_json_schema_31(map()) :: map()
   def to_json_schema_31(attr) do
-    base_schema = ash_type_to_base_schema(resolve_type(attr))
+    base_schema = ash_type_to_base_schema(resolve_type(attr), constraints(attr), "3.1")
 
     schema =
       if allow_nil?(attr) do
@@ -118,7 +127,6 @@ defmodule AshOaskit.TypeMapper do
       end
 
     schema
-    |> maybe_add_constraints(attr)
     |> maybe_add_description(attr)
     |> maybe_add_default(attr)
   end
@@ -142,7 +150,7 @@ defmodule AshOaskit.TypeMapper do
   """
   @spec to_json_schema_30(map()) :: map()
   def to_json_schema_30(attr) do
-    base_schema = ash_type_to_base_schema(resolve_type(attr))
+    base_schema = ash_type_to_base_schema(resolve_type(attr), constraints(attr), "3.0")
 
     schema =
       if allow_nil?(attr) do
@@ -152,7 +160,6 @@ defmodule AshOaskit.TypeMapper do
       end
 
     schema
-    |> maybe_add_constraints(attr)
     |> maybe_add_description(attr)
     |> maybe_add_default(attr)
   end
@@ -171,6 +178,9 @@ defmodule AshOaskit.TypeMapper do
   end
 
   defp resolve_type(%{type: type}), do: type
+
+  defp constraints(%{constraints: constraints}) when is_list(constraints), do: constraints
+  defp constraints(_), do: []
 
   defp union_newtype?(type) do
     Code.ensure_loaded?(type) and
@@ -217,39 +227,50 @@ defmodule AshOaskit.TypeMapper do
     }
   }
 
-  defp ash_type_to_base_schema(type) do
-    normalized = normalize_type(type)
-    simple_type_schema(normalized) || complex_type_schema(normalized)
+  defp ash_type_to_base_schema(type, constraints, version) do
+    normalized = normalize_type(type, constraints)
+
+    normalized
+    |> schema_for_normalized_type(version)
+    |> apply_constraints(constraint_type(type), effective_constraints(type, constraints), version)
+  end
+
+  defp schema_for_normalized_type(type, version) do
+    simple_type_schema(type) || complex_type_schema(type, version)
   end
 
   defp simple_type_schema(type) when is_atom(type), do: Map.get(@simple_type_schemas, type)
   defp simple_type_schema(_), do: nil
 
-  defp complex_type_schema({:array, inner_type}) do
-    %{"type" => "array", "items" => ash_type_to_base_schema(inner_type)}
+  defp complex_type_schema({:array, inner_type}, version) do
+    %{"type" => "array", "items" => schema_for_normalized_type(inner_type, version)}
   end
 
-  defp complex_type_schema({:embedded, module}) do
+  defp complex_type_schema({:embedded, module}, _) do
     schema_name = module |> Module.split() |> List.last()
-    %{"$ref" => "#/components/schemas/#{schema_name}"}
+    schema_ref(schema_name)
   end
 
-  defp complex_type_schema({:union, types}), do: build_union_schema(types)
-  defp complex_type_schema({:struct, module}), do: build_struct_schema(module)
-  defp complex_type_schema({:struct_fields, module}), do: build_typed_struct_schema(module)
-  defp complex_type_schema({:custom, custom_schema}), do: custom_schema
-  defp complex_type_schema(_), do: %{"type" => "string"}
+  defp complex_type_schema({:union, types}, version), do: build_union_schema(types, version)
+  defp complex_type_schema({:struct, module}, _), do: build_struct_schema(module)
 
-  defp build_union_schema(types) when is_list(types) do
+  defp complex_type_schema({:struct_fields, module}, version),
+    do: build_typed_struct_schema(module, version)
+
+  defp complex_type_schema({:custom, custom_schema}, _), do: custom_schema
+  defp complex_type_schema(_, _), do: %{"type" => "string"}
+
+  defp build_union_schema(types, version) when is_list(types) do
     any_of =
       Enum.map(types, fn
         {name, type_config} when is_list(type_config) ->
           inner_type = Keyword.get(type_config, :type, :string)
-          schema = ash_type_to_base_schema(inner_type)
+          constraints = Keyword.get(type_config, :constraints, [])
+          schema = ash_type_to_base_schema(inner_type, constraints, version)
           Map.put(schema, "title", to_string(name))
 
         type when is_atom(type) ->
-          ash_type_to_base_schema(type)
+          ash_type_to_base_schema(type, [], version)
 
         _ ->
           %{"type" => "string"}
@@ -258,7 +279,7 @@ defmodule AshOaskit.TypeMapper do
     %{"anyOf" => any_of}
   end
 
-  defp build_union_schema(_), do: %{}
+  defp build_union_schema(_, _), do: %{}
 
   defp build_struct_schema(module) when is_atom(module) do
     if Code.ensure_loaded?(module) and function_exported?(module, :__struct__, 0) do
@@ -284,12 +305,23 @@ defmodule AshOaskit.TypeMapper do
   # the field definitions carry declared types and allow_nil? flags in the
   # NewType's subtype constraints, so properties keep their real types and
   # non-nil fields become required.
-  defp build_typed_struct_schema(module) do
+  defp build_typed_struct_schema(module, version) do
     fields = module.subtype_constraints()[:fields] || []
 
     properties =
       Map.new(fields, fn {name, config} ->
-        {to_string(name), ash_type_to_base_schema(Keyword.get(config, :type, :string))}
+        type = Keyword.get(config, :type, :string)
+        constraints = Keyword.get(config, :constraints, [])
+        schema = ash_type_to_base_schema(type, constraints, version)
+
+        schema =
+          if Keyword.get(config, :allow_nil?, true) do
+            make_nullable(schema, version)
+          else
+            schema
+          end
+
+        {to_string(name), schema}
       end)
 
     required =
@@ -346,33 +378,38 @@ defmodule AshOaskit.TypeMapper do
     Ash.Type.DurationName => :duration_name
   }
 
-  defp normalize_type({:union, types}), do: {:union, types}
-  defp normalize_type({:struct, module}), do: {:struct, module}
-  defp normalize_type({:embedded, module}), do: {:embedded, module}
-  defp normalize_type({:array, inner}), do: {:array, normalize_type(inner)}
+  defp normalize_type(type, constraints)
+
+  defp normalize_type({:union, types}, _), do: {:union, types}
+  defp normalize_type({:struct, module}, _), do: {:struct, module}
+  defp normalize_type({:embedded, module}, _), do: {:embedded, module}
+
+  defp normalize_type({:array, inner}, constraints) do
+    {:array, normalize_type(inner, Keyword.get(constraints, :items, []))}
+  end
 
   # Handle tuple types (legacy format) - first element is the type module
-  defp normalize_type(type) when is_tuple(type) do
+  defp normalize_type(type, _) when is_tuple(type) do
     Map.get(@ash_type_to_atom, elem(type, 0), :string)
   end
 
-  defp normalize_type(type) when is_atom(type) do
+  defp normalize_type(type, constraints) when is_atom(type) do
     cond do
       type in @basic_types -> type
       Map.has_key?(@ash_type_to_atom, type) -> Map.get(@ash_type_to_atom, type)
-      true -> normalize_complex_type(type)
+      true -> normalize_complex_type(type, constraints)
     end
   end
 
-  defp normalize_type(_), do: :string
+  defp normalize_type(_, _), do: :string
 
   # Handle complex type checking for embedded resources, custom types, unions,
   # Ash.Type.Enum implementors, and NewType wrappers
-  defp normalize_complex_type(type) do
+  defp normalize_complex_type(type, constraints) do
     cond do
       # Custom types own their schema even when they also wrap a built-in type.
       has_json_schema_callback?(type) ->
-        {:custom, get_custom_json_schema(type)}
+        {:custom, get_custom_json_schema(type, constraints)}
 
       embedded_resource?(type) ->
         {:embedded, type}
@@ -384,7 +421,7 @@ defmodule AshOaskit.TypeMapper do
         {:custom, enum_schema(type)}
 
       newtype?(type) ->
-        normalize_newtype(type)
+        normalize_newtype(type, constraints)
 
       true ->
         :string
@@ -395,10 +432,10 @@ defmodule AshOaskit.TypeMapper do
   # (subtype_of: :struct, e.g. `use Ash.TypedStruct`), whose field
   # definitions live in the NewType's constraints and would be lost by
   # plain recursion on the subtype
-  defp normalize_newtype(type) do
+  defp normalize_newtype(type, constraints) do
     case NewType.subtype_of(type) do
       Ash.Type.Struct -> {:struct_fields, type}
-      subtype -> normalize_type(subtype)
+      subtype -> normalize_type(subtype, effective_constraints(type, constraints))
     end
   end
 
@@ -420,8 +457,8 @@ defmodule AshOaskit.TypeMapper do
     Code.ensure_loaded?(type) and function_exported?(type, :json_schema, 1)
   end
 
-  defp get_custom_json_schema(type) do
-    type.json_schema([])
+  defp get_custom_json_schema(type, constraints) do
+    type.json_schema(constraints)
   rescue
     e ->
       Logger.warning(fn ->
@@ -487,13 +524,65 @@ defmodule AshOaskit.TypeMapper do
     Map.put(schema, "nullable", true)
   end
 
-  defp maybe_add_constraints(schema, %{constraints: constraints}) when is_list(constraints) do
+  defp apply_constraints(schema, {:array, inner_type}, constraints, version) do
+    schema
+    |> apply_item_constraints(inner_type, constraints, version)
+    |> apply_constraint_keywords(constraints, :array)
+  end
+
+  defp apply_constraints(schema, type, constraints, _) do
+    apply_constraint_keywords(schema, constraints, type)
+  end
+
+  defp apply_item_constraints(schema, inner_type, constraints, version) do
+    item_constraints = Keyword.get(constraints, :items, [])
+
+    Map.update(schema, "items", %{}, fn items ->
+      items =
+        if is_list(item_constraints) do
+          apply_constraints(items, constraint_type(inner_type), item_constraints, version)
+        else
+          items
+        end
+
+      if Keyword.get(constraints, :nil_items?, false) do
+        make_nullable(items, version)
+      else
+        items
+      end
+    end)
+  end
+
+  defp make_nullable(schema, "3.1"), do: make_nullable_31(schema)
+  defp make_nullable(schema, _), do: make_nullable_30(schema)
+
+  defp constraint_type({:array, inner_type}), do: {:array, inner_type}
+  defp constraint_type(type) when type in [:uuid_v7, Ash.Type.UUIDv7], do: :uuid_v7
+
+  defp constraint_type(type) when is_atom(type) do
+    if newtype?(type), do: constraint_type(NewType.subtype_of(type)), else: :scalar
+  end
+
+  defp constraint_type(_), do: :scalar
+
+  defp effective_constraints(type, constraints) when is_atom(type) do
+    if newtype?(type) and not has_json_schema_callback?(type) do
+      constraints = NewType.constraints(type, constraints)
+      type.type_constraints(constraints, type.subtype_constraints())
+    else
+      constraints
+    end
+  end
+
+  defp effective_constraints(_, constraints), do: constraints
+
+  defp apply_constraint_keywords(schema, constraints, type) do
     Enum.reduce(constraints, schema, fn
       {:min_length, min}, acc ->
-        Map.put(acc, "minLength", min)
+        Map.put(acc, length_constraint(type, "min"), min)
 
       {:max_length, max}, acc ->
-        Map.put(acc, "maxLength", max)
+        Map.put(acc, length_constraint(type, "max"), max)
 
       {:min, min}, acc ->
         Map.put(acc, "minimum", to_number(min))
@@ -509,15 +598,20 @@ defmodule AshOaskit.TypeMapper do
         Map.put(acc, "pattern", pattern_string)
 
       {:one_of, values}, acc ->
-        string_values = Enum.map(values, &to_string/1)
-        Map.put(acc, "enum", string_values)
+        Map.put(acc, "enum", Enum.map(values, &sanitize_default/1))
+
+      {:strict?, true}, acc when type == :uuid_v7 ->
+        Map.put(acc, "pattern", @uuid_v7_pattern)
 
       _, acc ->
         acc
     end)
   end
 
-  defp maybe_add_constraints(schema, _), do: schema
+  defp length_constraint(:array, "min"), do: "minItems"
+  defp length_constraint(:array, "max"), do: "maxItems"
+  defp length_constraint(_, "min"), do: "minLength"
+  defp length_constraint(_, "max"), do: "maxLength"
 
   defp maybe_add_description(schema, %{description: desc}) when is_binary(desc) do
     Map.put(schema, "description", desc)

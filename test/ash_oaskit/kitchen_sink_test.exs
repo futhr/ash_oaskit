@@ -1,20 +1,5 @@
 defmodule AshOaskit.KitchenSinkTest do
-  @moduledoc """
-  Integration tests for edge-case types and features using the KitchenSink resource.
-
-  Validates full pipeline output (AshOaskit.spec/1) for both OpenAPI 3.0 and 3.1,
-  covering:
-
-  - Union types (Ash.Type.NewType subtype of Ash.Type.Union)
-  - Typed structs (Ash.TypedStruct), direct and as discriminated-union variants
-  - Custom types with json_schema/1 callback
-  - Deeply nested embedded resources (3 levels: Venue → Location → GeoPoint)
-  - Array of embedded resources
-  - Read-only attributes (writable?: false)
-  - DurationName type
-  - Input schema generation (create/update)
-  - Embedded schema $ref generation
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -99,7 +84,7 @@ defmodule AshOaskit.KitchenSinkTest do
                    "title" => "person",
                    "description" => "Struct of type AshOaskit.Test.Person",
                    "properties" => %{
-                     "age" => %{"type" => "integer"},
+                     "age" => %{"type" => ["integer", "null"]},
                      "email" => %{"type" => "string"},
                      "name" => %{"type" => "string"},
                      "type" => %{"type" => "string"}
@@ -112,7 +97,7 @@ defmodule AshOaskit.KitchenSinkTest do
                    "description" => "Struct of type AshOaskit.Test.Company",
                    "properties" => %{
                      "company_name" => %{"type" => "string"},
-                     "employee_count" => %{"type" => "integer"},
+                     "employee_count" => %{"type" => ["integer", "null"]},
                      "tax_id" => %{"type" => "string"},
                      "type" => %{"type" => "string"}
                    },
@@ -130,6 +115,7 @@ defmodule AshOaskit.KitchenSinkTest do
       assert actor["nullable"] == true
       assert [person, _] = actor["anyOf"]
       assert person["properties"]["age"]["type"] == "integer"
+      assert person["properties"]["age"]["nullable"] == true
     end
   end
 
@@ -138,7 +124,7 @@ defmodule AshOaskit.KitchenSinkTest do
       owner = get_attr(spec, "owner")
 
       assert owner["type"] == ["object", "null"]
-      assert owner["properties"]["age"]["type"] == "integer"
+      assert owner["properties"]["age"]["type"] == ["integer", "null"]
       assert owner["properties"]["name"]["type"] == "string"
       assert owner["required"] == ["email", "name", "type"]
       assert owner["description"] == "The owner of this record"
@@ -150,6 +136,7 @@ defmodule AshOaskit.KitchenSinkTest do
       assert owner["type"] == "object"
       assert owner["nullable"] == true
       assert owner["properties"]["age"]["type"] == "integer"
+      assert owner["properties"]["age"]["nullable"] == true
     end
   end
 

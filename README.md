@@ -233,12 +233,15 @@ custom types with a `json_schema/1` callback.
 
 | Ash Constraint | JSON Schema |
 |----------------|-------------|
-| `:min_length` | `minLength` |
-| `:max_length` | `maxLength` |
+| `:min_length` | `minLength` for strings; `minItems` for arrays |
+| `:max_length` | `maxLength` for strings; `maxItems` for arrays |
 | `:min` | `minimum` |
 | `:max` | `maximum` |
 | `:match` (Regex) | `pattern` |
 | `:one_of` | `enum` |
+| array `:items` | Constraints on the nested item schema |
+| array `:nil_items?` | Nullable item schema |
+| UUIDv7 `:strict?` | Version 7 UUID pattern |
 
 ## Router Integration
 

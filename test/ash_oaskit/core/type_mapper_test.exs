@@ -1,50 +1,5 @@
 defmodule AshOaskit.TypeMapperTest do
-  @moduledoc """
-  Tests for the AshOaskit.TypeMapper module.
-
-  This module tests the conversion of Ash types to JSON Schema types,
-  covering both OpenAPI 3.0 and 3.1 specifications.
-
-  ## Test Categories
-
-  The tests are organized into the following categories:
-
-  - **Basic Type Mapping** - Tests for simple types (string, integer, etc.)
-  - **Nullable Handling** - Tests for 3.0 vs 3.1 nullable differences
-  - **Constraints** - Tests for min/max, pattern, enum constraints
-  - **Complex Types** - Tests for arrays, unions, structs, embedded
-  - **Ash.Type Modules** - Tests for both atom and module type formats
-  - **Custom Types** - Tests for types with json_schema/1 callback
-
-  ## Type Conversion Flow
-
-  ```
-  Ash Attribute
-       │
-       ▼
-  ┌─────────────┐
-  │normalize_type ← Handles atoms, modules, tuples
-  └──────┬──────┘
-         │
-         ▼
-  ┌─────────────┐
-  │base_schema  │ ← Maps to JSON Schema type/format
-  └──────┬──────┘
-         │
-         ▼
-  ┌─────────────┐
-  │nullable?    │ ← 3.1: type array, 3.0: nullable flag
-  └──────┬──────┘
-         │
-         ▼
-  ┌─────────────┐
-  │constraints  │ ← minLength, maximum, pattern, enum
-  └──────┬──────┘
-         │
-         ▼
-   JSON Schema
-  ```
-  """
+  @moduledoc false
 
   use ExUnit.Case, async: true
 
@@ -151,7 +106,6 @@ defmodule AshOaskit.TypeMapperTest do
       refute Map.has_key?(result, "default")
     end
 
-    # Additional type tests for coverage
     test "maps ci_string type as string" do
       attr = %{type: :ci_string, allow_nil?: false}
       assert TypeMapper.to_json_schema_31(attr) == %{"type" => "string"}
@@ -232,6 +186,47 @@ defmodule AshOaskit.TypeMapperTest do
       assert result["type"] == "string"
     end
 
+    test "maps array length and item constraints" do
+      attr = %{
+        type: {:array, :string},
+        allow_nil?: false,
+        constraints: [min_length: 1, max_length: 3, items: [min_length: 2]]
+      }
+
+      assert TypeMapper.to_json_schema_31(attr) == %{
+               "type" => "array",
+               "minItems" => 1,
+               "maxItems" => 3,
+               "items" => %{"type" => "string", "minLength" => 2}
+             }
+
+      assert TypeMapper.to_json_schema_30(attr) == %{
+               "type" => "array",
+               "minItems" => 1,
+               "maxItems" => 3,
+               "items" => %{"type" => "string", "minLength" => 2}
+             }
+    end
+
+    test "maps nullable array items for each OpenAPI version" do
+      attr = %{
+        type: {:array, :integer},
+        allow_nil?: false,
+        constraints: [nil_items?: true]
+      }
+
+      assert get_in(TypeMapper.to_json_schema_31(attr), ["items", "type"]) ==
+               ["integer", "null"]
+
+      assert get_in(TypeMapper.to_json_schema_30(attr), ["items", "nullable"]) == true
+    end
+
+    test "preserves JSON scalar types in one_of constraints" do
+      attr = %{type: :integer, allow_nil?: false, constraints: [one_of: [1, 2]]}
+
+      assert TypeMapper.to_json_schema_31(attr)["enum"] == [1, 2]
+    end
+
     test "handles array with nested integer type" do
       attr = %{type: {:array, :integer}, allow_nil?: false}
       expected = %{"type" => "array", "items" => %{"type" => "integer"}}
@@ -277,7 +272,6 @@ defmodule AshOaskit.TypeMapperTest do
       # This tests the make_nullable_31 with type list
       attr = %{type: :string, allow_nil?: true}
       result = TypeMapper.to_json_schema_31(attr)
-      # Should only have one "null" in the array
       assert result["type"] == ["string", "null"]
       assert Enum.count(result["type"], &(&1 == "null")) == 1
     end
@@ -613,6 +607,18 @@ defmodule AshOaskit.TypeMapperTest do
       assert TypeMapper.to_json_schema_30(attr) == %{"type" => "string", "format" => "uuid"}
     end
 
+    test "maps strict UUIDv7 constraints to a version-specific pattern" do
+      attr = %{type: Ash.Type.UUIDv7, allow_nil?: false, constraints: [strict?: true]}
+
+      for schema <- [
+            TypeMapper.to_json_schema_31(attr),
+            TypeMapper.to_json_schema_30(attr)
+          ] do
+        assert Regex.match?(Regex.compile!(schema["pattern"]), Ash.UUIDv7.generate())
+        refute Regex.match?(Regex.compile!(schema["pattern"]), Ash.UUID.generate())
+      end
+    end
+
     test "maps Ash.Type.Duration to ISO 8601 duration string" do
       attr = %{type: Ash.Type.Duration, allow_nil?: false}
 
@@ -685,7 +691,7 @@ defmodule AshOaskit.TypeMapperTest do
       attr = %{type: AshOaskit.Test.Subject, allow_nil?: false, constraints: []}
       result = TypeMapper.to_json_schema_31(attr)
 
-      assert result == %{"type" => "string"}
+      assert result == %{"type" => "string", "maxLength" => 120}
     end
 
     test "fallbacks flow through resource attributes end to end" do
@@ -695,6 +701,7 @@ defmodule AshOaskit.TypeMapperTest do
       assert attrs["priority"]["enum"] == ["low", "medium", "high"]
       assert attrs["external_id"]["format"] == "uuid"
       assert "string" in List.wrap(attrs["subject"]["type"])
+      assert attrs["subject"]["maxLength"] == 120
     end
   end
 
@@ -771,7 +778,6 @@ defmodule AshOaskit.TypeMapperTest do
       # Kernel is loaded but doesn't have __struct__
       attr = %{type: {:struct, Kernel}, allow_nil?: false}
       result = TypeMapper.to_json_schema_31(attr)
-      # Should fall back to basic object
       assert result["type"] == "object"
     end
   end
@@ -801,6 +807,14 @@ defmodule AshOaskit.TypeMapperTest do
       end
     end
 
+    defmodule CustomTypeWithConstraintSchema do
+      @moduledoc false
+      @spec json_schema(keyword()) :: map()
+      def json_schema(constraints) do
+        %{"type" => "string", "x-label" => constraints[:label]}
+      end
+    end
+
     test "maps custom type with json_schema callback" do
       attr = %{type: CustomTypeWithJsonSchema, allow_nil?: false}
       result = TypeMapper.to_json_schema_31(attr)
@@ -816,6 +830,43 @@ defmodule AshOaskit.TypeMapperTest do
       assert result["properties"]["key"]["type"] == "string"
     end
 
+    test "passes attribute constraints to a custom type" do
+      attr = %{
+        type: CustomTypeWithConstraintSchema,
+        allow_nil?: false,
+        constraints: [label: "constrained"]
+      }
+
+      assert TypeMapper.to_json_schema_31(attr)["x-label"] == "constrained"
+      assert TypeMapper.to_json_schema_30(attr)["x-label"] == "constrained"
+    end
+
+    test "preserves custom item schemas in arrays" do
+      attr = %{
+        type: {:array, CustomTypeWithConstraintSchema},
+        allow_nil?: false,
+        constraints: [items: [label: "item"]]
+      }
+
+      assert TypeMapper.to_json_schema_31(attr)["items"] == %{
+               "type" => "string",
+               "x-label" => "item"
+             }
+    end
+
+    test "applies constraints declared by union variants" do
+      attr = %{
+        type: {:union, [short_text: [type: :string, constraints: [max_length: 5]]]},
+        allow_nil?: false
+      }
+
+      assert TypeMapper.to_json_schema_31(attr) == %{
+               "anyOf" => [
+                 %{"type" => "string", "maxLength" => 5, "title" => "short_text"}
+               ]
+             }
+    end
+
     test "maps custom type with failing json_schema callback to string" do
       attr = %{type: CustomTypeWithFailingJsonSchema, allow_nil?: false}
 
@@ -824,7 +875,6 @@ defmodule AshOaskit.TypeMapperTest do
           TypeMapper.to_json_schema_31(attr)
         end)
 
-      # Should fall back to string when json_schema raises
       assert result["type"] == "string"
       assert log =~ "Failed to get json_schema"
     end

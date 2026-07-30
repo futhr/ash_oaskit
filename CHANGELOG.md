@@ -7,15 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Changed
 
-- `:resource_scope` option (`:all` | `:routed`, default `:all`) on `use AshOaskit`,
-  `AshOaskit.spec/1`, and the version shortcuts. With `:routed`, only resources
-  contributing at least one JSON:API route seed the generated schemas and tags;
-  relationship and embedded destinations are still pulled in transitively, so the
-  components are exactly the closure the served paths reference. Use it when a
-  listed domain contains internal resources whose shape should not appear in a
-  public spec.
+- Updated Ash to 3.31 and Igniter to 0.8.3. The resolved dependency refresh also
+  includes Mint's HTTP/1 header-size and HTTP/2 continuation-frame security fixes.
+- Custom Ash types now receive their declared constraints in `json_schema/1`,
+  matching AshJsonApi's callback contract.
+
+### Fixed
+
+- Exclude attributes, calculations, and aggregates that Ash marks as unsortable
+  from JSON:API sort parameters.
+- Exclude calculations with required arguments from sort parameters.
+- Map array length and item constraints to `minItems`, `maxItems`, and the nested
+  `items` schema, including nullable items.
+- Preserve non-string `one_of` values and emit the strict UUIDv7 pattern.
 
 ## [0.1.0] - 2026-03-31
 
@@ -38,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JSON and YAML output formats
 - Configurable API metadata (title, version, description, servers, contact, license)
 
-[Unreleased]: https://github.com/futhr/ash_oaskit/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/futhr/ash_oaskit/compare/v0.3.0...HEAD
 [0.1.0]: https://github.com/futhr/ash_oaskit/releases/tag/v0.1.0
 
 <!-- changelog -->

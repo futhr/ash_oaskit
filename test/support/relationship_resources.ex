@@ -1,62 +1,5 @@
-# Test resources for relationship, calculation, aggregate, and embedded resource testing
-#
-# This module defines additional Ash resources used to test advanced OpenAPI
-# spec generation features that require relationships between resources.
-#
-# ## Resources
-#
-# ### Core Resources (with relationships)
-# - `AshOaskit.Test.Author` - Author with has_many posts, calculations
-# - `AshOaskit.Test.Article` - Article with belongs_to author, has_many comments
-# - `AshOaskit.Test.Review` - Review with belongs_to article
-# - `AshOaskit.Test.Tag` - Tag for many_to_many relationship testing
-# - `AshOaskit.Test.ArticleTag` - Join resource for article-tag relationship
-#
-# ### Embedded Resources
-# - `AshOaskit.Test.Address` - Simple embedded resource
-# - `AshOaskit.Test.Profile` - Embedded resource with nested embedded (Address)
-#
-# ### Recursive/Self-referential Resources
-# - `AshOaskit.Test.Category` - Self-referential with parent/children
-#
-# ## Domains
-#
-# - `AshOaskit.Test.Publishing` - Domain with all relationship resources
-#
-# ## Test Coverage
-#
-# These resources enable testing of:
-# - belongs_to relationships (Article -> Author)
-# - has_many relationships (Author -> Articles)
-# - has_one relationships (Author -> Profile)
-# - many_to_many relationships (Article <-> Tags)
-# - Self-referential relationships (Category parent/children)
-# - Calculations with expressions
-# - Aggregates (count, sum, etc.)
-# - Embedded resources
-# - Nested embedded resources
-# - Recursive type detection and $ref generation
-#
-# ## Visibility Coverage
-#
-# Specs must only expose fields marked `public? true`. The non-public
-# members below are deliberate regression guards:
-# - `Author.internal_rank` (calculation) and `Author.draft_count` (aggregate)
-# - `Article.moderator` (relationship)
-
-# ===========================================================================
-# Embedded Resources (must be defined first - no domain required)
-# ===========================================================================
-
 defmodule AshOaskit.Test.Address do
-  @moduledoc """
-  Embedded resource for address data.
-
-  Used to test embedded resource schema generation, including:
-  - Embedded resource detection
-  - Input schema generation for embedded types
-  - Nested embedding (used in Profile)
-  """
+  @moduledoc false
   use Ash.Resource, data_layer: :embedded
 
   attributes do
@@ -91,14 +34,7 @@ defmodule AshOaskit.Test.Address do
 end
 
 defmodule AshOaskit.Test.Profile do
-  @moduledoc """
-  Embedded resource for user profile data with nested embedded.
-
-  Used to test:
-  - Nested embedded resources (Profile contains Address)
-  - Recursive embedded schema generation
-  - Multiple levels of embedding
-  """
+  @moduledoc false
   use Ash.Resource, data_layer: :embedded
 
   attributes do
@@ -131,21 +67,10 @@ defmodule AshOaskit.Test.Profile do
   end
 end
 
-# ===========================================================================
 # Core Resources with Relationships
-# ===========================================================================
 
 defmodule AshOaskit.Test.Author do
-  @moduledoc """
-  Author resource with relationships and calculations.
-
-  Used to test:
-  - has_many relationships (articles)
-  - has_one relationship (profile - embedded)
-  - Calculations (article_count, full_name)
-  - Aggregates (total_articles)
-  - Non-public calculation/aggregate exclusion (internal_rank, draft_count)
-  """
+  @moduledoc false
   use Ash.Resource,
     domain: AshOaskit.Test.Publishing,
     data_layer: Ash.DataLayer.Ets,
@@ -188,6 +113,12 @@ defmodule AshOaskit.Test.Author do
       description "Whether the author is currently active"
     end
 
+    attribute :external_label, :string do
+      public? true
+      sortable? false
+      description "External label that cannot be used for sorting"
+    end
+
     create_timestamp :inserted_at
     update_timestamp :updated_at
   end
@@ -210,7 +141,6 @@ defmodule AshOaskit.Test.Author do
       description "Number of articles written"
     end
 
-    # Calculation with arguments for coverage testing
     calculate :greeting, :string, expr("Hello, " <> ^arg(:name)) do
       public? true
       description "Personalized greeting"
@@ -220,7 +150,6 @@ defmodule AshOaskit.Test.Author do
       end
     end
 
-    # Calculation with optional argument for coverage testing
     calculate :formal_greeting,
               :string,
               expr("Dear " <> (^arg(:title) || "") <> " " <> first_name) do
@@ -233,6 +162,12 @@ defmodule AshOaskit.Test.Author do
       end
     end
 
+    calculate :unsortable_name, :string, expr(first_name) do
+      public? true
+      sortable? false
+      description "Public calculation that cannot be used for sorting"
+    end
+
     # Deliberately non-public: must never appear in generated specs
     calculate :internal_rank, :integer, expr(article_count * 10) do
       description "Internal ranking score"
@@ -243,6 +178,12 @@ defmodule AshOaskit.Test.Author do
     count :total_articles, :articles do
       public? true
       description "Total number of articles"
+    end
+
+    count :unsortable_article_count, :articles do
+      public? true
+      sortable? false
+      description "Public aggregate that cannot be used for sorting"
     end
 
     # Deliberately non-public: must never appear in generated specs
@@ -265,17 +206,7 @@ defmodule AshOaskit.Test.Author do
 end
 
 defmodule AshOaskit.Test.Article do
-  @moduledoc """
-  Article resource with multiple relationship types.
-
-  Used to test:
-  - belongs_to relationship (author)
-  - has_many relationship (reviews)
-  - many_to_many relationship (tags via article_tags)
-  - Calculations depending on relationships
-  - Aggregates on relationships
-  - Non-public relationship exclusion (moderator)
-  """
+  @moduledoc false
   use Ash.Resource,
     domain: AshOaskit.Test.Publishing,
     data_layer: Ash.DataLayer.Ets,
@@ -374,7 +305,6 @@ defmodule AshOaskit.Test.Article do
       description "Number of tags"
     end
 
-    # Additional aggregates for coverage testing
     first :first_review_rating, :reviews, :rating do
       public? true
       description "Rating of the first review"
@@ -428,13 +358,7 @@ defmodule AshOaskit.Test.Article do
 end
 
 defmodule AshOaskit.Test.Review do
-  @moduledoc """
-  Review resource for testing belongs_to relationships.
-
-  Used to test:
-  - belongs_to relationship (article)
-  - Simple aggregate source (rating for average)
-  """
+  @moduledoc false
   use Ash.Resource,
     domain: AshOaskit.Test.Publishing,
     data_layer: Ash.DataLayer.Ets,
@@ -488,13 +412,7 @@ defmodule AshOaskit.Test.Review do
 end
 
 defmodule AshOaskit.Test.Tag do
-  @moduledoc """
-  Tag resource for many_to_many relationship testing.
-
-  Used to test:
-  - many_to_many relationship (articles via article_tags)
-  - Simple resource with minimal attributes
-  """
+  @moduledoc false
   use Ash.Resource,
     domain: AshOaskit.Test.Publishing,
     data_layer: Ash.DataLayer.Ets,
@@ -554,11 +472,7 @@ defmodule AshOaskit.Test.Tag do
 end
 
 defmodule AshOaskit.Test.ArticleTag do
-  @moduledoc """
-  Join resource for Article-Tag many_to_many relationship.
-
-  This is a simple join table resource that connects articles to tags.
-  """
+  @moduledoc false
   use Ash.Resource,
     domain: AshOaskit.Test.Publishing,
     data_layer: Ash.DataLayer.Ets
@@ -587,20 +501,10 @@ defmodule AshOaskit.Test.ArticleTag do
   end
 end
 
-# ===========================================================================
 # Self-Referential Resource
-# ===========================================================================
 
 defmodule AshOaskit.Test.Category do
-  @moduledoc """
-  Self-referential resource for recursive relationship testing.
-
-  Used to test:
-  - Self-referential belongs_to (parent category)
-  - Self-referential has_many (child categories)
-  - Cycle detection in schema generation
-  - $ref usage for recursive types
-  """
+  @moduledoc false
   use Ash.Resource,
     domain: AshOaskit.Test.Publishing,
     data_layer: Ash.DataLayer.Ets,
@@ -694,17 +598,10 @@ defmodule AshOaskit.Test.Category do
   end
 end
 
-# ===========================================================================
 # Domain Definition
-# ===========================================================================
 
 defmodule AshOaskit.Test.Publishing do
-  @moduledoc """
-  Domain for relationship testing resources.
-
-  This domain includes all resources with relationships, calculations,
-  aggregates, and embedded resources for comprehensive testing.
-  """
+  @moduledoc false
   use Ash.Domain,
     validate_config_inclusion?: false,
     extensions: [AshJsonApi.Domain]
@@ -734,7 +631,6 @@ defmodule AshOaskit.Test.Publishing do
         post :create
         patch :update
         delete :destroy
-        # Relationship routes for coverage testing
         related :reviews, :read
         related :author, :read
         relationship :reviews, :read

@@ -1,58 +1,10 @@
-# Test resources for AshOaskit
-#
-# This module defines Ash resources and domains used throughout the test suite
-# to validate OpenAPI spec generation. The resources include various attribute
-# types to ensure comprehensive type mapping coverage.
-#
-# ## Resources
-#
-# - `AshOaskit.Test.Post` - Main test resource with all supported attribute types
-# - `AshOaskit.Test.Comment` - Secondary resource for multi-resource domain testing
-#
-# ## Domains
-#
-# - `AshOaskit.Test.SimpleDomain` - Basic domain without AshJsonApi (fallback testing)
-# - `AshOaskit.Test.Blog` - Domain with AshJsonApi routes (path generation testing)
-#
-# ## Usage in Tests
-#
-#     # Test schema generation
-#     spec = AshOaskit.spec(domains: [AshOaskit.Test.SimpleDomain])
-#     assert spec["components"]["schemas"]["PostAttributes"]
-#
-#     # Test path generation
-#     spec = AshOaskit.spec(domains: [AshOaskit.Test.Blog])
-#     assert spec["paths"]["/posts"]
-#
-# ## Attribute Coverage
-#
-# The Post resource includes attributes for testing all supported Ash types:
-# - Basic types: string, integer, float, decimal, boolean
-# - Date/time types: time, utc_datetime, naive_datetime
-# - Special types: uuid, binary, map, atom, term, ci_string
-# - Array types: {:array, :string}
-# - Constraints: min_length, max_length, min, max, match, one_of
-#
-# ## Visibility Coverage
-#
-# Specs must only expose fields marked `public? true` (matching what
-# AshJsonApi serializes). `Post.internal_notes` is deliberately
-# non-public to regression-test that filtering; `Comment`'s timestamps
-# are deliberately public to prove public timestamps DO appear.
-
 defmodule AshOaskit.Test.Priority do
-  @moduledoc """
-  `Ash.Type.Enum` implementor used to test the generic enum fallback
-  in `TypeMapper` (string schema with enum from `values/0`).
-  """
+  @moduledoc false
   use Ash.Type.Enum, values: [:low, :medium, :high]
 end
 
 defmodule AshOaskit.Test.Subject do
-  @moduledoc """
-  `Ash.Type.NewType` wrapper used to test the generic NewType fallback
-  in `TypeMapper` (schema resolved from the subtype).
-  """
+  @moduledoc false
   use Ash.Type.NewType, subtype_of: :string, constraints: [max_length: 120]
 end
 
@@ -171,12 +123,7 @@ defmodule AshOaskit.Test.NoTypeResource do
 end
 
 defmodule AshOaskit.Test.PhoneType do
-  @moduledoc """
-  Custom type module that implements `json_schema/1`.
-
-  Used to test the `normalize_complex_type` path in `TypeMapper` where atom types
-  with a `json_schema/1` callback get wrapped as `{:custom, schema}`.
-  """
+  @moduledoc false
 
   def json_schema(_opts) do
     %{"type" => "string", "format" => "phone"}
@@ -184,17 +131,7 @@ defmodule AshOaskit.Test.PhoneType do
 end
 
 defmodule AshOaskit.Test.NilTypeResource do
-  @moduledoc """
-  Test resource with AshJsonApi extension but no explicit type set in the json_api block.
-
-  When `AshJsonApi.Resource.Info.type/1` returns nil, the system falls back to
-  `Macro.underscore/1` of the module name. This resource exercises that fallback
-  path across several modules:
-
-  - `Config.resource_type/1` — produces `"nil_type_resource"`
-  - `FilterBuilder` — `derive_filter?/1` returns nil, defaults to true
-  - `SortBuilder` — `derive_sort?/1` returns nil, defaults to true
-  """
+  @moduledoc false
   use Ash.Resource,
     domain: AshOaskit.Test.EdgeCaseDomain,
     extensions: [AshJsonApi.Resource]

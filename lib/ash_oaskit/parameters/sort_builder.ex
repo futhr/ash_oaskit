@@ -242,33 +242,36 @@ defmodule AshOaskit.SortBuilder do
   defp get_sortable_attributes(resource) do
     resource
     |> ResourceInfo.public_attributes()
-    |> Enum.filter(&Config.show_field?(resource, &1))
+    |> Enum.filter(&sortable_field?(resource, &1))
     |> Enum.map(& &1.name)
   end
 
   defp get_sortable_calculations(resource) do
     resource
     |> ResourceInfo.public_calculations()
-    |> Enum.filter(&(Config.show_field?(resource, &1) and sortable_calculation?(&1)))
+    |> Enum.filter(&(sortable_field?(resource, &1) and calculation_arguments_optional?(&1)))
     |> Enum.map(& &1.name)
   end
 
-  defp sortable_calculation?(calculation) do
-    sortable = Map.get(calculation, :sortable?, true)
+  defp calculation_arguments_optional?(calculation) do
     args = calculation.arguments || []
-    no_required_args = args == [] or Enum.all?(args, &argument_optional?/1)
-    sortable and no_required_args
+    Enum.all?(args, &argument_optional?/1)
   end
 
   defp argument_optional?(arg) do
-    Map.has_key?(arg, :default) or Map.get(arg, :allow_nil?, false)
+    Map.get(arg, :allow_nil?, false) or not is_nil(Map.get(arg, :default))
   end
 
   defp get_sortable_aggregates(resource) do
     resource
     |> ResourceInfo.public_aggregates()
-    |> Enum.filter(&Config.show_field?(resource, &1))
+    |> Enum.filter(&sortable_field?(resource, &1))
     |> Enum.map(& &1.name)
+  end
+
+  defp sortable_field?(resource, field) do
+    Config.show_field?(resource, field) and
+      ResourceInfo.sortable?(resource, field.name, include_private?: false)
   end
 
   defp resource_name(resource) do
