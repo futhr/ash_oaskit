@@ -157,16 +157,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
     # Build properties from attributes (and generate embedded schemas)
     attributes = get_public_attributes(resource)
 
-    # Create embedded handler that uses our callback functions
-    embedded_handler = fn bldr, type ->
-      EmbeddedSchemas.maybe_add_embedded_schema(bldr, type, fn b, t ->
-        if EmbeddedSchemas.has_embedded_schema?(b, t, has_schema_fn) do
-          b
-        else
-          EmbeddedSchemas.add_embedded_resource_schema(b, t, mark_seen_fn, add_schema_fn)
-        end
-      end)
-    end
+    embedded_handler = embedded_schema_handler(has_schema_fn, mark_seen_fn, add_schema_fn)
 
     {attr_properties, builder} =
       PropertyBuilders.build_attribute_properties_with_embedded(
@@ -213,6 +204,28 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
     schema = maybe_add_required(schema, required)
 
     add_schema_fn.(builder, "#{schema_name}Attributes", schema)
+  end
+
+  defp embedded_schema_handler(has_schema_fn, mark_seen_fn, add_schema_fn) do
+    fn bldr, type ->
+      EmbeddedSchemas.maybe_add_embedded_schema(bldr, type, fn b, t ->
+        maybe_add_embedded_resource_schema(b, t, has_schema_fn, mark_seen_fn, add_schema_fn)
+      end)
+    end
+  end
+
+  defp maybe_add_embedded_resource_schema(
+         builder,
+         type,
+         has_schema_fn,
+         mark_seen_fn,
+         add_schema_fn
+       ) do
+    if EmbeddedSchemas.has_embedded_schema?(builder, type, has_schema_fn) do
+      builder
+    else
+      EmbeddedSchemas.add_embedded_resource_schema(builder, type, mark_seen_fn, add_schema_fn)
+    end
   end
 
   @doc """

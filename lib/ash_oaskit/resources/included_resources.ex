@@ -411,27 +411,28 @@ defmodule AshOaskit.IncludedResources do
   defp resolve_path_to_resource(_, []), do: []
 
   defp resolve_path_to_resource(resource, [rel_name | rest]) do
-    relationships = get_relationships(resource)
+    resource
+    |> get_relationships()
+    |> find_relationship(rel_name)
+    |> resolve_relationship_path(rest)
+  end
 
-    case find_relationship(relationships, rel_name) do
-      nil ->
-        []
+  defp resolve_relationship_path(nil, _), do: []
 
-      rel ->
-        destination = get_relationship_destination(rel)
+  defp resolve_relationship_path(rel, rest) do
+    rel
+    |> get_relationship_destination()
+    |> resolve_destination_path(rest)
+  end
 
-        if destination do
-          name = resource_name(destination)
+  defp resolve_destination_path(nil, _), do: []
 
-          if Enum.empty?(rest) do
-            [name]
-          else
-            [name | resolve_path_to_resource(destination, rest)]
-          end
-        else
-          []
-        end
-    end
+  defp resolve_destination_path(destination, []) do
+    [resource_name(destination)]
+  end
+
+  defp resolve_destination_path(destination, rest) do
+    [resource_name(destination) | resolve_path_to_resource(destination, rest)]
   end
 
   @spec get_relationships(module()) :: list(map())

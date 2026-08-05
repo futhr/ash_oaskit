@@ -482,24 +482,28 @@ defmodule AshOaskit.SpecModifier do
     sunset = Keyword.get(opts, :sunset)
 
     fn spec ->
-      update_operations(spec, operation_ids, fn operation ->
-        operation = Map.put(operation, "deprecated", true)
-
-        updated_description =
-          String.trim(Map.get(operation, "description", "") <> "\n\n**Deprecated:** #{message}")
-
-        operation = Map.put(operation, "description", updated_description)
-
-        if sunset do
-          Map.put(operation, "x-sunset", sunset)
-        else
-          operation
-        end
-      end)
+      update_operations(spec, operation_ids, &deprecate_operation(&1, message, sunset))
     end
   end
 
   # Private helper functions
+
+  defp deprecate_operation(operation, message, sunset) do
+    operation
+    |> Map.put("deprecated", true)
+    |> put_deprecation_description(message)
+    |> maybe_put_sunset(sunset)
+  end
+
+  defp put_deprecation_description(operation, message) do
+    updated_description =
+      String.trim(Map.get(operation, "description", "") <> "\n\n**Deprecated:** #{message}")
+
+    Map.put(operation, "description", updated_description)
+  end
+
+  defp maybe_put_sunset(operation, nil), do: operation
+  defp maybe_put_sunset(operation, sunset), do: Map.put(operation, "x-sunset", sunset)
 
   @spec update_operations(map(), list(String.t()) | nil, (map() -> map())) :: map()
   defp update_operations(spec, operation_ids, update_fn) do

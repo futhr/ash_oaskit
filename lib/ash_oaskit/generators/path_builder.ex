@@ -514,31 +514,43 @@ defmodule AshOaskit.Generators.PathBuilder do
 
     route
     |> Map.get(:query_params, [])
-    |> Enum.map(fn name ->
-      case Map.get(arguments, name) do
-        nil ->
-          attribute = ResourceInfo.attribute(route.resource, name)
-          schema = if attribute, do: version_schema(attribute, version), else: %{type: :string}
-
-          param_name =
-            if attribute do
-              Config.json_field_name(route.resource, name)
-            else
-              to_string(name)
-            end
-
-          %{name: param_name, in: :query, required: false, schema: schema}
-
-        argument ->
-          %{
-            name: Config.json_argument_name(route.resource, route.action, name),
-            in: :query,
-            required: not argument.allow_nil? and is_nil(argument.default),
-            schema: version_schema(argument, version)
-          }
-      end
-    end)
+    |> Enum.map(&build_generic_query_parameter(&1, arguments, route, version))
   end
+
+  defp build_generic_query_parameter(name, arguments, route, version) do
+    case Map.get(arguments, name) do
+      nil -> build_attribute_query_parameter(name, route, version)
+      argument -> build_argument_query_parameter(name, argument, route, version)
+    end
+  end
+
+  defp build_attribute_query_parameter(name, route, version) do
+    attribute = ResourceInfo.attribute(route.resource, name)
+
+    %{
+      name: query_parameter_name(route.resource, name, attribute),
+      in: :query,
+      required: false,
+      schema: query_parameter_schema(attribute, version)
+    }
+  end
+
+  defp build_argument_query_parameter(name, argument, route, version) do
+    %{
+      name: Config.json_argument_name(route.resource, route.action, name),
+      in: :query,
+      required: not argument.allow_nil? and is_nil(argument.default),
+      schema: version_schema(argument, version)
+    }
+  end
+
+  defp query_parameter_name(_, name, nil), do: to_string(name)
+
+  defp query_parameter_name(resource, name, _),
+    do: Config.json_field_name(resource, name)
+
+  defp query_parameter_schema(nil, _), do: %{type: :string}
+  defp query_parameter_schema(attribute, version), do: version_schema(attribute, version)
 
   # Builds responses for a generic action route, mirroring how AshJsonApi
   # serializes generic action results
