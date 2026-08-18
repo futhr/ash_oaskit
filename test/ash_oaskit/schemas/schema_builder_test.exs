@@ -289,6 +289,39 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       assert components.schemas["Person"] == schema
     end
+
+    test "rejects local references whose component is missing" do
+      builder =
+        SchemaBuilder.add_schema(SchemaBuilder.new(), "Post", %{
+          type: :object,
+          properties: %{author: %{"$ref" => "#/components/schemas/Author"}}
+        })
+
+      assert_raise ArgumentError,
+                   "OpenAPI schemas contain missing local component references: Author",
+                   fn ->
+                     SchemaBuilder.to_components(builder)
+                   end
+    end
+
+    test "validates references outside the components map" do
+      schemas = %{"Post" => %{type: :object}}
+
+      document = %{
+        paths: %{
+          "/posts" => %{
+            get: %{responses: %{"200" => %{"$ref" => "#/components/schemas/Missing"}}}
+          }
+        },
+        components: %{schemas: schemas}
+      }
+
+      assert_raise ArgumentError,
+                   "OpenAPI schemas contain missing local component references: Missing",
+                   fn ->
+                     SchemaBuilder.validate_refs!(document, schemas)
+                   end
+    end
   end
 
   describe "version/1" do

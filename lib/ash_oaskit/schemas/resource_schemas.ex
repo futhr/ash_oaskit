@@ -83,6 +83,11 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
     mark_seen_fn = Keyword.fetch!(opts, :mark_seen_fn)
     add_schema_fn = Keyword.fetch!(opts, :add_schema_fn)
 
+    reserve_resource_name_fn =
+      Keyword.get(opts, :reserve_resource_name_fn, fn bldr, _ -> bldr end)
+
+    builder = reserve_resource_name_fn.(builder, resource)
+
     # Mark as seen to prevent cycles
     builder = mark_seen_fn.(builder, resource)
 
@@ -204,6 +209,15 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
     schema = maybe_add_required(schema, required)
 
     add_schema_fn.(builder, "#{schema_name}Attributes", schema)
+  rescue
+    error in ArgumentError ->
+      reraise ArgumentError,
+              [
+                message:
+                  "failed to generate OpenAPI attributes for #{inspect(resource)}: " <>
+                    Exception.message(error)
+              ],
+              __STACKTRACE__
   end
 
   defp embedded_schema_handler(has_schema_fn, mark_seen_fn, add_schema_fn) do

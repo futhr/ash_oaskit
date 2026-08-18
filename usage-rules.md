@@ -177,6 +177,14 @@ end
 | `Ash.Type.Enum` implementors | `string` + `enum` | - |
 | `Ash.Type.NewType` wrappers | (subtype schema) | - |
 
+Custom `json_schema/1` callbacks must return a map and must not raise. Invalid
+callbacks fail generation with type and attribute context; there is no silent
+string fallback.
+
+Give resources distinct JSON:API `type` values whenever their modules share a
+final segment. Component-name collisions are rejected, and generated local
+`$ref` targets are validated before the spec is returned.
+
 ## Constraint Mapping
 
 | Ash | JSON Schema |

@@ -118,6 +118,7 @@ defmodule AshOaskit.Generators.Generator do
     }
     |> reject_nil_values()
     |> apply_modify_hook(opts)
+    |> validate_local_schema_refs!()
   end
 
   @doc """
@@ -149,7 +150,7 @@ defmodule AshOaskit.Generators.Generator do
         )
       end)
 
-    %{schemas: builder.schemas}
+    SchemaBuilder.to_components(builder)
   end
 
   # :all seeds every resource of every domain; :routed seeds only the
@@ -224,6 +225,11 @@ defmodule AshOaskit.Generators.Generator do
 
         spec
     end
+  end
+
+  defp validate_local_schema_refs!(spec) do
+    SchemaBuilder.validate_refs!(spec, get_in(spec, [:components, :schemas]))
+    spec
   end
 
   # Gets all resources from a domain

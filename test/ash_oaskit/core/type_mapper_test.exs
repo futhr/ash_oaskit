@@ -3,7 +3,6 @@ defmodule AshOaskit.TypeMapperTest do
 
   use ExUnit.Case, async: true
 
-  import ExUnit.CaptureLog
   doctest AshOaskit.TypeMapper
 
   alias AshOaskit.TypeMapper
@@ -799,6 +798,12 @@ defmodule AshOaskit.TypeMapperTest do
       end
     end
 
+    defmodule CustomTypeWithMalformedJsonSchema do
+      @moduledoc false
+      @spec json_schema(keyword()) :: String.t()
+      def json_schema(_), do: "not a schema"
+    end
+
     defmodule CustomTypeWithObjectSchema do
       @moduledoc false
       @spec json_schema(keyword()) :: map()
@@ -867,16 +872,24 @@ defmodule AshOaskit.TypeMapperTest do
              }
     end
 
-    test "maps custom type with failing json_schema callback to string" do
-      attr = %{type: CustomTypeWithFailingJsonSchema, allow_nil?: false}
+    test "raises with type and attribute context when a custom callback fails" do
+      attr = %{name: :external_id, type: CustomTypeWithFailingJsonSchema, allow_nil?: false}
 
-      {result, log} =
-        with_log(fn ->
-          TypeMapper.to_json_schema_31(attr)
-        end)
+      assert_raise ArgumentError,
+                   ~r/CustomTypeWithFailingJsonSchema\.json_schema\/1 failed: intentional error.*attribute :external_id/s,
+                   fn ->
+                     TypeMapper.to_json_schema_31(attr)
+                   end
+    end
 
-      assert result["type"] == "string"
-      assert log =~ "Failed to get json_schema"
+    test "rejects malformed custom callback return values" do
+      attr = %{name: :metadata, type: CustomTypeWithMalformedJsonSchema, allow_nil?: false}
+
+      assert_raise ArgumentError,
+                   ~r/CustomTypeWithMalformedJsonSchema\.json_schema\/1 must return a map.*"not a schema".*attribute :metadata/s,
+                   fn ->
+                     TypeMapper.to_json_schema_31(attr)
+                   end
     end
   end
 

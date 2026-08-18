@@ -90,8 +90,6 @@ defmodule AshOaskit.TypeMapper do
 
   alias Ash.Type.NewType
 
-  require Logger
-
   @uuid_v7_pattern "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
 
   @doc """
@@ -129,6 +127,9 @@ defmodule AshOaskit.TypeMapper do
     schema
     |> maybe_add_description(attr)
     |> maybe_add_default(attr)
+  rescue
+    error in ArgumentError ->
+      reraise_with_attribute_context(error, attr, __STACKTRACE__)
   end
 
   @doc """
@@ -162,6 +163,9 @@ defmodule AshOaskit.TypeMapper do
     schema
     |> maybe_add_description(attr)
     |> maybe_add_default(attr)
+  rescue
+    error in ArgumentError ->
+      reraise_with_attribute_context(error, attr, __STACKTRACE__)
   end
 
   # For Ash.Type.NewType subtypes of Ash.Type.Union, the actual union variant
@@ -458,14 +462,41 @@ defmodule AshOaskit.TypeMapper do
   end
 
   defp get_custom_json_schema(type, constraints) do
-    type.json_schema(constraints)
-  rescue
-    e ->
-      Logger.warning(fn ->
-        "Failed to get json_schema for #{inspect(type)}: #{Exception.message(e)}"
-      end)
+    schema =
+      try do
+        type.json_schema(constraints)
+      rescue
+        error ->
+          reraise ArgumentError,
+                  [
+                    message:
+                      "custom type callback #{inspect(type)}.json_schema/1 failed: " <>
+                        Exception.message(error)
+                  ],
+                  __STACKTRACE__
+      end
 
-      %{"type" => "string"}
+    if is_map(schema) do
+      schema
+    else
+      raise ArgumentError,
+            "custom type callback #{inspect(type)}.json_schema/1 must return a map, " <>
+              "got: #{inspect(schema)}"
+    end
+  end
+
+  @spec reraise_with_attribute_context(term(), map(), Exception.stacktrace()) ::
+          no_return()
+  defp reraise_with_attribute_context(error, attr, stacktrace) do
+    attribute =
+      case Map.get(attr, :name) do
+        nil -> "unnamed attribute"
+        name -> "attribute #{inspect(name)}"
+      end
+
+    reraise ArgumentError,
+            [message: "#{Exception.message(error)} while mapping #{attribute}"],
+            stacktrace
   end
 
   # Check if a type is a union type and return {:union, types} or false

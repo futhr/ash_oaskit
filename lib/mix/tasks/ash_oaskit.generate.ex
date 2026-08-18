@@ -22,7 +22,8 @@ defmodule Mix.Tasks.AshOaskit.Generate do
 
     * `--domains` - Comma-separated list of Ash domains (required)
     * `--version` - OpenAPI version: "3.0" or "3.1" (default: "3.1")
-    * `--output` - Output file path (default: "openapi.json")
+    * `--output` - Output file path (default: `openapi-<version>.<format>`,
+      for example `openapi-3.1.json`)
     * `--format` - Output format: "json" or "yaml" (default: "json")
     * `--title` - API title
     * `--api-version` - API version string

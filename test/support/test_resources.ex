@@ -425,3 +425,41 @@ defmodule AshOaskit.Test.Blog do
     end
   end
 end
+
+defmodule AshOaskit.Test.Left.Record do
+  @moduledoc false
+  use Ash.Resource, domain: AshOaskit.Test.ComponentCollisionDomain
+
+  attributes do
+    uuid_primary_key :id
+    attribute :left_value, :string, allow_nil?: false, public?: true
+  end
+
+  actions do
+    defaults [:read]
+  end
+end
+
+defmodule AshOaskit.Test.Right.Record do
+  @moduledoc false
+  use Ash.Resource, domain: AshOaskit.Test.ComponentCollisionDomain
+
+  attributes do
+    uuid_primary_key :id
+    attribute :right_value, :integer, allow_nil?: false, public?: true
+  end
+
+  actions do
+    defaults [:read]
+  end
+end
+
+defmodule AshOaskit.Test.ComponentCollisionDomain do
+  @moduledoc false
+  use Ash.Domain, validate_config_inclusion?: false
+
+  resources do
+    resource AshOaskit.Test.Left.Record
+    resource AshOaskit.Test.Right.Record
+  end
+end

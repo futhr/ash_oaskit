@@ -20,6 +20,7 @@ defmodule AshOaskit.SchemaBuilder do
   The builder maintains state through a struct containing:
 
   - `schemas` - Map of schema name to schema definition
+  - `resource_names` - Map of component base name to its owning resource
   - `seen_types` - MapSet of types already processed (output schemas)
   - `seen_input_types` - MapSet of input types already processed
   - `version` - OpenAPI version ("3.0" or "3.1") for nullable handling
@@ -107,6 +108,7 @@ defmodule AshOaskit.SchemaBuilder do
   ## Fields
 
   - `:schemas` - Map of schema name (string) to schema definition (map)
+  - `:resource_names` - Map of schema base name to the resource that owns it
   - `:seen_types` - MapSet of modules already processed for output schemas
   - `:seen_input_types` - MapSet of modules already processed for input schemas
   - `:version` - OpenAPI version string ("3.0" or "3.1")
@@ -134,6 +136,7 @@ defmodule AshOaskit.SchemaBuilder do
   def new(opts \\ []) do
     %{
       schemas: %{},
+      resource_names: %{},
       seen_types: MapSet.new(),
       seen_input_types: MapSet.new(),
       version: Keyword.get(opts, :version, "3.1")
@@ -321,7 +324,27 @@ defmodule AshOaskit.SchemaBuilder do
   """
   @spec to_components(t()) :: map()
   def to_components(%{schemas: schemas}) do
+    validate_refs!(schemas, schemas)
     %{schemas: schemas}
+  end
+
+  @doc false
+  @spec validate_refs!(term(), map()) :: :ok
+  def validate_refs!(document, schemas) when is_map(schemas) do
+    missing_refs =
+      document
+      |> collect_local_schema_refs([])
+      |> Enum.uniq()
+      |> Enum.reject(&Map.has_key?(schemas, &1))
+      |> Enum.sort()
+
+    if missing_refs != [] do
+      raise ArgumentError,
+            "OpenAPI schemas contain missing local component references: " <>
+              Enum.join(missing_refs, ", ")
+    end
+
+    :ok
   end
 
   @doc """
@@ -418,6 +441,7 @@ defmodule AshOaskit.SchemaBuilder do
   def add_resource_schemas(%{} = builder, resource, opts) when is_atom(resource) do
     builder_opts = [
       mark_seen_fn: &mark_seen/2,
+      reserve_resource_name_fn: &reserve_resource_name/2,
       add_schema_fn: &add_schema/3,
       has_schema_fn: &has_schema?/2,
       seen_fn: &seen?/2
@@ -425,6 +449,40 @@ defmodule AshOaskit.SchemaBuilder do
 
     ResourceSchemas.add_resource_schemas(builder, resource, Keyword.merge(builder_opts, opts))
   end
+
+  defp reserve_resource_name(%{resource_names: resource_names} = builder, resource) do
+    name = resource_schema_name(resource)
+
+    case Map.get(resource_names, name) do
+      nil ->
+        %{builder | resource_names: Map.put(resource_names, name, resource)}
+
+      ^resource ->
+        builder
+
+      existing_resource ->
+        raise ArgumentError,
+              "cannot generate OpenAPI component #{inspect(name)}: " <>
+                "#{inspect(existing_resource)} and #{inspect(resource)} resolve to the same " <>
+                "resource name; configure distinct AshJsonApi resource types"
+    end
+  end
+
+  defp collect_local_schema_refs(%{} = value, refs) do
+    refs =
+      case Map.get(value, "$ref") do
+        "#/components/schemas/" <> name -> [name | refs]
+        _ -> refs
+      end
+
+    Enum.reduce(Map.values(value), refs, &collect_local_schema_refs/2)
+  end
+
+  defp collect_local_schema_refs(value, refs) when is_list(value) do
+    Enum.reduce(value, refs, &collect_local_schema_refs/2)
+  end
+
+  defp collect_local_schema_refs(_, refs), do: refs
 
   @doc """
   Generates the schema name for a resource.

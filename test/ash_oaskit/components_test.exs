@@ -138,6 +138,14 @@ defmodule AshOaskit.ComponentsTest do
       keys = Map.keys(schemas)
       assert length(keys) == length(Enum.uniq(keys))
     end
+
+    test "rejects distinct resources that resolve to the same component name" do
+      assert_raise ArgumentError,
+                   ~r/cannot generate OpenAPI component "Record".*Left\.Record.*Right\.Record/s,
+                   fn ->
+                     AshOaskit.spec_31(domains: [AshOaskit.Test.ComponentCollisionDomain])
+                   end
+    end
   end
 
   describe "$ref references in components" do

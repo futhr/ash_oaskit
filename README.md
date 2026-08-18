@@ -227,7 +227,14 @@ validated = AshOaskit.validate!(spec)
 | `Ash.Type.NewType` wrappers | (subtype schema) | via `subtype_of/0` |
 
 See `AshOaskit.TypeMapper` for unions, structs, embedded resources, and
-custom types with a `json_schema/1` callback.
+custom types with a `json_schema/1` callback. A declared callback must return
+a schema map; exceptions and malformed return values stop generation with the
+custom type and attribute in the error instead of emitting a guessed schema.
+
+Component names come from each resource's JSON:API `type`, falling back to the
+resource module's final segment. If two resources resolve to the same name,
+generation fails with both modules and the conflicting component name. Give
+such resources distinct JSON:API types so `$ref` identity remains unambiguous.
 
 ### Constraint Mapping
 
