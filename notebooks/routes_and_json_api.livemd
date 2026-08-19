@@ -1,0 +1,412 @@
+# Routes and JSON:API: how operations appear in the spec
+
+[![Run in Livebook](https://livebook.dev/badge/v1/blue.svg)](https://livebook.dev/run/?url=https://raw.githubusercontent.com/futhr/ash_oaskit/main/notebooks/routes_and_json_api.livemd)
+
+This notebook explains the path-generation side of AshOaskit.
+
+AshOaskit can generate schemas from resources alone, but the most useful OpenAPI documents come from AshJsonApi route declarations. Routes tell the generator which operations exist, which HTTP methods they use, which path parameters they need, which request bodies apply, and which response shapes to reference.
+
+## Setup
+
+```elixir
+repo_root = Path.expand("..", __DIR__)
+mix_exs = Path.join(repo_root, "mix.exs")
+
+ash_oaskit_dep =
+  if File.exists?(mix_exs) and File.read!(mix_exs) =~ "app: :ash_oaskit" do
+    {:ash_oaskit, path: repo_root, env: :prod}
+  else
+    {:ash_oaskit, github: "futhr/ash_oaskit", branch: "main"}
+  end
+
+mix_install_opts =
+  if File.exists?(Path.join(repo_root, "mix.lock")) do
+    [lockfile: Path.join(repo_root, "mix.lock")]
+  else
+    []
+  end
+
+Mix.install(
+  [
+    ash_oaskit_dep,
+    {:ash_json_api, "~> 1.0"}
+  ],
+  mix_install_opts
+)
+
+Application.put_env(:ash_oaskit, :cache_specs, false)
+```
+
+## A route-heavy domain
+
+This domain has collection routes, member routes, create/update/delete routes, and relationship routes.
+
+```elixir
+defmodule AshOaskit.Notebooks.Routes.Author do
+  use Ash.Resource,
+    domain: AshOaskit.Notebooks.Routes.Publishing,
+    data_layer: Ash.DataLayer.Ets,
+    extensions: [AshJsonApi.Resource]
+
+  json_api do
+    type "author"
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :first_name, :string do
+      public? true
+      allow_nil? false
+    end
+
+    attribute :last_name, :string do
+      public? true
+      allow_nil? false
+    end
+
+    attribute :email, :string do
+      public? true
+      allow_nil? false
+      constraints match: ~r/^[^\s]+@[^\s]+$/
+    end
+  end
+
+  relationships do
+    has_many :articles, AshOaskit.Notebooks.Routes.Article do
+      public? true
+    end
+  end
+
+  calculations do
+    calculate :full_name, :string, expr(first_name <> " " <> last_name) do
+      public? true
+      description "Author display name"
+    end
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [:first_name, :last_name, :email]
+    end
+
+    update :update do
+      primary? true
+      accept [:first_name, :last_name, :email]
+    end
+  end
+end
+
+defmodule AshOaskit.Notebooks.Routes.Article do
+  use Ash.Resource,
+    domain: AshOaskit.Notebooks.Routes.Publishing,
+    data_layer: Ash.DataLayer.Ets,
+    extensions: [AshJsonApi.Resource]
+
+  json_api do
+    type "article"
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :title, :string do
+      public? true
+      allow_nil? false
+      constraints min_length: 1, max_length: 200
+    end
+
+    attribute :status, :atom do
+      public? true
+      constraints one_of: [:draft, :published, :archived]
+      default :draft
+    end
+
+    attribute :word_count, :integer do
+      public? true
+      constraints min: 0
+    end
+
+    create_timestamp :inserted_at, public?: true
+  end
+
+  relationships do
+    belongs_to :author, AshOaskit.Notebooks.Routes.Author do
+      public? true
+      allow_nil? false
+    end
+
+    has_many :reviews, AshOaskit.Notebooks.Routes.Review do
+      public? true
+    end
+  end
+
+  aggregates do
+    count :review_count, :reviews do
+      public? true
+      description "Number of reviews"
+    end
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [:title, :status, :word_count, :author_id]
+    end
+
+    update :update do
+      primary? true
+      accept [:title, :status, :word_count]
+    end
+  end
+end
+
+defmodule AshOaskit.Notebooks.Routes.Review do
+  use Ash.Resource,
+    domain: AshOaskit.Notebooks.Routes.Publishing,
+    data_layer: Ash.DataLayer.Ets,
+    extensions: [AshJsonApi.Resource]
+
+  json_api do
+    type "review"
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :rating, :integer do
+      public? true
+      allow_nil? false
+      constraints min: 1, max: 5
+    end
+
+    attribute :comment, :string do
+      public? true
+    end
+  end
+
+  relationships do
+    belongs_to :article, AshOaskit.Notebooks.Routes.Article do
+      public? true
+      allow_nil? false
+    end
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [:rating, :comment, :article_id]
+    end
+  end
+end
+
+defmodule AshOaskit.Notebooks.Routes.Publishing do
+  use Ash.Domain,
+    validate_config_inclusion?: false,
+    extensions: [AshJsonApi.Domain]
+
+  resources do
+    resource AshOaskit.Notebooks.Routes.Author
+    resource AshOaskit.Notebooks.Routes.Article
+    resource AshOaskit.Notebooks.Routes.Review
+  end
+
+  json_api do
+    routes do
+      base_route "/authors", AshOaskit.Notebooks.Routes.Author do
+        get :read
+        index :read
+        post :create
+        patch :update
+        delete :destroy
+      end
+
+      base_route "/articles", AshOaskit.Notebooks.Routes.Article do
+        get :read
+        index :read
+        post :create
+        patch :update
+        delete :destroy
+
+        related :author, :read
+        related :reviews, :read
+        relationship :author, :read
+        relationship :reviews, :read
+        post_to_relationship :reviews
+        delete_from_relationship :reviews
+      end
+
+      base_route "/reviews", AshOaskit.Notebooks.Routes.Review do
+        get :read
+        index :read
+        post :create
+        delete :destroy
+      end
+    end
+  end
+end
+```
+
+## Inspect generated paths
+
+```elixir
+spec =
+  AshOaskit.spec_31(
+    domains: [AshOaskit.Notebooks.Routes.Publishing],
+    title: "Publishing API"
+  )
+
+spec["paths"]
+|> Map.keys()
+|> Enum.sort()
+```
+
+A JSON:API base route expands into a set of OpenAPI path items. `:id` parameters are converted to OpenAPI's `{id}` syntax by `AshOaskit.Core.PathUtils`.
+
+## Operation summary
+
+This view is useful when reviewing a generated spec: paths, methods, operation IDs, tags, and parameters.
+
+```elixir
+operation_summary =
+  for {path, methods} <- spec["paths"],
+      {method, operation} <- methods,
+      method in ["get", "post", "patch", "delete"] do
+    %{
+      path: path,
+      method: method,
+      operation_id: operation["operationId"],
+      tags: operation["tags"],
+      parameters:
+        operation
+        |> Map.get("parameters", [])
+        |> Enum.map(& &1["name"])
+    }
+  end
+
+Enum.sort_by(operation_summary, &{&1.path, &1.method})
+```
+
+## Query parameters
+
+Collection and related-resource operations get JSON:API-flavored query parameters where they apply.
+
+```elixir
+index_parameters =
+  spec
+  |> get_in(["paths", "/articles", "get", "parameters"])
+  |> List.wrap()
+  |> Enum.map(fn parameter ->
+    %{
+      name: parameter["name"],
+      in: parameter["in"],
+      style: parameter["style"],
+      explode: parameter["explode"]
+    }
+  end)
+
+index_parameters
+```
+
+Typical parameters include:
+
+- `page` for pagination
+- `fields` for sparse fieldsets
+- `include` for relationship inclusion
+- `filter` for deep-object filtering
+- `sort` for sortable public attributes, calculations, and aggregates
+
+The generator derives these from the resource and AshJsonApi configuration instead of hard-coding names per route.
+
+## Relationship routes
+
+JSON:API relationship routes are separate from ordinary resource routes. They are useful when clients need to inspect or mutate linkage without fetching full related resources.
+
+```elixir
+spec["paths"]
+|> Enum.filter(fn {path, _methods} ->
+  String.contains?(path, "relationships") or String.contains?(path, "/reviews")
+end)
+|> Enum.map(fn {path, methods} ->
+  {path, Map.keys(methods) |> Enum.sort()}
+end)
+|> Enum.sort()
+```
+
+AshOaskit handles:
+
+| AshJsonApi route | OpenAPI intent |
+|------------------|----------------|
+| `related :reviews, :read` | fetch related resources |
+| `relationship :reviews, :read` | fetch resource identifiers |
+| `post_to_relationship :reviews` | add linkage |
+| `patch_relationship :reviews` | replace linkage |
+| `delete_from_relationship :reviews` | remove linkage |
+
+Relationship response schemas reuse the same JSON:API resource identifier shape: `type`, `id`, and optional `meta`.
+
+## Resource-level routes are supported too
+
+AshJsonApi can declare routes on the domain or on the resource. AshOaskit gathers both. This is useful in larger codebases where route ownership is closer to the resource module.
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+json_api do
+  type "gadget"
+
+  routes do
+    base "/gadgets"
+    get :read
+    index :read
+    post :create
+
+    route :post, "/:id/activate", :activate,
+      name: "power_up",
+      description: "Activates the gadget immediately"
+  end
+end
+```
+
+The generated OpenAPI path uses `{id}` and gets a stable operation object, response schema, and request body where the Ash action exposes public arguments.
+
+## Phoenix controller introspection
+
+AshOaskit is primarily AshJsonApi-aware, but it can also merge hand-written Phoenix controller operations. That matters for hybrid APIs: most endpoints may be Ash resources, while a few are custom reports, callbacks, or health checks.
+
+The rule is explicit: only controllers that implement `AshOaskit.OpenApiController` are included.
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+defmodule MyAppWeb.HealthController do
+  use MyAppWeb, :controller
+  @behaviour AshOaskit.OpenApiController
+
+  @impl true
+  def openapi_operations do
+    %{
+      index: %{
+        summary: "Health check",
+        responses: %{"200" => %{description: "OK"}}
+      }
+    }
+  end
+end
+
+defmodule MyAppWeb.ApiSpec do
+  use AshOaskit,
+    domains: [MyApp.Blog],
+    router: MyAppWeb.Router
+end
+```
+
+That keeps controller introspection opt-in. The generator does not scrape every controller in your application and guess what should be public.
+
+## Speaker note
+
+A generated OpenAPI path is a join point. It combines route metadata, path parameters, action input, response schemas, query parameters, relationship semantics, tags, and errors. Most bugs in generated specs come from losing one of those inputs. AshOaskit keeps those concerns in small builders so the behavior is easier to reason about.

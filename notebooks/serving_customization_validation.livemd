@@ -1,0 +1,379 @@
+# Serving, customization, and validation
+
+[![Run in Livebook](https://livebook.dev/badge/v1/blue.svg)](https://livebook.dev/run/?url=https://raw.githubusercontent.com/futhr/ash_oaskit/main/notebooks/serving_customization_validation.livemd)
+
+This notebook covers the operational side of AshOaskit:
+
+- defining spec modules
+- serving JSON and Redoc from Phoenix or Plug.Router
+- adding security, servers, headers, examples, and webhooks
+- exporting static specs
+- validating generated specs and hand-written controllers through Oaskit
+
+The important rule is that customization should happen through hooks, not by editing generated files after the fact.
+
+## Setup
+
+```elixir
+repo_root = Path.expand("..", __DIR__)
+mix_exs = Path.join(repo_root, "mix.exs")
+
+ash_oaskit_dep =
+  if File.exists?(mix_exs) and File.read!(mix_exs) =~ "app: :ash_oaskit" do
+    {:ash_oaskit, path: repo_root, env: :prod}
+  else
+    {:ash_oaskit, github: "futhr/ash_oaskit", branch: "main"}
+  end
+
+mix_install_opts =
+  if File.exists?(Path.join(repo_root, "mix.lock")) do
+    [lockfile: Path.join(repo_root, "mix.lock")]
+  else
+    []
+  end
+
+Mix.install(
+  [
+    ash_oaskit_dep,
+    {:ash_json_api, "~> 1.0"}
+  ],
+  mix_install_opts
+)
+
+Application.put_env(:ash_oaskit, :cache_specs, false)
+```
+
+## A small API to serve
+
+```elixir
+defmodule AshOaskit.Notebooks.Serving.Task do
+  use Ash.Resource,
+    domain: AshOaskit.Notebooks.Serving.Work,
+    extensions: [AshJsonApi.Resource]
+
+  json_api do
+    type "task"
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :title, :string do
+      public? true
+      allow_nil? false
+      constraints min_length: 1, max_length: 160
+    end
+
+    attribute :state, :atom do
+      public? true
+      constraints one_of: [:todo, :doing, :done]
+      default :todo
+    end
+
+    attribute :due_on, :date do
+      public? true
+    end
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [:title, :state, :due_on]
+    end
+
+    update :update do
+      primary? true
+      accept [:title, :state, :due_on]
+    end
+  end
+end
+
+defmodule AshOaskit.Notebooks.Serving.Work do
+  use Ash.Domain,
+    validate_config_inclusion?: false,
+    extensions: [AshJsonApi.Domain]
+
+  resources do
+    resource AshOaskit.Notebooks.Serving.Task
+  end
+
+  json_api do
+    routes do
+      base_route "/tasks", AshOaskit.Notebooks.Serving.Task do
+        get :read
+        index :read
+        post :create
+        patch :update
+        delete :destroy
+      end
+    end
+  end
+end
+```
+
+## The spec module is the integration point
+
+`use AshOaskit` turns the configured domain list into an Oaskit-compatible spec module.
+
+```elixir
+defmodule AshOaskit.Notebooks.Serving.ApiSpec do
+  use AshOaskit,
+    domains: [AshOaskit.Notebooks.Serving.Work],
+    title: "Work API",
+    api_version: "1.0.0",
+    cache: false
+end
+
+AshOaskit.Notebooks.Serving.ApiSpec.spec()
+|> Map.take(["openapi", "info"])
+```
+
+In an application, you normally keep caching enabled. In development, disable it globally so code reloads regenerate specs:
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+# config/dev.exs
+config :ash_oaskit, cache_specs: false
+```
+
+## Serve JSON and Redoc
+
+The router macro works in Phoenix Router and Plug.Router.
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+defmodule MyAppWeb.Router do
+  use MyAppWeb, :router
+
+  use AshOaskit.Router,
+    spec: MyAppWeb.ApiSpec,
+    open_api: "/openapi",
+    redoc: "/redoc"
+end
+```
+
+That serves:
+
+- `GET /openapi.json`
+- `GET /openapi/3.1.json` when multiple versions are configured
+- `GET /openapi/3.0.json` when multiple versions are configured
+- `GET /redoc`
+
+For dual-version output, define two spec modules. One spec module represents one OpenAPI version.
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+defmodule MyAppWeb.ApiSpecV31 do
+  use AshOaskit, domains: [MyApp.Blog], version: "3.1"
+end
+
+defmodule MyAppWeb.ApiSpecV30 do
+  use AshOaskit, domains: [MyApp.Blog], version: "3.0"
+end
+
+use AshOaskit.Router,
+  spec: [{"3.1", MyAppWeb.ApiSpecV31}, {"3.0", MyAppWeb.ApiSpecV30}],
+  open_api: "/openapi",
+  redoc: "/redoc"
+```
+
+## Customize through `modify_spec/1`
+
+`modify_spec/1` runs after generation and before caching. It is the right place to add project-specific OpenAPI details.
+
+```elixir
+defmodule AshOaskit.Notebooks.Serving.CustomApiSpec do
+  use AshOaskit,
+    domains: [AshOaskit.Notebooks.Serving.Work],
+    title: "Work API",
+    api_version: "1.0.0",
+    cache: false
+
+  @impl AshOaskit.Spec
+  def modify_spec(spec) do
+    webhook = %{
+      "post" => %{
+        "summary" => "Task changed",
+        "requestBody" => %{
+          "required" => true,
+          "content" => %{
+            "application/json" => %{
+              "schema" => %{
+                "type" => "object",
+                "required" => ["id", "state"],
+                "properties" => %{
+                  "id" => %{"type" => "string", "format" => "uuid"},
+                  "state" => %{"type" => "string", "enum" => ["todo", "doing", "done"]}
+                }
+              }
+            }
+          }
+        },
+        "responses" => %{"200" => %{"description" => "Webhook received"}}
+      }
+    }
+
+    spec
+    |> AshOaskit.SpecModifier.add_server("https://api.example.com", description: "Production")
+    |> AshOaskit.SpecModifier.add_extension(["info"], "x-api-audience", "partners")
+    |> AshOaskit.SpecModifier.add_header_to_operations("X-Request-ID", %{
+      "type" => "string",
+      "format" => "uuid"
+    })
+    |> AshOaskit.SpecModifier.add_webhook("taskChanged", webhook)
+    |> put_in(["components", "securitySchemes"], %{
+      "bearerAuth" => %{
+        "type" => "http",
+        "scheme" => "bearer",
+        "bearerFormat" => "JWT"
+      }
+    })
+    |> Map.put("security", [%{"bearerAuth" => []}])
+  end
+end
+
+custom_spec = AshOaskit.Notebooks.Serving.CustomApiSpec.spec()
+
+%{
+  servers: custom_spec["servers"],
+  info_extension: custom_spec["info"]["x-api-audience"],
+  security_schemes: custom_spec["components"]["securitySchemes"] |> Map.keys(),
+  webhook_names: custom_spec["webhooks"] |> Map.keys()
+}
+```
+
+Common customizations:
+
+- security schemes and global security requirements
+- request/response examples
+- `x-*` vendor extensions
+- extra servers per environment
+- webhook definitions
+- deprecation metadata
+- common headers such as request IDs or rate-limit headers
+
+## `modify_open_api` and `SpecBuilder`
+
+Most applications should use `modify_spec/1`. Two older or lower-level extension points also exist:
+
+- `:modify_open_api` accepts a function, MFA tuple, or list of modifiers.
+- `:spec_builder` accepts a module implementing `AshOaskit.SpecBuilder`.
+
+Those are useful when you need to compose AshOaskit into existing infrastructure, but a spec module plus `modify_spec/1` is the clearest default.
+
+## Export static files
+
+Because spec modules implement Oaskit, use Oaskit's dump task when possible:
+
+<!-- livebook:{"force_markdown":true} -->
+
+```bash
+mix openapi.dump MyAppWeb.ApiSpec --pretty -o priv/static/openapi.json
+```
+
+AshOaskit also ships a generator task for direct domain-based generation:
+
+<!-- livebook:{"force_markdown":true} -->
+
+```bash
+mix ash_oaskit.generate -d MyApp.Blog -o openapi.json
+mix ash_oaskit.generate -d MyApp.Blog -v 3.0 -f yaml -o openapi.yaml
+```
+
+Prefer the spec-module export once your application has one. It exports the exact document your application serves, including `modify_spec/1`.
+
+## Request validation for hand-written controllers
+
+AshJsonApi validates Ash-served routes at the JSON:API and action layers. Oaskit request validation is most useful for hand-written Phoenix controllers that live beside your Ash API.
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+# router.ex
+pipeline :api do
+  plug :accepts, ["json"]
+  plug Oaskit.Plugs.SpecProvider, spec: MyAppWeb.ApiSpec
+end
+
+scope "/api", MyAppWeb do
+  pipe_through :api
+
+  post "/reports", ReportController, :create
+end
+```
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+defmodule MyAppWeb.ReportController do
+  use MyAppWeb, :controller
+  use Oaskit.Controller
+
+  plug Oaskit.Plugs.ValidateRequest
+
+  operation :create,
+    operation_id: "create_report",
+    request_body: {%{
+      "type" => "object",
+      "required" => ["name"],
+      "properties" => %{"name" => %{"type" => "string"}}
+    }, []},
+    responses: [ok: true]
+
+  def create(conn, _params) do
+    json(conn, %{"ok" => true})
+  end
+end
+```
+
+To include those hand-written operations in the generated spec, pass the Phoenix router to the spec module and implement `AshOaskit.OpenApiController` on the controller.
+
+## Validate the spec itself
+
+```elixir
+case AshOaskit.validate(custom_spec) do
+  {:ok, validated} -> {:valid, validated.__struct__}
+  {:error, reason} -> {:invalid, reason}
+end
+```
+
+In CI, the stronger validation stack is:
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+{:ok, _} = AshOaskit.validate(MyAppWeb.ApiSpec.spec())
+Oaskit.build_spec!(MyAppWeb.ApiSpec)
+```
+
+## Resource scope
+
+By default, schemas are seeded from all resources in the listed domains. If a domain contains internal resources that are not routed and should not appear as top-level schemas or tags, use `resource_scope: :routed`.
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+defmodule MyAppWeb.PublicApiSpec do
+  use AshOaskit,
+    domains: [MyApp.BackOffice],
+    resource_scope: :routed
+end
+```
+
+Routed resources are included. Unrouted resources are only pulled in when public relationships or embedded fields need them.
+
+## Speaker note
+
+The operational story is clean if you keep the spec module as the center of gravity:
+
+- routers serve it
+- CI validates it
+- Oaskit exports it
+- request-validation plugs consume it
+- custom OpenAPI metadata is added before caching
+
+That is easier to reason about than generating a spec in five different places.

@@ -1,0 +1,324 @@
+# AshOaskit Quick Start: from Ash domain to OpenAPI
+
+[![Run in Livebook](https://livebook.dev/badge/v1/blue.svg)](https://livebook.dev/run/?url=https://raw.githubusercontent.com/futhr/ash_oaskit/main/notebooks/quickstart.livemd)
+
+This notebook is the shortest useful path through AshOaskit.
+
+We will define a tiny Ash JSON:API domain, generate an OpenAPI 3.1 document, compare it with OpenAPI 3.0, validate the result, and finish with the recommended `use AshOaskit` spec-module workflow.
+
+The main idea is simple: your Ash resources and AshJsonApi routes already describe most of your HTTP API. AshOaskit turns that description into an OpenAPI contract you can serve, validate, export, and hand to client tooling.
+
+## Setup
+
+When this notebook is opened from a local checkout, it uses the local project through a path dependency. When it is opened from `livebook.dev/run`, it falls back to the GitHub `main` branch.
+
+```elixir
+repo_root = Path.expand("..", __DIR__)
+mix_exs = Path.join(repo_root, "mix.exs")
+
+ash_oaskit_dep =
+  if File.exists?(mix_exs) and File.read!(mix_exs) =~ "app: :ash_oaskit" do
+    {:ash_oaskit, path: repo_root, env: :prod}
+  else
+    {:ash_oaskit, github: "futhr/ash_oaskit", branch: "main"}
+  end
+
+mix_install_opts =
+  if File.exists?(Path.join(repo_root, "mix.lock")) do
+    [lockfile: Path.join(repo_root, "mix.lock")]
+  else
+    []
+  end
+
+Mix.install(
+  [
+    ash_oaskit_dep,
+    {:ash_json_api, "~> 1.0"}
+  ],
+  mix_install_opts
+)
+
+# Notebooks are iterative. Disable persistent spec caching so re-running a
+# changed module reflects the latest code immediately.
+Application.put_env(:ash_oaskit, :cache_specs, false)
+```
+
+## The domain we want to document
+
+Here is a small blog API with posts and comments. It uses `AshJsonApi.Domain` for routes and `AshJsonApi.Resource` for JSON:API type names.
+
+```elixir
+defmodule AshOaskit.Notebooks.QuickStart.Post do
+  use Ash.Resource,
+    domain: AshOaskit.Notebooks.QuickStart.Blog,
+    extensions: [AshJsonApi.Resource]
+
+  json_api do
+    type "post"
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :title, :string do
+      public? true
+      allow_nil? false
+      constraints min_length: 1, max_length: 120
+      description "Human-readable post title"
+    end
+
+    attribute :body, :string do
+      public? true
+      description "Markdown body"
+    end
+
+    attribute :status, :atom do
+      public? true
+      constraints one_of: [:draft, :published]
+      default :draft
+      description "Publication status"
+    end
+
+    # This is deliberately private. It should never appear in the spec.
+    attribute :internal_notes, :string
+
+    create_timestamp :inserted_at, public?: true
+    update_timestamp :updated_at, public?: true
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      description "Creates a blog post"
+      accept [:title, :body, :status]
+    end
+
+    update :update do
+      primary? true
+      accept [:title, :body, :status]
+    end
+  end
+end
+
+defmodule AshOaskit.Notebooks.QuickStart.Comment do
+  use Ash.Resource,
+    domain: AshOaskit.Notebooks.QuickStart.Blog,
+    extensions: [AshJsonApi.Resource]
+
+  json_api do
+    type "comment"
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :content, :string do
+      public? true
+      allow_nil? false
+      constraints min_length: 1
+    end
+
+    create_timestamp :inserted_at, public?: true
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [:content]
+    end
+  end
+end
+
+defmodule AshOaskit.Notebooks.QuickStart.Blog do
+  use Ash.Domain,
+    validate_config_inclusion?: false,
+    extensions: [AshJsonApi.Domain]
+
+  resources do
+    resource AshOaskit.Notebooks.QuickStart.Post
+    resource AshOaskit.Notebooks.QuickStart.Comment
+  end
+
+  json_api do
+    routes do
+      base_route "/posts", AshOaskit.Notebooks.QuickStart.Post do
+        get :read
+        index :read
+        post :create
+        patch :update
+        delete :destroy
+      end
+
+      base_route "/comments", AshOaskit.Notebooks.QuickStart.Comment do
+        get :read
+        index :read
+        post :create
+        delete :destroy
+      end
+    end
+  end
+end
+```
+
+## Generate the spec
+
+`AshOaskit.spec/1` returns a plain Elixir map with string keys. That is deliberate: it is easy to inspect, encode as JSON, pass through Oaskit, or modify through documented hooks.
+
+```elixir
+spec =
+  AshOaskit.spec(
+    domains: [AshOaskit.Notebooks.QuickStart.Blog],
+    title: "Notebook Blog API",
+    api_version: "2026.08",
+    description: "A small API generated from Ash resources",
+    servers: ["http://localhost:4000/api"]
+  )
+
+%{
+  openapi: spec["openapi"],
+  title: spec["info"]["title"],
+  paths: spec["paths"] |> Map.keys() |> Enum.sort(),
+  schema_count: spec["components"]["schemas"] |> map_size()
+}
+```
+
+The paths came from the AshJsonApi routes. The component schemas came from public Ash fields, action `accept` lists, relationships, JSON:API response envelopes, pagination metadata, links, and error shapes.
+
+## Public fields are the contract boundary
+
+AshOaskit follows AshJsonApi field visibility. A field must be `public? true` to appear in generated schemas.
+
+```elixir
+schemas = spec["components"]["schemas"]
+
+post_related_schemas =
+  schemas
+  |> Map.keys()
+  |> Enum.filter(&String.contains?(&1, "Post"))
+  |> Enum.sort()
+
+find_schema_property = fn field ->
+  Enum.find_value(schemas, fn {schema_name, schema} ->
+    property = get_in(schema, ["properties", field])
+
+    if property do
+      {schema_name, property}
+    end
+  end)
+end
+
+%{
+  post_schemas: post_related_schemas,
+  title_property: find_schema_property.("title"),
+  internal_notes_property: find_schema_property.("internal_notes")
+}
+```
+
+`internal_notes_property` should be `nil`. That is the important behavior: private resource details do not leak into the OpenAPI contract.
+
+## OpenAPI 3.1 and 3.0 from the same source
+
+The same domain can be rendered as OpenAPI 3.1 or 3.0.
+
+The most visible difference is nullable handling:
+
+- OpenAPI 3.1 can use JSON Schema-style type arrays such as `["string", "null"]`.
+- OpenAPI 3.0 uses `nullable: true`.
+
+```elixir
+spec_31 = AshOaskit.spec_31(domains: [AshOaskit.Notebooks.QuickStart.Blog])
+spec_30 = AshOaskit.spec_30(domains: [AshOaskit.Notebooks.QuickStart.Blog])
+
+find_property = fn spec, field ->
+  spec["components"]["schemas"]
+  |> Enum.find_value(fn {schema_name, schema} ->
+    property = get_in(schema, ["properties", field])
+
+    if property do
+      {schema_name, property}
+    end
+  end)
+end
+
+%{
+  version_31: spec_31["openapi"],
+  nullable_body_in_31: find_property.(spec_31, "body"),
+  version_30: spec_30["openapi"],
+  nullable_body_in_30: find_property.(spec_30, "body")
+}
+```
+
+Use 3.1 when your downstream tooling supports it. Use 3.0 when an API gateway, client generator, or documentation system still expects the older OpenAPI dialect.
+
+## Validate the result
+
+AshOaskit delegates validation to Oaskit.
+
+```elixir
+case AshOaskit.validate(spec) do
+  {:ok, validated} ->
+    {:valid, validated.__struct__}
+
+  {:error, reason} ->
+    {:invalid, reason}
+end
+```
+
+Validation is cheap enough to run in CI. It catches broken references, malformed schema objects, and many compatibility mistakes that are painful to find after publishing a spec.
+
+## The recommended application shape: a spec module
+
+For real applications, prefer a spec module over calling `AshOaskit.spec/1` in a controller. The module implements the Oaskit behaviour, caches the generated document, and gives you a single object to serve, export, and validate.
+
+```elixir
+defmodule AshOaskit.Notebooks.QuickStart.ApiSpec do
+  use AshOaskit,
+    domains: [AshOaskit.Notebooks.QuickStart.Blog],
+    title: "Notebook Blog API",
+    api_version: "2026.08",
+    cache: false
+end
+
+AshOaskit.Notebooks.QuickStart.ApiSpec.spec()
+|> Map.take(["openapi", "info", "paths"])
+```
+
+In a Phoenix or Plug router, that spec module is what you serve:
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+use AshOaskit.Router,
+  spec: MyAppWeb.ApiSpec,
+  open_api: "/openapi",
+  redoc: "/redoc"
+```
+
+That creates:
+
+- `GET /openapi.json` for the OpenAPI document
+- `GET /redoc` for a Redoc UI
+
+## What to remember
+
+AshOaskit does not ask you to maintain a parallel OpenAPI model by hand.
+
+It reads:
+
+- Ash domains and resources
+- public attributes, calculations, aggregates, and relationships
+- action `accept` lists and public arguments
+- AshJsonApi route declarations
+- optional Phoenix controller metadata
+
+Then it emits:
+
+- OpenAPI 3.1 or 3.0
+- JSON:API request and response schemas
+- query parameters for pagination, fields, include, filters, and sorting
+- relationship endpoints
+- reusable components, errors, links, and metadata
+
+That is the core value proposition. The rest of the notebooks go deeper into each part.

@@ -1,0 +1,369 @@
+# Schema generation: how Ash fields become OpenAPI components
+
+[![Run in Livebook](https://livebook.dev/badge/v1/blue.svg)](https://livebook.dev/run/?url=https://raw.githubusercontent.com/futhr/ash_oaskit/main/notebooks/schema_generation.livemd)
+
+This notebook focuses on the schema side of AshOaskit.
+
+Routes decide where operations appear. Schemas decide what clients can send and what they can expect back. If the schema layer is wrong, generated documentation still looks polished, but client code and request validation become unreliable.
+
+We will walk through public fields, constraints, nullable values, enums, new types, embedded resources, custom JSON Schema callbacks, input schemas, and OpenAPI 3.0 versus 3.1 differences.
+
+## Setup
+
+```elixir
+repo_root = Path.expand("..", __DIR__)
+mix_exs = Path.join(repo_root, "mix.exs")
+
+ash_oaskit_dep =
+  if File.exists?(mix_exs) and File.read!(mix_exs) =~ "app: :ash_oaskit" do
+    {:ash_oaskit, path: repo_root, env: :prod}
+  else
+    {:ash_oaskit, github: "futhr/ash_oaskit", branch: "main"}
+  end
+
+mix_install_opts =
+  if File.exists?(Path.join(repo_root, "mix.lock")) do
+    [lockfile: Path.join(repo_root, "mix.lock")]
+  else
+    []
+  end
+
+Mix.install(
+  [
+    ash_oaskit_dep,
+    {:ash_json_api, "~> 1.0"}
+  ],
+  mix_install_opts
+)
+
+Application.put_env(:ash_oaskit, :cache_specs, false)
+```
+
+## A resource with representative field shapes
+
+This is not a production domain. It is a compact specimen built to show the schema generator.
+
+```elixir
+defmodule AshOaskit.Notebooks.Schema.Priority do
+  use Ash.Type.Enum, values: [:low, :medium, :high]
+end
+
+defmodule AshOaskit.Notebooks.Schema.Slug do
+  use Ash.Type.NewType,
+    subtype_of: :string,
+    constraints: [match: ~r/^[a-z0-9-]+$/]
+end
+
+defmodule AshOaskit.Notebooks.Schema.GeoPoint do
+  use Ash.Resource, data_layer: :embedded
+
+  attributes do
+    attribute :lat, :float do
+      public? true
+      allow_nil? false
+      constraints min: -90.0, max: 90.0
+    end
+
+    attribute :lng, :float do
+      public? true
+      allow_nil? false
+      constraints min: -180.0, max: 180.0
+    end
+  end
+end
+
+defmodule AshOaskit.Notebooks.Schema.Venue do
+  use Ash.Resource, data_layer: :embedded
+
+  attributes do
+    attribute :name, :string do
+      public? true
+      allow_nil? false
+      constraints min_length: 1
+    end
+
+    attribute :geo, AshOaskit.Notebooks.Schema.GeoPoint do
+      public? true
+      allow_nil? false
+      description "Coordinates for the venue"
+    end
+  end
+end
+
+defmodule AshOaskit.Notebooks.Schema.Money do
+  use Ash.Type
+
+  @impl Ash.Type
+  def storage_type(_constraints), do: :map
+
+  @impl Ash.Type
+  def cast_input(nil, _constraints), do: {:ok, nil}
+  def cast_input(%{"amount" => _, "currency" => _} = value, _constraints), do: {:ok, value}
+  def cast_input(_value, _constraints), do: :error
+
+  @impl Ash.Type
+  def cast_stored(value, _constraints), do: {:ok, value}
+
+  @impl Ash.Type
+  def dump_to_native(value, _constraints), do: {:ok, value}
+
+  def json_schema(_opts) do
+    %{
+      "type" => "object",
+      "required" => ["amount", "currency"],
+      "properties" => %{
+        "amount" => %{"type" => "number", "minimum" => 0},
+        "currency" => %{"type" => "string", "pattern" => "^[A-Z]{3}$"}
+      }
+    }
+  end
+end
+
+defmodule AshOaskit.Notebooks.Schema.Event do
+  use Ash.Resource,
+    domain: AshOaskit.Notebooks.Schema.Events,
+    extensions: [AshJsonApi.Resource]
+
+  json_api do
+    type "event"
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :title, :string do
+      public? true
+      allow_nil? false
+      constraints min_length: 3, max_length: 160
+      description "Public event title"
+    end
+
+    attribute :slug, AshOaskit.Notebooks.Schema.Slug do
+      public? true
+      allow_nil? false
+    end
+
+    attribute :priority, AshOaskit.Notebooks.Schema.Priority do
+      public? true
+      allow_nil? false
+    end
+
+    attribute :starts_at, :utc_datetime do
+      public? true
+      allow_nil? false
+    end
+
+    attribute :ends_at, :utc_datetime do
+      public? true
+      description "Optional end time"
+    end
+
+    attribute :tags, {:array, :string} do
+      public? true
+      default []
+    end
+
+    attribute :venue, AshOaskit.Notebooks.Schema.Venue do
+      public? true
+      allow_nil? false
+    end
+
+    attribute :budget, AshOaskit.Notebooks.Schema.Money do
+      public? true
+      description "Budget represented by a custom Ash type"
+    end
+
+    attribute :metadata, :map do
+      public? true
+      description "Unstructured public metadata"
+    end
+
+    # Private implementation detail. It must not be documented.
+    attribute :moderation_notes, :string
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [:title, :slug, :priority, :starts_at, :ends_at, :tags, :venue, :budget, :metadata]
+    end
+
+    update :update do
+      primary? true
+      accept [:title, :priority, :ends_at, :tags, :venue, :budget, :metadata]
+    end
+  end
+end
+
+defmodule AshOaskit.Notebooks.Schema.Events do
+  use Ash.Domain,
+    validate_config_inclusion?: false,
+    extensions: [AshJsonApi.Domain]
+
+  resources do
+    resource AshOaskit.Notebooks.Schema.Event
+  end
+
+  json_api do
+    routes do
+      base_route "/events", AshOaskit.Notebooks.Schema.Event do
+        get :read
+        index :read
+        post :create
+        patch :update
+        delete :destroy
+      end
+    end
+  end
+end
+```
+
+## Generate both OpenAPI versions
+
+```elixir
+spec_31 = AshOaskit.spec_31(domains: [AshOaskit.Notebooks.Schema.Events])
+spec_30 = AshOaskit.spec_30(domains: [AshOaskit.Notebooks.Schema.Events])
+
+%{
+  openapi_31: spec_31["openapi"],
+  openapi_30: spec_30["openapi"],
+  event_schema_names:
+    spec_31["components"]["schemas"]
+    |> Map.keys()
+    |> Enum.filter(&String.contains?(&1, "Event"))
+    |> Enum.sort()
+}
+```
+
+You should see multiple event-related components. AshOaskit does not create one giant schema. It creates reusable schemas for resource documents, attributes, create/update inputs, lists, relationships, errors, links, and metadata.
+
+## Field visibility
+
+The first rule is non-negotiable: only public fields belong to the public contract.
+
+```elixir
+find_property = fn spec, field ->
+  spec["components"]["schemas"]
+  |> Enum.find_value(fn {schema_name, schema} ->
+    property = get_in(schema, ["properties", field])
+
+    if property do
+      {schema_name, property}
+    end
+  end)
+end
+
+%{
+  title: find_property.(spec_31, "title"),
+  moderation_notes: find_property.(spec_31, "moderation_notes")
+}
+```
+
+`moderation_notes` should be absent. The generator follows AshJsonApi's public surface rather than raw resource internals.
+
+## Constraints and formats
+
+Ash constraints are translated into JSON Schema keywords where possible.
+
+```elixir
+%{
+  title: find_property.(spec_31, "title"),
+  slug: find_property.(spec_31, "slug"),
+  starts_at: find_property.(spec_31, "starts_at"),
+  tags: find_property.(spec_31, "tags")
+}
+```
+
+The important mapping pattern:
+
+| Ash concept | OpenAPI / JSON Schema output |
+|-------------|------------------------------|
+| `allow_nil? false` | field becomes required where appropriate |
+| `min_length`, `max_length` | `minLength`, `maxLength` |
+| `min`, `max` | `minimum`, `maximum` |
+| regex `match` | `pattern` |
+| `one_of` or `Ash.Type.Enum` | `enum` |
+| date/time/datetime types | string schemas with `format` |
+| arrays | `type: array` plus nested `items` |
+
+## Nullable values differ by OpenAPI version
+
+`ends_at` is public and optional. Compare how the same field is represented in each OpenAPI version.
+
+```elixir
+%{
+  openapi_31: find_property.(spec_31, "ends_at"),
+  openapi_30: find_property.(spec_30, "ends_at")
+}
+```
+
+This is one of the main reasons AshOaskit has explicit 3.0 and 3.1 generation paths. The semantics are the same, but the dialect is different.
+
+## Embedded resources
+
+Embedded resources are not flattened. They become reusable component schemas and are referenced where needed.
+
+```elixir
+%{
+  venue_property: find_property.(spec_31, "venue"),
+  venue_schemas:
+    spec_31["components"]["schemas"]
+    |> Map.keys()
+    |> Enum.filter(&(String.contains?(&1, "Venue") or String.contains?(&1, "GeoPoint")))
+    |> Enum.sort()
+}
+```
+
+This matters for deeply nested structures. A large embedded tree remains readable because components are deduplicated and referenced instead of duplicated inline everywhere.
+
+## Custom Ash types with `json_schema/1`
+
+When a custom type exposes a `json_schema/1` callback, AshOaskit uses it. That is the escape hatch for domain-specific values where a generic storage type is not precise enough.
+
+```elixir
+find_property.(spec_31, "budget")
+```
+
+If a custom callback raises or returns something malformed, generation fails with context. Silent fallback is worse than failure here because an inaccurate schema becomes an inaccurate public contract.
+
+## Input schemas follow action `accept` lists
+
+Output schemas describe what a resource can expose. Input schemas describe what each routed action accepts.
+
+```elixir
+spec_31["components"]["schemas"]
+|> Enum.filter(fn {name, _schema} ->
+  String.contains?(name, "Event") and String.contains?(name, "Input")
+end)
+|> Enum.map(fn {name, schema} ->
+  properties =
+    schema
+    |> get_in(["properties", "data", "properties", "attributes", "properties"])
+    |> case do
+      nil -> []
+      attrs -> attrs |> Map.keys() |> Enum.sort()
+    end
+
+  {name, properties}
+end)
+```
+
+This is the part that keeps create and update documentation honest. A writable field can exist on the resource, but it only appears in a request body when the routed action accepts it.
+
+## What else the mapper covers
+
+The same pipeline covers the broader Ash type surface:
+
+- primitives: strings, integers, floats, decimals, booleans
+- dates and times: `:date`, `:time`, `:utc_datetime`, `:naive_datetime`
+- identifiers and binary shapes: UUID, UUIDv7, binary, base64-style binaries, files
+- collections and flexible data: arrays, maps, keywords, tuples, terms
+- Ash abstractions: `Ash.Type.Enum`, `Ash.Type.NewType`, unions, typed structs, embedded resources
+- calculations and aggregates when marked `public? true`
+
+When adding support for a new Ash type, the project keeps the mapping centralized in `AshOaskit.TypeMapper`; calculation and aggregate output uses the parallel builder in `AshOaskit.SchemaBuilder.PropertyBuilders`.
+
+## Speaker note
+
+For a talk, this is the key framing: schema generation is not a pretty-printer. It is a translation layer between Ash's domain model and the JSON Schema dialect embedded inside OpenAPI. Good generated docs come from preserving that translation boundary carefully.

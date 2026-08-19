@@ -10,6 +10,7 @@ OpenAPI 3.0 and 3.1 specification generation for [Ash Framework](https://ash-hq.
 
 [Installation](#installation) |
 [Quick Start](#quick-start) |
+[Livebooks](#try-it-interactively) |
 [Configuration](#configuration) |
 [API Reference](#api-reference) |
 [Phoenix Integration](#phoenix-integration)
@@ -20,6 +21,24 @@ OpenAPI 3.0 and 3.1 specification generation for [Ash Framework](https://ash-hq.
 
 AshOaskit derives OpenAPI documents from Ash resources and AshJsonApi routes. It
 can emit OpenAPI 3.0 and 3.1 from the same domain definitions.
+
+## Try It Interactively
+
+The Livebook notebooks are executable guides, not extra API reference pages.
+Start with the quick-start notebook in a browser:
+
+[![Run in Livebook](https://livebook.dev/badge/v1/blue.svg)](https://livebook.dev/run?url=https%3A%2F%2Fraw.githubusercontent.com%2Ffuthr%2Fash_oaskit%2Fmain%2Fnotebooks%2Fquickstart.livemd)
+
+- **[Quick Start](https://livebook.dev/run?url=https%3A%2F%2Fraw.githubusercontent.com%2Ffuthr%2Fash_oaskit%2Fmain%2Fnotebooks%2Fquickstart.livemd)** -
+  Generate and validate a spec from a tiny AshJsonApi domain.
+- **[Schema Generation](https://livebook.dev/run?url=https%3A%2F%2Fraw.githubusercontent.com%2Ffuthr%2Fash_oaskit%2Fmain%2Fnotebooks%2Fschema_generation.livemd)** -
+  Learn public fields, constraints, nullable values, embedded resources, custom types, and input schemas.
+- **[Routes and JSON:API](https://livebook.dev/run?url=https%3A%2F%2Fraw.githubusercontent.com%2Ffuthr%2Fash_oaskit%2Fmain%2Fnotebooks%2Froutes_and_json_api.livemd)** -
+  Inspect generated paths, operations, query parameters, and relationship endpoints.
+- **[Serving, Customization, and Validation](https://livebook.dev/run?url=https%3A%2F%2Fraw.githubusercontent.com%2Ffuthr%2Fash_oaskit%2Fmain%2Fnotebooks%2Fserving_customization_validation.livemd)** -
+  Serve specs, add security/webhooks/extensions, export files, and validate with Oaskit.
+- **[Architecture Deep Dive](https://livebook.dev/run?url=https%3A%2F%2Fraw.githubusercontent.com%2Ffuthr%2Fash_oaskit%2Fmain%2Fnotebooks%2Farchitecture_deep_dive.livemd)** -
+  Walk through the generator pipeline and extension points.
 
 ## Background
 

@@ -125,6 +125,7 @@ defmodule AshOaskit.MixProject do
       files: ~w(
         lib
         guides
+        notebooks
         .formatter.exs
         mix.exs
         README.md
@@ -149,6 +150,13 @@ defmodule AshOaskit.MixProject do
       main: "readme",
       extras: [
         "README.md": [title: "Overview"],
+        "notebooks/quickstart.livemd": [title: "Livebook: Quick Start"],
+        "notebooks/schema_generation.livemd": [title: "Livebook: Schema Generation"],
+        "notebooks/routes_and_json_api.livemd": [title: "Livebook: Routes and JSON:API"],
+        "notebooks/serving_customization_validation.livemd": [
+          title: "Livebook: Serving, Customization, and Validation"
+        ],
+        "notebooks/architecture_deep_dive.livemd": [title: "Livebook: Architecture Deep Dive"],
         "guides/spec-modules.md": [title: "Spec Modules (use AshOaskit)"],
         "guides/request-validation.md": [title: "Request Validation with Oaskit"],
         "guides/cheatsheet.cheatmd": [title: "Cheatsheet"],
@@ -158,6 +166,7 @@ defmodule AshOaskit.MixProject do
         "usage-rules.md": [title: "Usage Rules (LLM)"]
       ],
       groups_for_extras: [
+        Livebooks: ~r{notebooks/.*},
         Guides: ~r{guides/.*}
       ],
       groups_for_modules: [

@@ -1,0 +1,338 @@
+# Architecture deep dive: the generator pipeline
+
+[![Run in Livebook](https://livebook.dev/badge/v1/blue.svg)](https://livebook.dev/run/?url=https://raw.githubusercontent.com/futhr/ash_oaskit/main/notebooks/architecture_deep_dive.livemd)
+
+This notebook is written as a talk track for maintainers and advanced users.
+
+The previous notebooks show how to use AshOaskit. This one explains how the pieces fit together, why the boundaries exist, and where you should change the code when adding features.
+
+## Setup
+
+```elixir
+repo_root = Path.expand("..", __DIR__)
+mix_exs = Path.join(repo_root, "mix.exs")
+
+ash_oaskit_dep =
+  if File.exists?(mix_exs) and File.read!(mix_exs) =~ "app: :ash_oaskit" do
+    {:ash_oaskit, path: repo_root, env: :prod}
+  else
+    {:ash_oaskit, github: "futhr/ash_oaskit", branch: "main"}
+  end
+
+mix_install_opts =
+  if File.exists?(Path.join(repo_root, "mix.lock")) do
+    [lockfile: Path.join(repo_root, "mix.lock")]
+  else
+    []
+  end
+
+Mix.install(
+  [
+    ash_oaskit_dep,
+    {:ash_json_api, "~> 1.0"}
+  ],
+  mix_install_opts
+)
+
+Application.put_env(:ash_oaskit, :cache_specs, false)
+```
+
+## The mental model
+
+AshOaskit is a translator.
+
+It translates from:
+
+- Ash domains and resources
+- AshJsonApi route metadata
+- Ash public field visibility
+- Ash action input declarations
+- optional Phoenix controller metadata
+
+Into:
+
+- OpenAPI 3.1 or 3.0
+- JSON:API resource documents
+- reusable component schemas
+- request bodies
+- response bodies
+- query parameters
+- links, metadata, errors, and security hooks
+
+It should not guess application behavior that Ash does not expose. When the generator is unsure, a clear failure is usually better than a plausible but wrong public contract.
+
+## Pipeline map
+
+```mermaid
+flowchart TD
+    A[AshOaskit.spec/1 or spec module] --> B[AshOaskit.OpenApi]
+    B --> C{OpenAPI version}
+    C -->|3.1| D[Generators.V31]
+    C -->|3.0| E[Generators.V30]
+    D --> F[Generators.Shared]
+    E --> F
+    F --> G[Generator]
+    G --> H[InfoBuilder]
+    G --> I[PathBuilder]
+    G --> J[SchemaBuilder]
+    I --> K[Route operations]
+    I --> L[Relationship routes]
+    I --> M[Phoenix introspection]
+    J --> N[Resource schemas]
+    J --> O[Relationship schemas]
+    J --> P[Embedded schemas]
+    J --> Q[Property builders]
+    Q --> R[TypeMapper]
+    G --> S[Oaskit normalization and validation]
+```
+
+The version split happens early, but most work is shared. Version-specific behavior should be small and explicit.
+
+## A tiny spec for inspection
+
+```elixir
+defmodule AshOaskit.Notebooks.Architecture.Note do
+  use Ash.Resource,
+    domain: AshOaskit.Notebooks.Architecture.Notes,
+    extensions: [AshJsonApi.Resource]
+
+  json_api do
+    type "note"
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :text, :string do
+      public? true
+      allow_nil? false
+    end
+
+    attribute :archived, :boolean do
+      public? true
+      default false
+    end
+
+    attribute :reviewed_at, :utc_datetime do
+      public? true
+    end
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    create :create do
+      accept [:text, :archived]
+    end
+
+    update :update do
+      primary? true
+      accept [:text, :archived, :reviewed_at]
+    end
+  end
+end
+
+defmodule AshOaskit.Notebooks.Architecture.Notes do
+  use Ash.Domain,
+    validate_config_inclusion?: false,
+    extensions: [AshJsonApi.Domain]
+
+  resources do
+    resource AshOaskit.Notebooks.Architecture.Note
+  end
+
+  json_api do
+    routes do
+      base_route "/notes", AshOaskit.Notebooks.Architecture.Note do
+        get :read
+        index :read
+        post :create
+        patch :update
+        delete :destroy
+      end
+    end
+  end
+end
+
+spec = AshOaskit.spec_31(domains: [AshOaskit.Notebooks.Architecture.Notes])
+
+%{
+  openapi: spec["openapi"],
+  path_count: map_size(spec["paths"]),
+  schema_count: map_size(spec["components"]["schemas"]),
+  tag_count: length(spec["tags"] || [])
+}
+```
+
+## Version routing
+
+`AshOaskit.OpenApi` routes to the version-specific generator. The important outcome is that callers keep one API while downstream tools get the dialect they expect.
+
+```elixir
+for version <- ["3.0", "3.1"] do
+  generated =
+    AshOaskit.spec(
+      domains: [AshOaskit.Notebooks.Architecture.Notes],
+      version: version
+    )
+
+  {version, generated["openapi"]}
+end
+```
+
+The most common version-specific rule is nullability:
+
+```elixir
+find_reviewed_at = fn spec ->
+  spec["components"]["schemas"]
+  |> Enum.find_value(fn {schema_name, schema} ->
+    property = get_in(schema, ["properties", "reviewed_at"])
+
+    if property do
+      {schema_name, property}
+    end
+  end)
+end
+
+%{
+  openapi_30:
+    find_reviewed_at.(
+      AshOaskit.spec(domains: [AshOaskit.Notebooks.Architecture.Notes], version: "3.0")
+    ),
+  openapi_31:
+    find_reviewed_at.(
+      AshOaskit.spec(domains: [AshOaskit.Notebooks.Architecture.Notes], version: "3.1")
+    )
+}
+```
+
+In the codebase, nullable handling is centralized. Avoid sprinkling version checks through unrelated builders.
+
+## Builder responsibilities
+
+| Area | Module family | Responsibility |
+|------|---------------|----------------|
+| public API | `AshOaskit`, `AshOaskit.Spec`, `AshOaskit.OpenApi` | caller-facing generation and spec modules |
+| orchestration | `AshOaskit.Generators.*` | version routing and final spec assembly |
+| metadata | `AshOaskit.Config`, `RouteGathering`, `PhoenixIntrospection` | read AshJsonApi and Phoenix metadata safely |
+| paths | `PathBuilder`, route modules | build path items, operations, request bodies, responses |
+| parameters | `FilterBuilder`, `SortBuilder`, `QueryParameters` | derive query parameters from public fields and route settings |
+| schemas | `SchemaBuilder`, resource/relationship/embedded/property builders | create reusable JSON:API components |
+| types | `TypeMapper` | translate Ash types to JSON Schema |
+| support | `Security`, `MultipartSupport`, `SpecModifier` | documented helpers around the generated document |
+
+Good changes usually preserve these boundaries. If a new Ash type is needed, start in `TypeMapper`. If a new route shape is needed, start in path/route builders. If a new customization pattern is needed, prefer `SpecModifier`.
+
+## References are string-keyed on purpose
+
+OpenAPI references must use the string key `"$ref"`. AshOaskit routes all reference creation through `AshOaskit.Core.SchemaRef` so references are consistent and Oaskit can detect them.
+
+```elixir
+AshOaskit.Core.SchemaRef.schema_ref("Note")
+```
+
+That looks tiny, but it prevents a real class of bugs: atom-keyed refs such as `%{ref: ...}` or `%{"ref" => ...}` are not OpenAPI references.
+
+## Counting refs in a generated spec
+
+This small helper walks the generated document and counts `$ref` objects. It is a useful way to show that the generator is building a component graph rather than duplicating schemas inline.
+
+```elixir
+defmodule AshOaskit.Notebooks.Architecture.Helpers do
+  def count_refs(%{"$ref" => _ref} = map) do
+    1 + count_refs(Map.delete(map, "$ref"))
+  end
+
+  def count_refs(%{} = map) do
+    map
+    |> Map.values()
+    |> Enum.map(&count_refs/1)
+    |> Enum.sum()
+  end
+
+  def count_refs(list) when is_list(list) do
+    list
+    |> Enum.map(&count_refs/1)
+    |> Enum.sum()
+  end
+
+  def count_refs(_value), do: 0
+end
+
+AshOaskit.Notebooks.Architecture.Helpers.count_refs(spec)
+```
+
+Component reuse is not only about smaller output. It also makes generated specs easier to validate and easier for client generators to consume.
+
+## What each generated section means
+
+```elixir
+%{
+  top_level_keys: spec |> Map.keys() |> Enum.sort(),
+  component_groups: spec["components"] |> Map.keys() |> Enum.sort(),
+  paths:
+    spec["paths"]
+    |> Enum.map(fn {path, operations} -> {path, Map.keys(operations) |> Enum.sort()} end)
+    |> Enum.sort()
+}
+```
+
+The major sections are:
+
+- `openapi`: target dialect
+- `info`: title, version, contact, license, terms, description
+- `servers`: base URLs
+- `tags`: operation grouping
+- `paths`: HTTP operations
+- `components.schemas`: reusable JSON:API and JSON Schema shapes
+- `components.securitySchemes`: added by options or customization
+- `webhooks`: OpenAPI 3.1 callback-style operations when added through modifiers
+
+## Debugging workflow
+
+When a generated spec looks wrong, avoid starting with the whole document. Work backwards:
+
+1. Is the field or relationship `public? true`?
+2. Does the Ash action accept the field or expose the argument?
+3. Is the resource routed through AshJsonApi, or only present in the domain?
+4. Is the JSON:API type unique enough to produce a distinct component name?
+5. Is the issue version-specific nullable behavior?
+6. Is a custom `json_schema/1` callback returning a map?
+7. Is a post-generation modifier changing the shape after generation?
+
+That checklist usually lands you in the right module quickly.
+
+## How to extend the project
+
+### Add a new Ash type
+
+Update:
+
+1. `AshOaskit.TypeMapper`
+2. `AshOaskit.SchemaBuilder.PropertyBuilders` if calculations or aggregates need it
+3. tests for OpenAPI 3.0 and 3.1 where nullable behavior matters
+4. README and usage rules tables
+
+### Add an OpenAPI feature
+
+Start in the narrowest builder that owns the output. Keep version differences behind `Schemas.Nullable` or the version-specific generator entry points.
+
+### Add a customization helper
+
+Add it to `AshOaskit.SpecModifier` and make invalid inputs warn instead of crashing where that is the established pattern.
+
+### Add serving behavior
+
+Router behavior belongs in `AshOaskit.Router` and `AshOaskit.Router.Plug`. Controller behavior belongs in `AshOaskit.Controller`, `AshOaskit.OpenApiController`, or `PhoenixIntrospection`.
+
+## Speaker note
+
+The architecture story is that AshOaskit is intentionally boring in the right places. It is a pipeline of small translators:
+
+- collect metadata
+- build schemas
+- build paths
+- normalize and validate
+- expose a spec module
+
+That shape is why the project can support both OpenAPI 3.0 and 3.1, AshJsonApi routes, Phoenix controller introspection, request validation, and customization hooks without turning every module into a ball of conditionals.
