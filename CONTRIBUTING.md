@@ -129,6 +129,34 @@ end
 - Add examples where they clarify behavior or configuration
 - Keep implementation details out of public documentation unless callers rely on them
 
+## Releasing
+
+Publication is allowed only from an annotated `vVERSION` tag whose commit is on protected
+`main`. The publish workflow reruns the complete gate, builds the package outside the repository,
+publishes through the protected `hex-publish` environment, downloads the registry tarball, compares
+it byte-for-byte with the validated build, and attests those registry bytes.
+
+The canonical repository must keep these external controls enabled:
+
+- protect `main`, require every current Continuous Integration job, require the branch to be up to
+  date, and forbid force pushes and deletion;
+- protect `v*` tags from creation except by maintainers and forbid updates and deletion;
+- configure `hex-publish` with administrator bypass disabled, a required reviewer, and a `v*`
+  deployment-tag policy;
+- scope `HEX_API_KEY` to the environment and a Hex key that can publish only `ash_oaskit`.
+
+Verify the controls before every release:
+
+```bash
+gh api repos/futhr/ash_oaskit/environments/hex-publish
+gh api repos/futhr/ash_oaskit/environments/hex-publish/deployment-branch-policies
+gh api repos/futhr/ash_oaskit/branches/main/protection
+gh api repos/futhr/ash_oaskit/rulesets
+```
+
+Then update the version and changelog, merge the release commit to `main`, wait for required CI,
+and create an annotated tag with `git tag -a vVERSION -m vVERSION`. Never move or reuse a tag.
+
 ## Release Process
 
 Releases are managed by maintainers using git_ops:
