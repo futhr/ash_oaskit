@@ -1,7 +1,6 @@
 ---
-name: review-code
-description: Review AshOaskit Elixir library changes for OpenAPI/Ash correctness, optional Phoenix integration safety, test integrity, AI-slop/provenance quality signals, docs, and quality-gate risk. Use for code review, audits, bug hunts, coverage review, or architecture review.
-allowed-tools: Bash(rg *), Bash(mix *), Bash(git *)
+name: oaskit-code-review
+description: "Apply automatically when reviewing a AshOaskit diff or audit involving OpenAPI 3.0/3.1 generation, Ash types, optional Phoenix integrations, and Hex package consumers. Find reachable correctness, security, test-integrity, compatibility, and release risks, ranked by evidence and severity."
 ---
 
 # Review Code
