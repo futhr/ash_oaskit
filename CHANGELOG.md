@@ -49,6 +49,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- changelog -->
 
+## [v0.4.0](https://github.com/futhr/ash_oaskit/compare/v0.3.0...v0.4.0) (2026-08-24)
+
+
+
+
+### Features:
+
+* guidance: add terse prose skills by futhr
+
+* guidance: align automatic repository skills by Tobias Bohwalli
+
+### Bug Fixes:
+
+* bind publication to validated release identity by Tobias Bohwalli
+
+* harden schema generation and releases by Tobias Bohwalli
+
+* align generated schemas with Ash metadata by futhr
+
+* support domains without ash_json_api by futhr
+
 ## [v0.3.0](https://github.com/futhr/ash_oaskit/compare/v0.2.1...v0.3.0) (2026-06-30)
 
 
