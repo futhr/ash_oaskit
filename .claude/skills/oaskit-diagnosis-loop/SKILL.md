@@ -21,3 +21,9 @@ the exact generated fragment or validation error.
 If the failure depends on a missing optional package or consumer application, record the exact
 missing evidence and keep the conclusion bounded. Never convert an unavailable integration into a
 pass.
+
+Do not edit before one causal hypothesis explains the observed evidence. Run one discriminating
+probe at a time and record its result. After three materially distinct failed fixes for the same
+symptom, stop local patching and reopen the architecture, state-ownership, interface, or versioning
+assumption. Close only with fresh output from the minimized reproduction and retained regression;
+an unavailable lane remains unverified.
