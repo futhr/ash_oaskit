@@ -4,6 +4,32 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
   use ExUnit.Case, async: true
 
   alias AshOaskit.SchemaBuilder
+  alias AshOaskit.SchemaBuilder.EmbeddedSchemas
+
+  test "embedded component collisions fail rather than selecting the first definition" do
+    builder = SchemaBuilder.new()
+
+    builder =
+      EmbeddedSchemas.add_embedded_resource_schema(
+        builder,
+        AshOaskit.Test.Address,
+        &SchemaBuilder.mark_seen/2,
+        &SchemaBuilder.add_schema/3
+      )
+
+    assert_raise ArgumentError, ~r/Address.*shared by.*distinct embedded module names/, fn ->
+      EmbeddedSchemas.add_embedded_resource_schema(
+        builder,
+        AshOaskit.Test.Another.Address,
+        &SchemaBuilder.mark_seen/2,
+        &SchemaBuilder.add_schema/3
+      )
+    end
+
+    assert_raise ArgumentError, ~r/conflicts with an embedded/, fn ->
+      SchemaBuilder.add_schema(builder, "Address", %{type: :integer})
+    end
+  end
 
   describe "simple embedded resource detection" do
     test "embedded resource schema is generated" do

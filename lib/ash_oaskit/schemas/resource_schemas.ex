@@ -229,6 +229,8 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
          mark_seen_fn,
          add_schema_fn
        ) do
+    builder = EmbeddedSchemas.reserve_name(builder, type)
+
     if EmbeddedSchemas.has_embedded_schema?(builder, type, has_schema_fn) do
       builder
     else

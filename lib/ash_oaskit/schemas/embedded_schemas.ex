@@ -49,6 +49,30 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemas do
   alias Ash.Resource.Info, as: ResourceInfo
   alias AshOaskit.SchemaBuilder.PropertyBuilders
 
+  @doc false
+  @spec reserve_name(map(), module()) :: map()
+  def reserve_name(builder, type) do
+    name = type |> Module.split() |> List.last()
+    owners = Map.get(builder, :embedded_names, %{})
+
+    case Map.get(owners, name) do
+      ^type ->
+        builder
+
+      nil ->
+        if Map.has_key?(builder.schemas, name) do
+          raise ArgumentError,
+                "embedded component #{inspect(name)} for #{inspect(type)} conflicts with an existing schema"
+        end
+
+        Map.put(builder, :embedded_names, Map.put(owners, name, type))
+
+      owner ->
+        raise ArgumentError,
+              "embedded component #{inspect(name)} is shared by #{inspect(owner)} and #{inspect(type)}; use distinct embedded module names"
+    end
+  end
+
   @doc """
   Checks if a type is an embedded Ash resource.
 
@@ -154,6 +178,7 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemas do
   """
   @spec add_embedded_resource_schema(map(), module(), function(), function()) :: map()
   def add_embedded_resource_schema(builder, embedded_type, mark_seen_fn, add_schema_fn) do
+    builder = reserve_name(builder, embedded_type)
     schema_name = embedded_type |> Module.split() |> List.last()
 
     # Mark as seen to prevent cycles

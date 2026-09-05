@@ -171,6 +171,11 @@ defmodule AshOaskit.SchemaBuilder do
   @spec add_schema(t(), String.t(), map()) :: t()
   def add_schema(%{schemas: schemas} = builder, name, schema)
       when is_binary(name) and is_map(schema) do
+    if Map.has_key?(Map.get(builder, :embedded_names, %{}), name) and
+         Map.has_key?(schemas, name) and Map.fetch!(schemas, name) != schema do
+      raise ArgumentError, "component #{inspect(name)} conflicts with an embedded resource schema"
+    end
+
     if has_schema?(builder, name) do
       builder
     else
