@@ -335,7 +335,7 @@ defmodule AshOaskit.SchemaBuilder do
       document
       |> collect_local_schema_refs([])
       |> Enum.uniq()
-      |> Enum.reject(&Map.has_key?(schemas, &1))
+      |> Enum.reject(&resolves_pointer?(schemas, &1))
       |> Enum.sort()
 
     if missing_refs != [] do
@@ -483,6 +483,37 @@ defmodule AshOaskit.SchemaBuilder do
   end
 
   defp collect_local_schema_refs(_, refs), do: refs
+
+  defp resolves_pointer?(schemas, pointer) do
+    segments =
+      pointer
+      |> URI.decode()
+      |> String.split("/")
+      |> Enum.map(&(&1 |> String.replace("~1", "/") |> String.replace("~0", "~")))
+
+    resolve_pointer(schemas, segments) != :error
+  end
+
+  defp resolve_pointer(value, []), do: {:ok, value}
+
+  defp resolve_pointer(value, [segment | rest]) when is_map(value) do
+    case Enum.find(value, fn {key, _} -> to_string(key) == segment end) do
+      {_, child} -> resolve_pointer(child, rest)
+      nil -> :error
+    end
+  end
+
+  defp resolve_pointer(value, [segment | rest]) when is_list(value) do
+    with true <- Regex.match?(~r/^(0|[1-9][0-9]*)$/, segment),
+         {index, ""} <- Integer.parse(segment),
+         {:ok, child} <- Enum.fetch(value, index) do
+      resolve_pointer(child, rest)
+    else
+      _ -> :error
+    end
+  end
+
+  defp resolve_pointer(_, _), do: :error
 
   @doc """
   Generates the schema name for a resource.

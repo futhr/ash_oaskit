@@ -6,6 +6,27 @@ defmodule AshOaskit.SchemaBuilderTest do
 
   alias AshOaskit.SchemaBuilder
 
+  test "resolves nested, escaped, and array-index JSON Pointers without creating atoms" do
+    schemas = %{
+      "A/B~C" => %{properties: %{"name" => %{type: :string}}, anyOf: [%{type: :null}]},
+      "Boolean" => false
+    }
+
+    for pointer <- ["A~1B~0C/properties/name", "A~1B~0C/anyOf/0", "Boolean"] do
+      assert :ok =
+               SchemaBuilder.validate_refs!(
+                 %{"$ref" => "#/components/schemas/" <> pointer},
+                 schemas
+               )
+    end
+
+    for pointer <- ["A~1B~0C/properties/missing", "A~1B~0C/anyOf/1", "A~1B~0C/anyOf/01"] do
+      assert_raise ArgumentError, ~r/missing local component/, fn ->
+        SchemaBuilder.validate_refs!(%{"$ref" => "#/components/schemas/" <> pointer}, schemas)
+      end
+    end
+  end
+
   describe "new/1" do
     test "creates builder with default version 3.1" do
       builder = SchemaBuilder.new()
