@@ -7,6 +7,35 @@ defmodule AshOaskit.TypeMapperTest do
 
   alias AshOaskit.TypeMapper
 
+  test "decimal schemas accept exact serialized output without rounding defaults or bounds" do
+    decimal = Decimal.new("12345678901234567890.123456")
+
+    wire =
+      AshJsonApi.Serializer.serialize_value(decimal, Ash.Type.Decimal, [], AshOaskit.Test.Blog)
+
+    attr = %{
+      type: Ash.Type.Decimal,
+      allow_nil?: false,
+      default: decimal,
+      constraints: [max: decimal]
+    }
+
+    for mapper <- [&TypeMapper.to_json_schema_31/1, &TypeMapper.to_json_schema_30/1] do
+      schema = mapper.(attr)
+      assert schema["default"] == wire
+      assert schema["x-ash-maximum"] == wire
+      refute Map.has_key?(schema, "maximum")
+      validator = JSV.build!(schema)
+      assert {:ok, _} = JSV.validate(wire, validator)
+      assert {:error, _} = JSV.validate(12.5, validator)
+      assert {:error, _} = JSV.validate("not a decimal", validator)
+    end
+
+    input = attr |> TypeMapper.to_json_schema_31(direction: :input) |> JSV.build!()
+    assert {:ok, _} = JSV.validate(wire, input)
+    assert {:ok, _} = JSV.validate(12.5, input)
+  end
+
   describe "to_json_schema_31/1" do
     test "maps string type" do
       attr = %{type: :string, allow_nil?: false}
@@ -44,9 +73,9 @@ defmodule AshOaskit.TypeMapperTest do
       assert TypeMapper.to_json_schema_31(attr) == %{"type" => "string", "format" => "date"}
     end
 
-    test "maps decimal type as number with double format" do
+    test "maps decimal type to its JSON string representation" do
       attr = %{type: :decimal, allow_nil?: false}
-      assert TypeMapper.to_json_schema_31(attr) == %{"type" => "number", "format" => "double"}
+      assert %{"type" => "string", "pattern" => _} = TypeMapper.to_json_schema_31(attr)
     end
 
     test "maps float type as number with float format" do
@@ -428,7 +457,7 @@ defmodule AshOaskit.TypeMapperTest do
 
     test "normalizes Ash.Type.Decimal module" do
       attr = %{type: Ash.Type.Decimal, allow_nil?: false}
-      assert TypeMapper.to_json_schema_31(attr) == %{"type" => "number", "format" => "double"}
+      assert %{"type" => "string", "pattern" => _} = TypeMapper.to_json_schema_31(attr)
     end
 
     test "normalizes Ash.Type.Float module" do
@@ -525,7 +554,7 @@ defmodule AshOaskit.TypeMapperTest do
 
     test "normalizes Ash.Type.Decimal tuple" do
       attr = %{type: {Ash.Type.Decimal, []}, allow_nil?: false}
-      assert TypeMapper.to_json_schema_31(attr) == %{"type" => "number", "format" => "double"}
+      assert %{"type" => "string", "pattern" => _} = TypeMapper.to_json_schema_31(attr)
     end
 
     test "normalizes Ash.Type.Float tuple" do
@@ -1078,7 +1107,7 @@ defmodule AshOaskit.TypeMapperTest do
     test "handles Decimal constraint" do
       attr = %{type: :decimal, allow_nil?: false, constraints: [min: Decimal.new("1.5")]}
       result = TypeMapper.to_json_schema_31(attr)
-      assert result["minimum"] == 1.5
+      assert result["x-ash-minimum"] == "1.5"
     end
 
     test "handles non-numeric constraint value" do
@@ -1160,18 +1189,16 @@ defmodule AshOaskit.TypeMapperTest do
       assert result["default"] == "hello"
     end
 
-    test "converts Decimal default to float" do
+    test "preserves Decimal default as a string" do
       attr = %{type: :decimal, allow_nil?: false, default: Decimal.new("0.65")}
       result = TypeMapper.to_json_schema_31(attr)
-      assert result["default"] == 0.65
-      assert is_float(result["default"])
+      assert result["default"] == "0.65"
     end
 
-    test "converts Decimal default to float in 3.0 mode" do
+    test "preserves Decimal default as a string in 3.0 mode" do
       attr = %{type: :decimal, allow_nil?: false, default: Decimal.new("3.14")}
       result = TypeMapper.to_json_schema_30(attr)
-      assert result["default"] == 3.14
-      assert is_float(result["default"])
+      assert result["default"] == "3.14"
     end
 
     test "converts atom default to string" do

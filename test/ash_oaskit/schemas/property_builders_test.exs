@@ -15,7 +15,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuildersTest do
 
     test "maps types with formats" do
       assert PropertyBuilders.type_to_schema(:float) == %{type: :number, format: :float}
-      assert PropertyBuilders.type_to_schema(:decimal) == %{type: :number, format: :double}
+      assert PropertyBuilders.type_to_schema(:decimal) == %{type: :string}
       assert PropertyBuilders.type_to_schema(:uuid) == %{type: :string, format: :uuid}
 
       assert PropertyBuilders.type_to_schema(:datetime) == %{

@@ -161,7 +161,7 @@ end
 | `:string`, `:ci_string`, `:atom`, `:module` | `string` | - |
 | `:integer` | `integer` | - |
 | `:float` | `number` | `float` |
-| `:decimal` | `number` | `double` |
+| `:decimal` | `string` | exact decimal pattern |
 | `:boolean` | `boolean` | - |
 | `:date` | `string` | `date` |
 | `:time`, `:time_usec` | `string` | `time` |

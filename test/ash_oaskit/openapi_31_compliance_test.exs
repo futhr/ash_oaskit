@@ -535,7 +535,7 @@ defmodule AshOaskit.OpenAPI31ComplianceTest do
       assert schema["format"] == "float"
     end
 
-    test "decimal type has double format" do
+    test "decimal type retains exact string precision" do
       attr = %{
         name: :price,
         type: :decimal,
@@ -547,8 +547,8 @@ defmodule AshOaskit.OpenAPI31ComplianceTest do
 
       schema = TypeMapper.to_json_schema_31(attr)
 
-      assert schema["type"] == "number"
-      assert schema["format"] == "double"
+      assert schema["type"] == "string"
+      refute Map.has_key?(schema, "format")
     end
 
     test "binary type has binary format" do

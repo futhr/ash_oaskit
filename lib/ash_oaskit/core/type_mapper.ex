@@ -2,6 +2,11 @@ defmodule AshOaskit.TypeMapper do
   @moduledoc """
   Maps Ash types to JSON Schema types for OpenAPI 3.0 and 3.1.
 
+  Decimal output and defaults use exact strings, matching AshJsonApi. Bounds
+  are retained as `x-ash-minimum`/`x-ash-maximum` strings and enforced by Ash,
+  since JSON Schema numeric bounds do not apply to decimal strings. Pass
+  `direction: :input` to accept numeric decimal inputs as well as strings.
+
   This module handles the conversion of Ash resource attributes to their
   corresponding JSON Schema representations, respecting the differences
   between OpenAPI versions.
@@ -21,7 +26,7 @@ defmodule AshOaskit.TypeMapper do
   | `:ci_string` | `string` | - |
   | `:integer` | `integer` | - |
   | `:float` | `number` | `float` |
-  | `:decimal` | `number` | `double` |
+  | `:decimal` | `string` | exact decimal pattern |
   | `:boolean` | `boolean` | - |
   | `:date` | `string` | `date` |
   | `:time` | `string` | `time` |
@@ -110,8 +115,8 @@ defmodule AshOaskit.TypeMapper do
       %{"type" => "string", "format" => "uuid"}
 
   """
-  @spec to_json_schema_31(map()) :: map()
-  def to_json_schema_31(attr) do
+  @spec to_json_schema_31(map(), keyword()) :: map()
+  def to_json_schema_31(attr, opts \\ []) do
     base_schema = ash_type_to_base_schema(resolve_type(attr), constraints(attr), "3.1")
 
     schema =
@@ -124,6 +129,7 @@ defmodule AshOaskit.TypeMapper do
     schema
     |> maybe_add_description(attr)
     |> maybe_add_default(attr)
+    |> maybe_input_schema(attr, opts)
   rescue
     error in ArgumentError ->
       reraise_with_attribute_context(error, attr, __STACKTRACE__)
@@ -146,8 +152,8 @@ defmodule AshOaskit.TypeMapper do
       %{"type" => "string", "nullable" => true}
 
   """
-  @spec to_json_schema_30(map()) :: map()
-  def to_json_schema_30(attr) do
+  @spec to_json_schema_30(map(), keyword()) :: map()
+  def to_json_schema_30(attr, opts \\ []) do
     base_schema = ash_type_to_base_schema(resolve_type(attr), constraints(attr), "3.0")
 
     schema =
@@ -160,6 +166,7 @@ defmodule AshOaskit.TypeMapper do
     schema
     |> maybe_add_description(attr)
     |> maybe_add_default(attr)
+    |> maybe_input_schema(attr, opts)
   rescue
     error in ArgumentError ->
       reraise_with_attribute_context(error, attr, __STACKTRACE__)
@@ -194,7 +201,10 @@ defmodule AshOaskit.TypeMapper do
     ci_string: %{"type" => "string"},
     integer: %{"type" => "integer"},
     float: %{"type" => "number", "format" => "float"},
-    decimal: %{"type" => "number", "format" => "double"},
+    decimal: %{
+      "type" => "string",
+      "pattern" => "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$"
+    },
     boolean: %{"type" => "boolean"},
     date: %{"type" => "string", "format" => "date"},
     time: %{"type" => "string", "format" => "time"},
@@ -522,6 +532,22 @@ defmodule AshOaskit.TypeMapper do
   defp allow_nil?(%{allow_nil?: allow_nil?}), do: allow_nil?
   defp allow_nil?(_), do: true
 
+  defp maybe_input_schema(schema, attr, opts) do
+    if Keyword.get(opts, :direction) == :input do
+      decimal_input_schema(schema, normalize_type(resolve_type(attr), constraints(attr)))
+    else
+      schema
+    end
+  end
+
+  defp decimal_input_schema(schema, :decimal),
+    do: %{"anyOf" => [schema, %{"type" => "number"}]}
+
+  defp decimal_input_schema(schema, {:array, inner}),
+    do: Map.update!(schema, "items", &decimal_input_schema(&1, inner))
+
+  defp decimal_input_schema(schema, _), do: schema
+
   defp make_nullable_31(schema),
     do: Nullable.make_nullable(schema, "3.1", :string)
 
@@ -561,6 +587,7 @@ defmodule AshOaskit.TypeMapper do
   defp make_nullable(schema, _), do: make_nullable_30(schema)
 
   defp constraint_type({:array, inner_type}), do: {:array, inner_type}
+  defp constraint_type(type) when type in [:decimal, Ash.Type.Decimal], do: :decimal
   defp constraint_type(type) when type in [:uuid_v7, Ash.Type.UUIDv7], do: :uuid_v7
 
   defp constraint_type(type) when is_atom(type) do
@@ -582,6 +609,12 @@ defmodule AshOaskit.TypeMapper do
 
   defp apply_constraint_keywords(schema, constraints, type) do
     Enum.reduce(constraints, schema, fn
+      {:min, min}, acc when type == :decimal ->
+        Map.put(acc, "x-ash-minimum", to_string(min))
+
+      {:max, max}, acc when type == :decimal ->
+        Map.put(acc, "x-ash-maximum", to_string(max))
+
       {:min_length, min}, acc ->
         Map.put(acc, length_constraint(type, "min"), min)
 
@@ -643,7 +676,7 @@ defmodule AshOaskit.TypeMapper do
 
   defp maybe_add_default(schema, _), do: schema
 
-  defp sanitize_default(%Decimal{} = d), do: Decimal.to_float(d)
+  defp sanitize_default(%Decimal{} = d), do: Decimal.to_string(d)
 
   defp sanitize_default(value) when is_atom(value) and value not in [true, false, nil],
     do: to_string(value)

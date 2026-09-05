@@ -231,7 +231,7 @@ defmodule AshOaskit.FilterBuilder do
     ci_string: %{type: :string},
     integer: %{type: :integer},
     float: %{type: :number},
-    decimal: %{type: :number},
+    decimal: %{type: :string},
     boolean: %{type: :boolean},
     date: %{type: :string, format: "date"},
     time: %{type: :string, format: "time"},

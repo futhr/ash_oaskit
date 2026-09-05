@@ -302,9 +302,9 @@ defmodule AshOaskit.OpenAPI30ComplianceTest do
       assert schema["format"] == "float"
     end
 
-    test "decimal type has double format" do
+    test "decimal type retains exact string precision" do
       schema = TypeMapper.to_json_schema_30(mock_attr(%{type: :decimal}))
-      assert schema["format"] == "double"
+      assert schema["type"] == "string"
     end
 
     test "binary type has binary format" do

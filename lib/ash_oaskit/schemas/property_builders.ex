@@ -58,7 +58,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
     ci_string: %{type: :string},
     integer: %{type: :integer},
     float: %{type: :number, format: :float},
-    decimal: %{type: :number, format: :double},
+    decimal: %{type: :string},
     boolean: %{type: :boolean},
     date: %{type: :string, format: :date},
     time: %{type: :string, format: :time},
@@ -130,13 +130,14 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
     argument_names = opt(opts, :argument_names, [])
     field_name_fn = opt(opts, :field_name_fn, &default_name/1)
     argument_name_fn = opt(opts, :argument_name_fn, field_name_fn)
+    mapper_opts = if action_name, do: [direction: :input], else: []
 
     Map.new(attributes, fn attr ->
       schema =
         if builder.version == "3.1" do
-          TypeMapper.to_json_schema_31(attr)
+          TypeMapper.to_json_schema_31(attr, mapper_opts)
         else
-          TypeMapper.to_json_schema_30(attr)
+          TypeMapper.to_json_schema_30(attr, mapper_opts)
         end
 
       {property_name(attr, action_name, argument_names, field_name_fn, argument_name_fn), schema}
