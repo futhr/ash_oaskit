@@ -14,13 +14,12 @@ if Code.ensure_loaded?(Igniter) do
     ## What it does
 
     1. Adds `:ash_oaskit` to your formatter's import dependencies
-    2. Generates an `ApiSpec` module (`use AshOaskit`) to fill in with
-       your domains
+    2. Generates a compileable `ApiSpec` scaffold; pass `--domains` to activate it
     3. Prints the router snippet for serving the spec and Redoc UI
 
     ## Options
 
-    This task accepts no options.
+    * `--domains` - Comma-separated Ash domain module names
     """
 
     use Igniter.Mix.Task
@@ -32,6 +31,7 @@ if Code.ensure_loaded?(Igniter) do
         group: :ash_oaskit,
         adds_deps: [],
         installs: [],
+        schema: [domains: :string],
         example: "mix igniter.install ash_oaskit"
       }
     end
@@ -40,21 +40,16 @@ if Code.ensure_loaded?(Igniter) do
     @spec igniter(Igniter.t()) :: Igniter.t()
     def igniter(igniter) do
       spec_module = Igniter.Project.Module.module_name(igniter, "ApiSpec")
+      domains = igniter.args.options[:domains]
 
       igniter
       |> Igniter.Project.Formatter.import_dep(:ash_oaskit)
-      |> Igniter.Project.Module.create_module(spec_module, """
-      use AshOaskit,
-        domains: [
-          # Add your Ash domains here, e.g. #{inspect(Igniter.Project.Module.module_name_prefix(igniter))}.Blog
-        ],
-        title: "API",
-        api_version: "1.0.0"
-      """)
+      |> Igniter.Project.Module.create_module(spec_module, spec_source(domains))
       |> Igniter.add_notice("""
       AshOaskit installed!
 
-      1. Add your Ash domains to #{inspect(spec_module)}.
+      1. Review #{inspect(spec_module)}. If --domains was omitted, uncomment its
+         use AshOaskit declaration and replace the example domain before serving it.
 
       2. Serve the spec from your router:
 
@@ -72,6 +67,38 @@ if Code.ensure_loaded?(Igniter) do
 
            mix openapi.dump #{inspect(spec_module)}
       """)
+    end
+
+    defp spec_source(nil) do
+      """
+      @moduledoc "Configure your Ash domains before serving this specification."
+
+      # Uncomment after replacing MyApp.Domain with your actual domain:
+      # use AshOaskit,
+      #   domains: [MyApp.Domain],
+      #   title: "API",
+      #   api_version: "1.0.0"
+      """
+    end
+
+    defp spec_source(domains) do
+      domains =
+        domains
+        |> String.split(",", trim: true)
+        |> Enum.map(&String.trim/1)
+        |> Enum.reject(&(&1 == ""))
+        |> Enum.map(&Module.concat([&1]))
+
+      if domains == [] do
+        spec_source(nil)
+      else
+        """
+        use AshOaskit,
+          domains: #{inspect(domains)},
+          title: "API",
+          api_version: "1.0.0"
+        """
+      end
     end
   end
 else

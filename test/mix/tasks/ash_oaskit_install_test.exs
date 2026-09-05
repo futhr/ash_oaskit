@@ -50,6 +50,35 @@ defmodule Mix.Tasks.AshOaskit.InstallTest do
         assert Enum.any?(result.notices, &(&1 =~ "use AshOaskit.Router"))
         assert Enum.any?(result.notices, &(&1 =~ "mix openapi.dump"))
       end
+
+      test "an installation without domains produces a compileable inactive scaffold" do
+        result = Install.igniter(Igniter.Test.test_project(app_name: :audit_install))
+
+        {_, source} =
+          Enum.find(result.rewrite.sources, fn {path, _} ->
+            String.ends_with?(path, "api_spec.ex")
+          end)
+
+        content = Rewrite.Source.get(source, :content)
+        assert content =~ "# use AshOaskit"
+        assert [{AuditInstall.ApiSpec, _}] = Code.compile_string(content)
+        refute function_exported?(AuditInstall.ApiSpec, :spec, 0)
+      end
+
+      test "explicit domains generate an active specification" do
+        igniter = Igniter.Test.test_project(app_name: :audit_active_install)
+        igniter = put_in(igniter.args.options, domains: "AshOaskit.Test.Blog")
+        result = Install.igniter(igniter)
+
+        {_, source} =
+          Enum.find(result.rewrite.sources, fn {path, _} ->
+            String.ends_with?(path, "api_spec.ex")
+          end)
+
+        content = Rewrite.Source.get(source, :content)
+        [{spec_module, _}] = Code.compile_string(content)
+        assert spec_module.spec()["paths"]["/posts"]["get"]
+      end
     end
   else
     describe "without igniter available" do
