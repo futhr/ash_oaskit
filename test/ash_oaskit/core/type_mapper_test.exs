@@ -1118,6 +1118,30 @@ defmodule AshOaskit.TypeMapperTest do
   end
 
   describe "default value handling" do
+    test "omits MFA defaults without executing them" do
+      attr = %{type: :string, allow_nil?: false, default: {Kernel, :raise, ["must not run"]}}
+
+      for mapper <- [&TypeMapper.to_json_schema_31/1, &TypeMapper.to_json_schema_30/1] do
+        schema = mapper.(attr)
+        refute Map.has_key?(schema, "default")
+        assert Jason.encode!(schema)
+      end
+    end
+
+    test "normalizes nested static defaults without turning null into a string" do
+      attr = %{type: :map, default: %{state: :ready, values: [nil, false, :ready]}}
+      schema = TypeMapper.to_json_schema_31(attr)
+      assert schema["default"] == %{state: "ready", values: [nil, false, "ready"]}
+      assert Jason.encode!(schema)
+    end
+
+    test "warns and omits unrepresentable static defaults" do
+      assert ExUnit.CaptureLog.capture_log(fn ->
+               schema = TypeMapper.to_json_schema_31(%{type: :term, default: self()})
+               refute Map.has_key?(schema, "default")
+             end) =~ "cannot be encoded as JSON"
+    end
+
     test "skips function defaults" do
       attr = %{type: :string, allow_nil?: false, default: &String.upcase/1}
       result = TypeMapper.to_json_schema_31(attr)

@@ -85,6 +85,8 @@ defmodule AshOaskit.TypeMapper do
   alias Ash.Type.NewType
   alias AshOaskit.Schemas.Nullable
 
+  require Logger
+
   @uuid_v7_pattern "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
 
   @doc """
@@ -621,18 +623,35 @@ defmodule AshOaskit.TypeMapper do
 
   defp maybe_add_description(schema, _), do: schema
 
-  # Add default value (skip nil and function defaults - they can't be represented in OpenAPI)
+  # Runtime defaults must never run during introspection.
+  defp maybe_add_default(schema, %{default: {module, function, args}})
+       when is_atom(module) and is_atom(function) and is_list(args), do: schema
+
   defp maybe_add_default(schema, %{default: default})
        when default != nil and not is_function(default) do
-    Map.put(schema, "default", sanitize_default(default))
+    default = sanitize_default(default)
+
+    case Jason.encode(default) do
+      {:ok, _} ->
+        Map.put(schema, "default", default)
+
+      {:error, _} ->
+        Logger.warning("AshOaskit: omitting a default that cannot be encoded as JSON")
+        schema
+    end
   end
 
   defp maybe_add_default(schema, _), do: schema
 
   defp sanitize_default(%Decimal{} = d), do: Decimal.to_float(d)
 
-  defp sanitize_default(value) when is_atom(value) and value not in [true, false],
+  defp sanitize_default(value) when is_atom(value) and value not in [true, false, nil],
     do: to_string(value)
+
+  defp sanitize_default(value) when is_list(value), do: Enum.map(value, &sanitize_default/1)
+
+  defp sanitize_default(value) when is_map(value) and not is_struct(value),
+    do: Map.new(value, fn {key, value} -> {key, sanitize_default(value)} end)
 
   defp sanitize_default(value), do: value
 
