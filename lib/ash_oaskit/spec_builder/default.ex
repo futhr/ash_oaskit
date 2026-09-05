@@ -39,13 +39,13 @@ defmodule AshOaskit.SpecBuilder.Default do
 
   @impl true
   def spec(openapi_version, opts) do
-    AshOaskit.spec(
-      domains: opts[:domains] || [],
-      version: openapi_version,
-      title: opts[:title] || "API",
-      api_version: opts[:version] || "1.0.0",
-      description: opts[:description],
-      servers: opts[:servers] || []
-    )
+    opts
+    |> Map.to_list()
+    |> Keyword.put(:domains, opts[:domains] || [])
+    |> Keyword.put(:title, opts[:title] || "API")
+    |> Keyword.put(:servers, opts[:servers] || [])
+    |> Keyword.put(:api_version, opts[:api_version] || opts[:version] || "1.0.0")
+    |> Keyword.put(:version, openapi_version)
+    |> AshOaskit.spec()
   end
 end

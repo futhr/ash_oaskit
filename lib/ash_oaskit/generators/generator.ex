@@ -114,7 +114,8 @@ defmodule AshOaskit.Generators.Generator do
       paths: PathBuilder.build_paths(domains, opts),
       components: build_components(domains, opts),
       tags: build_all_tags(domains, opts),
-      security: Keyword.get(opts, :security)
+      security: Keyword.get(opts, :security),
+      externalDocs: Keyword.get(opts, :external_docs)
     }
     |> reject_nil_values()
     |> apply_modify_hook(opts)

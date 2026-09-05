@@ -205,16 +205,13 @@ defmodule AshOaskit.Router do
       default_version = Keyword.get(opts, :default_version, "3.1")
       formats = Keyword.get(opts, :formats, [:json])
 
-      config = %{
-        domains: Keyword.fetch!(opts, :domains),
-        title: Keyword.get(opts, :title, "API"),
-        version: Keyword.get(opts, :version, "1.0.0"),
-        description: Keyword.get(opts, :description),
-        servers: Keyword.get(opts, :servers, []),
-        router: Keyword.get(opts, :router),
-        modify_open_api: Keyword.get(opts, :modify_open_api),
-        spec_builder: Keyword.get(opts, :spec_builder, AshOaskit.SpecBuilder.Default)
-      }
+      config =
+        opts
+        |> Map.new()
+        |> Map.put_new(:title, "API")
+        |> Map.put_new(:version, "1.0.0")
+        |> Map.put_new(:servers, [])
+        |> Map.put_new(:spec_builder, AshOaskit.SpecBuilder.Default)
 
       for format <- formats do
         ext = Atom.to_string(format)
@@ -257,17 +254,12 @@ defmodule AshOaskit.Router do
       default_version = Keyword.get(opts, :default_version, "3.1")
       formats = Keyword.get(opts, :formats, [:json])
 
-      # credo:disable-for-next-line Credo.Check.Design.DuplicatedCode
-      @__ash_oaskit_config %{
-        domains: Keyword.fetch!(opts, :domains),
-        title: Keyword.get(opts, :title, "API"),
-        version: Keyword.get(opts, :version, "1.0.0"),
-        description: Keyword.get(opts, :description),
-        servers: Keyword.get(opts, :servers, []),
-        router: Keyword.get(opts, :router),
-        modify_open_api: Keyword.get(opts, :modify_open_api),
-        spec_builder: Keyword.get(opts, :spec_builder, AshOaskit.SpecBuilder.Default)
-      }
+      @__ash_oaskit_config opts
+                           |> Map.new()
+                           |> Map.put_new(:title, "API")
+                           |> Map.put_new(:version, "1.0.0")
+                           |> Map.put_new(:servers, [])
+                           |> Map.put_new(:spec_builder, AshOaskit.SpecBuilder.Default)
 
       for format <- formats do
         ext = Atom.to_string(format)
