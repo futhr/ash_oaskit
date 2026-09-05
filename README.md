@@ -75,6 +75,19 @@ AshOaskit provides:
 
 ## Installation
 
+Requires Elixir 1.17+, Ash 3.33+, and Oaskit 0.14.2+. The optional
+AshJsonApi integration requires 1.7.1+ for field-visibility introspection.
+These minimums include the security fixes used by this library.
+
+Ash 3.33 requires an explicit string-length policy in your application:
+
+```elixir
+config :ash, default_string_length_count: :codepoints
+```
+
+Codepoints match JSON Schema's length semantics. Configure this in your
+application; dependencies cannot supply application-wide Ash settings.
+
 Add `ash_oaskit` to your dependencies in `mix.exs`:
 
 ```elixir

@@ -64,7 +64,7 @@ defmodule AshOaskit.MixProject do
   defp deps do
     [
       # Core Ash dependencies
-      {:ash, "~> 3.0"},
+      {:ash, "~> 3.33"},
       {:spark, "~> 2.0"},
 
       # Security floor: decimal < 3.1.0 has a DoS via unbounded exponent
@@ -74,10 +74,10 @@ defmodule AshOaskit.MixProject do
       {:decimal, "~> 3.1"},
 
       # OpenAPI spec normalization, validation, and rendering
-      {:oaskit, "~> 0.14"},
+      {:oaskit, "~> 0.14.2"},
 
       # AshJsonApi integration (optional)
-      {:ash_json_api, "~> 1.0", optional: true},
+      {:ash_json_api, ">= 1.7.1 and < 2.0.0", optional: true},
 
       # Igniter for installation task (optional)
       {:igniter, "~> 0.5", optional: true},
