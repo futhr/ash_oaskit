@@ -182,7 +182,7 @@ defmodule AshOaskit.IncludedResources do
   ## Options
 
   - `:max_depth` - Maximum relationship depth. Defaults to 2.
-  - `:include_paths` - Explicit include paths to follow. If nil, follows all relationships.
+  - `:include_paths` - Explicit include paths to follow. Defaults to the configured AshJsonApi includes.
 
   ## Examples
 
@@ -192,13 +192,18 @@ defmodule AshOaskit.IncludedResources do
   @spec get_includable_resources(module(), keyword()) :: list(String.t())
   def get_includable_resources(resource, opts \\ []) do
     max_depth = Keyword.get(opts, :max_depth, 2)
-    include_paths = Keyword.get(opts, :include_paths)
 
-    if include_paths do
-      get_resources_from_paths(resource, include_paths)
-    else
-      get_all_related_resources(resource, max_depth)
+    if not is_integer(max_depth) or max_depth < 0 do
+      raise ArgumentError, "max_depth must be a non-negative integer"
     end
+
+    paths = Keyword.get(opts, :include_paths) || configured_includes(resource) || []
+
+    paths
+    |> flatten_paths()
+    |> Enum.map(&(String.split(&1, ".") |> Enum.take(max_depth) |> Enum.join(".")))
+    |> then(&get_resources_from_paths(resource, &1))
+    |> Enum.sort()
   end
 
   @doc """
@@ -362,8 +367,7 @@ defmodule AshOaskit.IncludedResources do
   """
   @spec has_includable_resources?(module()) :: boolean()
   def has_includable_resources?(resource) do
-    relationships = get_relationships(resource)
-    not Enum.empty?(relationships)
+    get_includable_resources(resource) != []
   end
 
   @doc """
@@ -376,34 +380,18 @@ defmodule AshOaskit.IncludedResources do
   """
   @spec configured_includes(module()) :: list(String.t()) | nil
   def configured_includes(resource) do
-    Config.includes(resource)
+    flatten_paths(Config.includes(resource) || [])
   end
 
   # Private helper functions
 
-  @spec get_all_related_resources(module(), non_neg_integer()) :: list(String.t())
-  defp get_all_related_resources(resource, max_depth) do
-    resource
-    |> get_related_resources_recursive(max_depth, %{})
-    |> Map.keys()
-  end
+  defp flatten_paths(paths) do
+    Enum.flat_map(paths, fn
+      {name, nested} ->
+        [to_string(name) | Enum.map(flatten_paths(nested), &"#{name}.#{&1}")]
 
-  @spec get_related_resources_recursive(module(), non_neg_integer(), map()) :: map()
-  defp get_related_resources_recursive(_, 0, seen), do: seen
-
-  defp get_related_resources_recursive(resource, depth, seen) do
-    relationships = get_relationships(resource)
-
-    Enum.reduce(relationships, seen, fn rel, acc ->
-      destination = get_relationship_destination(rel)
-
-      if destination && not Map.has_key?(acc, destination) do
-        name = resource_name(destination)
-        updated = Map.put(acc, name, true)
-        get_related_resources_recursive(destination, depth - 1, updated)
-      else
-        acc
-      end
+      path ->
+        [to_string(path)]
     end)
   end
 
@@ -437,7 +425,9 @@ defmodule AshOaskit.IncludedResources do
 
   @spec get_relationships(module()) :: list(map())
   defp get_relationships(resource) do
-    Ash.Resource.Info.relationships(resource)
+    resource
+    |> Ash.Resource.Info.public_relationships()
+    |> Enum.filter(&Config.show_field?(resource, &1.name))
   end
 
   @spec get_relationship_destination(map()) :: module() | nil

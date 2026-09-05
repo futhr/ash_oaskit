@@ -214,6 +214,7 @@ defmodule AshOaskit.Test.Article do
 
   json_api do
     type "article"
+    includes [:author, :tags, reviews: [:article]]
   end
 
   attributes do
@@ -512,6 +513,7 @@ defmodule AshOaskit.Test.Category do
 
   json_api do
     type "category"
+    includes children: [:children], parent: [:parent]
   end
 
   attributes do

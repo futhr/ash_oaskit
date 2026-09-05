@@ -302,6 +302,23 @@ defmodule AshOaskit.IncludedResourcesTest do
   end
 
   describe "get_includable_resources/2" do
+    test "only configured public paths are included and invalid depths fail" do
+      assert IncludedResources.get_includable_resources(AshOaskit.Test.Post) == []
+
+      assert IncludedResources.get_includable_resources(AshOaskit.Test.Article) ==
+               ["Article", "Author", "Review", "Tag"]
+
+      assert IncludedResources.get_includable_resources(AshOaskit.Test.Article, max_depth: 0) ==
+               []
+
+      assert IncludedResources.get_resources_from_paths(AshOaskit.Test.Article, ["moderator"]) ==
+               []
+
+      assert_raise ArgumentError, ~r/max_depth/, fn ->
+        IncludedResources.get_includable_resources(AshOaskit.Test.Article, max_depth: -1)
+      end
+    end
+
     test "returns related resource names for resource with relationships" do
       result = IncludedResources.get_includable_resources(AshOaskit.Test.Article)
 
