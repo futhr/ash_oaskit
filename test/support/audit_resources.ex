@@ -34,6 +34,7 @@ defmodule AshOaskit.Test.SchemaAuditResource do
       post :create, route: "/:label"
       post :relate, route: "/relate", relationship_arguments: [{:id, :author}, :tags]
       route :get, "/shipping", :shipping
+      route :post, "/upload", :upload
     end
   end
 
@@ -42,6 +43,12 @@ defmodule AshOaskit.Test.SchemaAuditResource do
   end
 
   actions do
+    action :upload, :string do
+      argument :file, :file, allow_nil?: false
+      argument :caption, :string, allow_nil?: false
+      run fn _, _ -> {:ok, "uploaded"} end
+    end
+
     create :create do
       accept []
       argument :shipping, AshOaskit.Test.WrappedShippingInfo, allow_nil?: false

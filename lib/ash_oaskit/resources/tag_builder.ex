@@ -185,7 +185,7 @@ defmodule AshOaskit.TagBuilder do
 
     case group_by do
       :domain -> get_resource_domain_tag(resource)
-      :custom -> Config.domain_tag(resource) || resource_tag_name(resource)
+      :custom -> get_resource_domain_tag(resource)
       _ -> resource_tag_name(resource)
     end
   end

@@ -152,7 +152,11 @@ defmodule AshOaskit.Generators.Generator do
         )
       end)
 
-    SchemaBuilder.to_components(builder)
+    components = SchemaBuilder.to_components(builder)
+
+    if components.schemas == %{},
+      do: components,
+      else: AshOaskit.ErrorSchemas.add_error_components(components)
   end
 
   # :all seeds every resource of every domain; :routed seeds only the
@@ -194,6 +198,11 @@ defmodule AshOaskit.Generators.Generator do
       domains
       |> seed_resources(Keyword.get(opts, :resource_scope, :all))
       |> InfoBuilder.build_resource_tags()
+
+    domain_tags =
+      if Keyword.get(opts, :group_by) in [:domain, :custom],
+        do: AshOaskit.TagBuilder.build_tags(domains, opts),
+        else: domain_tags
 
     controller_tags =
       case Keyword.get(opts, :router) do

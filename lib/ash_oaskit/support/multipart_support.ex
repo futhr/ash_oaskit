@@ -97,6 +97,68 @@ defmodule AshOaskit.MultipartSupport do
     end)
   end
 
+  @doc "Adds AshJsonApi's multipart media type using the same route-specific input contract."
+  @spec add_route_content(map(), map(), keyword()) :: map()
+  def add_route_content(operation, route, opts) do
+    {attributes, arguments} = AshOaskit.SchemaBuilder.ResourceSchemas.input_fields(route)
+    body = operation[:requestBody]
+
+    if body && Enum.any?(attributes ++ arguments, &file_type?(&1.type)) do
+      input = multipart_input(route, attributes, arguments, opts)
+      data = body.content["application/vnd.api+json"].schema.properties.data
+
+      data =
+        if route.type == :route, do: input, else: put_in(data, [:properties, :attributes], input)
+
+      content = %{
+        schema: %{
+          type: :object,
+          required: ["data"],
+          properties: %{data: data},
+          additionalProperties: %{type: :string, format: :binary}
+        },
+        encoding: %{"data" => %{contentType: "application/vnd.api+json"}}
+      }
+
+      put_in(operation, [:requestBody, :content, "multipart/x.ash+form-data"], content)
+    else
+      operation
+    end
+  end
+
+  defp multipart_input(route, attributes, arguments, opts) do
+    properties =
+      Map.new(attributes ++ arguments, fn field ->
+        name =
+          if field in arguments,
+            do: Config.json_argument_name(route.resource, route.action, field.name),
+            else: Config.json_field_name(route.resource, field.name)
+
+        schema = multipart_field(field, Keyword.get(opts, :version, "3.1"))
+        {name, schema}
+      end)
+
+    required = AshOaskit.SchemaBuilder.ResourceSchemas.input_required(route)
+    schema = %{type: :object, properties: properties}
+    if required == [], do: schema, else: Map.put(schema, :required, required)
+  end
+
+  defp multipart_field(%{type: type} = field, version) do
+    cond do
+      type in [:file, Ash.Type.File] ->
+        %{type: :string, description: "Name of an uploaded multipart part"}
+
+      file_type?(type) ->
+        %{type: :array, items: multipart_field(%{field | type: elem(type, 1)}, version)}
+
+      version == "3.0" ->
+        AshOaskit.TypeMapper.to_json_schema_30(field, direction: :input)
+
+      true ->
+        AshOaskit.TypeMapper.to_json_schema_31(field, direction: :input)
+    end
+  end
+
   @doc """
   Gets the file arguments from an action.
 

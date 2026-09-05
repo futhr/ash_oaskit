@@ -56,6 +56,9 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   alias AshOaskit.Config
   alias AshOaskit.Core.PathUtils
   alias AshOaskit.FilterBuilder
+  alias AshOaskit.IncludedResources
+  alias AshOaskit.ResponseLinks
+  alias AshOaskit.ResponseMeta
   alias AshOaskit.SchemaBuilder
   alias AshOaskit.SchemaBuilder.EmbeddedSchemas
   alias AshOaskit.SchemaBuilder.PropertyBuilders
@@ -304,7 +307,9 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
       properties: %{
         id: %{type: :string},
         type: %{type: :string, enum: [json_api_type]},
-        attributes: schema_ref("#{schema_name}Attributes")
+        attributes: schema_ref("#{schema_name}Attributes"),
+        links: ResponseLinks.build_resource_links_schema(),
+        meta: ResponseMeta.build_resource_meta_schema()
       },
       required: ["id", "type"]
     }
@@ -325,7 +330,11 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
       type: :object,
       required: ["data"],
       properties: %{
-        data: data_schema
+        data: data_schema,
+        links: ResponseLinks.build_document_links_schema(version: builder.version),
+        meta: ResponseMeta.build_resource_meta_schema(),
+        jsonapi: ResponseMeta.build_jsonapi_object_schema(supported_versions: ["1.0"]),
+        included: IncludedResources.build_included_schema(resource)
       }
     }
 
@@ -334,6 +343,14 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
         type: :array,
         items: schema_ref("#{schema_name}Resource")
       })
+
+    collection_schema =
+      collection_schema
+      |> put_in(
+        [:properties, :links],
+        ResponseLinks.build_collection_links_schema(version: builder.version)
+      )
+      |> put_in([:properties, :meta], ResponseMeta.build_ash_page_meta_schema())
 
     builder
     |> add_schema_fn.("#{schema_name}Resource", data_schema)
@@ -573,6 +590,18 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
           accepted_writable_attributes(route.resource, action),
           body_arguments(action, route)
         )
+    end
+  end
+
+  @doc "Returns the accepted attributes and body arguments for a route."
+  @spec input_fields(map()) :: {[map()], [map()]}
+  def input_fields(route) do
+    case ResourceInfo.action(route.resource, route.action) do
+      nil ->
+        {[], []}
+
+      action ->
+        {accepted_writable_attributes(route.resource, action), body_arguments(action, route)}
     end
   end
 

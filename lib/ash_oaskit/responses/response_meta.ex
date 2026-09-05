@@ -107,6 +107,24 @@ defmodule AshOaskit.ResponseMeta do
     }
   end
 
+  @doc "Describes the page metadata emitted by AshJsonApi for offset and keyset results."
+  @spec build_ash_page_meta_schema() :: map()
+  def build_ash_page_meta_schema do
+    %{
+      type: :object,
+      properties: %{
+        page: %{
+          type: :object,
+          properties: %{
+            total: %{type: :integer, minimum: 0},
+            limit: %{type: :integer, minimum: 1},
+            offset: %{type: :integer, minimum: 0}
+          }
+        }
+      }
+    }
+  end
+
   @doc """
   Builds a page info schema based on pagination strategy.
 

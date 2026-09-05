@@ -135,24 +135,37 @@ defmodule AshOaskit.Generators.PathBuilder do
   def build_operation(route, opts) do
     version = Keyword.fetch!(opts, :version)
 
-    cond do
-      RelationshipRoutes.relationship_route?(route) ->
-        RelationshipRoutes.build_operation(route, opts)
+    operation =
+      cond do
+        RelationshipRoutes.relationship_route?(route) ->
+          RelationshipRoutes.build_operation(route, opts)
 
-      route.type == :route ->
-        build_generic_operation(route, version)
+        route.type == :route ->
+          build_generic_operation(route, version)
 
-      true ->
-        reject_nil_values(%{
-          operationId: build_operation_id(route),
-          summary: build_operation_summary(route),
-          description: build_operation_description(route),
-          responses: build_responses(route),
-          tags: build_operation_tags(route),
-          parameters: build_parameters(route, version),
-          requestBody: build_request_body(route)
-        })
-    end
+        true ->
+          reject_nil_values(%{
+            operationId: build_operation_id(route),
+            summary: build_operation_summary(route),
+            description: build_operation_description(route),
+            responses: build_responses(route),
+            tags: build_operation_tags(route),
+            parameters: build_parameters(route, version),
+            requestBody: build_request_body(route)
+          })
+      end
+
+    operation
+    |> Map.update!(:responses, &Map.merge(AshOaskit.ErrorSchemas.all_error_responses(), &1))
+    |> Map.update!(:responses, fn responses ->
+      Map.new(responses, fn {code, response} ->
+        if code in ["400", "401", "403", "404", "409", "422", "500"],
+          do: {code, AshOaskit.ErrorSchemas.error_response(code)},
+          else: {code, response}
+      end)
+    end)
+    |> Map.put(:tags, AshOaskit.TagBuilder.operation_tags(route, opts))
+    |> AshOaskit.MultipartSupport.add_route_content(route, opts)
   end
 
   # Builds an operation for a generic action route (`route :post, "...", :action`)
