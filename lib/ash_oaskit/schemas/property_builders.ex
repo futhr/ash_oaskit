@@ -355,9 +355,16 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
       iex> PropertyBuilders.type_to_schema({:array, :integer})
       %{type: :array, items: %{type: :integer}}
   """
-  @spec type_to_schema(atom() | tuple()) :: map()
-  def type_to_schema(:number), do: %{type: :number}
-  def type_to_schema(type), do: field_schema(%{version: "3.1"}, %{type: type, allow_nil?: false})
+  @spec type_to_schema(atom() | tuple(), keyword()) :: map()
+  def type_to_schema(type, opts \\ [])
+  def type_to_schema(:number, _), do: %{type: :number}
+
+  def type_to_schema(type, opts),
+    do:
+      field_schema(%{version: Keyword.get(opts, :version, "3.1")}, %{
+        type: type,
+        allow_nil?: false
+      })
 
   @doc """
   Normalizes Ash.Type.* modules to their atom equivalents.

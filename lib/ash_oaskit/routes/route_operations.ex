@@ -263,7 +263,7 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
   defp to_many_query_parameters(route, destination, version) do
     filter_param =
       if Map.get(route, :derive_filter?, true) do
-        FilterBuilder.build_filter_parameter(destination, version: version)
+        FilterBuilder.build_filter_parameter(destination, version: version, recursive?: true)
       end
 
     sort_param =

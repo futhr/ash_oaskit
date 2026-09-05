@@ -359,7 +359,9 @@ defmodule AshOaskit.Generators.PathBuilder do
   defp build_query_parameters(route, version) do
     resource = route.resource
 
-    filter_param = FilterBuilder.build_filter_parameter(resource, version: version)
+    filter_param =
+      FilterBuilder.build_filter_parameter(resource, version: version, recursive?: true)
+
     sort_param = SortBuilder.build_sort_parameter(resource, version: version)
 
     base_params = [

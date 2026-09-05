@@ -55,6 +55,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   alias Ash.Resource.Info, as: ResourceInfo
   alias AshOaskit.Config
   alias AshOaskit.Core.PathUtils
+  alias AshOaskit.FilterBuilder
   alias AshOaskit.SchemaBuilder
   alias AshOaskit.SchemaBuilder.EmbeddedSchemas
   alias AshOaskit.SchemaBuilder.PropertyBuilders
@@ -112,6 +113,13 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
 
     # Build input schemas
     builder = add_input_schemas(builder, resource, schema_name, opts)
+
+    builder =
+      add_schema_fn.(
+        builder,
+        "#{schema_name}Filter",
+        FilterBuilder.build_filter_schema(resource, recursive?: true, version: builder.version)
+      )
 
     add_return_schemas(builder, resource, opts)
   end

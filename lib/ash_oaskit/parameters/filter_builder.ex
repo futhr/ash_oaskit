@@ -41,7 +41,7 @@ defmodule AshOaskit.FilterBuilder do
   ### Equality Operators
   - Direct value: `filter[field]=value`
   - `eq`: `filter[field][eq]=value`
-  - `ne`: `filter[field][ne]=value`
+  - `not_eq`: `filter[field][not_eq]=value`
 
   ### Comparison Operators
   - `gt`: Greater than
@@ -51,15 +51,17 @@ defmodule AshOaskit.FilterBuilder do
 
   ### Set Operators
   - `in`: `filter[field][in][]=value1&filter[field][in][]=value2`
-  - `not_in`: Negation of `in`
+  - Negate membership with the `not` boolean filter
 
   ### String Operators
   - `contains`: Substring match
-  - `starts_with`: Prefix match
-  - `ends_with`: Suffix match
-  - `icontains`: Case-insensitive contains
-  - `istarts_with`: Case-insensitive starts_with
-  - `iends_with`: Case-insensitive ends_with
+  - `string_starts_with`: Prefix match
+  - `string_ends_with`: Suffix match
+  - Case-insensitive behavior comes from `:ci_string` fields
+
+  ### Array Operators
+  - `has`: Membership using the array's element type
+  - `intersects`: Overlap with an array of the same element type
 
   ### Null Check
   - `is_nil`: `filter[field][is_nil]=true`
@@ -87,7 +89,11 @@ defmodule AshOaskit.FilterBuilder do
   This module respects that configuration when available.
   """
 
+  alias Ash.Resource.Info, as: ResourceInfo
   alias AshOaskit.Config
+  alias AshOaskit.Core.SchemaRef
+  alias AshOaskit.SchemaBuilder.PropertyBuilders
+  alias AshOaskit.TypeMapper
 
   @typedoc """
   Filter operator specification.
@@ -150,11 +156,19 @@ defmodule AshOaskit.FilterBuilder do
   A map representing the JSON Schema for the filter object.
   """
   @spec build_filter_schema(module(), keyword()) :: map()
-  def build_filter_schema(resource, _ \\ []) do
-    attribute_filters = build_attribute_filters(resource)
-    boolean_filters = build_boolean_filters()
+  def build_filter_schema(resource, opts \\ []) do
+    attribute_filters = build_attribute_filters(resource, opts)
+    boolean_filters = build_boolean_filters(filter_reference(resource, opts))
 
-    properties = Map.merge(attribute_filters, boolean_filters)
+    relationships =
+      resource
+      |> ResourceInfo.public_relationships()
+      |> Enum.filter(&(Config.show_field?(resource, &1) and Map.get(&1, :filterable?, true)))
+      |> Map.new(
+        &{Config.json_field_name(resource, &1.name), filter_reference(&1.destination, opts)}
+      )
+
+    properties = attribute_filters |> Map.merge(relationships) |> Map.merge(boolean_filters)
 
     %{
       type: :object,
@@ -174,12 +188,12 @@ defmodule AshOaskit.FilterBuilder do
 
   A map of attribute name to filter schema.
   """
-  @spec build_attribute_filters(module()) :: map()
-  def build_attribute_filters(resource) do
+  @spec build_attribute_filters(module(), keyword()) :: map()
+  def build_attribute_filters(resource, opts \\ []) do
     resource
     |> get_filterable_attributes()
     |> Map.new(fn attr ->
-      {Config.json_field_name(resource, attr.name), build_attribute_filter_schema(attr)}
+      {Config.json_field_name(resource, attr.name), build_attribute_filter_schema(attr, opts)}
     end)
   end
 
@@ -196,9 +210,9 @@ defmodule AshOaskit.FilterBuilder do
 
   A JSON Schema for the attribute's filter.
   """
-  @spec build_attribute_filter_schema(map()) :: map()
-  def build_attribute_filter_schema(attr) do
-    base_type_schema = attribute_type_schema(attr.type)
+  @spec build_attribute_filter_schema(map(), keyword()) :: map()
+  def build_attribute_filter_schema(attr, opts \\ []) do
+    base_type_schema = attribute_type_schema(attr.type, opts)
     operators = operators_for_type(attr.type)
 
     operator_properties =
@@ -206,90 +220,55 @@ defmodule AshOaskit.FilterBuilder do
 
     # Allow either direct value or operator object
     %{
-      oneOf: [
-        base_type_schema,
-        %{
-          type: :object,
-          properties: operator_properties
-        }
-      ]
+      if(base_type_schema[:type] == :object or base_type_schema == %{}, do: :anyOf, else: :oneOf) =>
+        [
+          base_type_schema,
+          %{
+            type: :object,
+            properties: operator_properties,
+            additionalProperties: false
+          }
+        ]
     }
   end
 
   # Gets filterable attributes from a resource
   @spec get_filterable_attributes(module()) :: [map()]
   defp get_filterable_attributes(resource) do
-    resource
-    |> Ash.Resource.Info.public_attributes()
+    aggregates =
+      Enum.map(ResourceInfo.public_aggregates(resource), fn aggregate ->
+        resolved = PropertyBuilders.resolve_aggregate(resource, aggregate)
+        {type, constraints} = resolved.resolved_type
+        resolved |> Map.put(:type, type) |> Map.put(:constraints, constraints)
+      end)
+
+    (ResourceInfo.public_attributes(resource) ++
+       ResourceInfo.public_calculations(resource) ++ aggregates)
     |> Enum.filter(&Config.show_field?(resource, &1))
     |> Enum.reject(fn attr -> Map.get(attr, :filterable?, true) == false end)
   end
 
-  # Map of types to their JSON Schema representation
-  @type_to_schema %{
-    string: %{type: :string},
-    ci_string: %{type: :string},
-    integer: %{type: :integer},
-    float: %{type: :number},
-    decimal: %{type: :string},
-    boolean: %{type: :boolean},
-    date: %{type: :string, format: "date"},
-    time: %{type: :string, format: "time"},
-    datetime: %{type: :string, format: "date-time"},
-    utc_datetime: %{type: :string, format: "date-time"},
-    utc_datetime_usec: %{type: :string, format: "date-time"},
-    naive_datetime: %{type: :string, format: "date-time"},
-    uuid: %{type: :string, format: "uuid"},
-    atom: %{type: :string}
-  }
+  defp attribute_type_schema(type, opts), do: PropertyBuilders.type_to_schema(type, opts)
 
-  # Map of Ash.Type modules to atom equivalents
-  @ash_type_to_atom %{
-    Ash.Type.String => :string,
-    Ash.Type.CiString => :ci_string,
-    Ash.Type.Integer => :integer,
-    Ash.Type.Float => :float,
-    Ash.Type.Decimal => :decimal,
-    Ash.Type.Boolean => :boolean,
-    Ash.Type.Date => :date,
-    Ash.Type.Time => :time,
-    Ash.Type.DateTime => :datetime,
-    Ash.Type.UtcDatetime => :utc_datetime,
-    Ash.Type.UtcDatetimeUsec => :utc_datetime_usec,
-    Ash.Type.NaiveDatetime => :naive_datetime,
-    Ash.Type.UUID => :uuid,
-    Ash.Type.Atom => :atom
-  }
-
-  # Maps Ash type to base JSON Schema for filter values
-  @spec attribute_type_schema(atom() | tuple()) :: map()
-  defp attribute_type_schema({:array, inner}) do
-    %{type: :array, items: attribute_type_schema(inner)}
-  end
-
-  defp attribute_type_schema(type) do
-    normalized = normalize_type(type)
-    Map.get(@type_to_schema, normalized, %{type: :string})
-  end
-
-  # Normalizes type to a simple atom
-  @spec normalize_type(atom() | tuple()) :: atom() | tuple()
   defp normalize_type({:array, inner}), do: {:array, normalize_type(inner)}
 
   defp normalize_type(type) when is_atom(type) do
-    # Check if it's an Ash.Type module, otherwise return the type itself
-    Map.get(@ash_type_to_atom, type, type)
+    if Ash.Type.NewType.new_type?(type) do
+      normalize_type(Ash.Type.NewType.subtype_of(type))
+    else
+      TypeMapper.normalize_type(type)
+    end
   end
 
   defp normalize_type(_), do: :string
 
   # Returns available operators for a type
-  @base_ops [:eq, :ne, :in, :not_in, :is_nil]
+  @base_ops [:eq, :not_eq, :in, :is_nil]
   @string_ops @base_ops ++
-                [:contains, :starts_with, :ends_with, :icontains, :istarts_with, :iends_with]
+                [:contains, :string_starts_with, :string_ends_with]
   @comparable_ops @base_ops ++ [:gt, :gte, :lt, :lte]
-  @boolean_ops [:eq, :ne, :is_nil]
-  @array_ops [:eq, :ne, :is_nil, :contains, :has_any, :has_all]
+  @boolean_ops [:eq, :not_eq, :is_nil]
+  @array_ops [:eq, :not_eq, :is_nil, :has, :intersects]
 
   @type_operators %{
     string: @string_ops,
@@ -312,48 +291,60 @@ defmodule AshOaskit.FilterBuilder do
       {:array, _} -> @array_ops
       t -> Map.get(@type_operators, t, @base_ops)
     end
+    |> Enum.filter(fn op ->
+      Ash.Filter.get_operator(op) != nil or
+        Ash.Filter.get_predicate_function(op, nil, true) != nil
+    end)
   end
 
   # Builds schema for a specific operator
   @spec operator_schema(atom(), map()) :: map()
   defp operator_schema(:eq, base_schema), do: base_schema
-  defp operator_schema(:ne, base_schema), do: base_schema
+  defp operator_schema(:not_eq, base_schema), do: base_schema
   defp operator_schema(:gt, base_schema), do: base_schema
   defp operator_schema(:gte, base_schema), do: base_schema
   defp operator_schema(:lt, base_schema), do: base_schema
   defp operator_schema(:lte, base_schema), do: base_schema
   defp operator_schema(:contains, _), do: %{type: :string}
-  defp operator_schema(:starts_with, _), do: %{type: :string}
-  defp operator_schema(:ends_with, _), do: %{type: :string}
-  defp operator_schema(:icontains, _), do: %{type: :string}
-  defp operator_schema(:istarts_with, _), do: %{type: :string}
-  defp operator_schema(:iends_with, _), do: %{type: :string}
+  defp operator_schema(:string_starts_with, _), do: %{type: :string}
+  defp operator_schema(:string_ends_with, _), do: %{type: :string}
+  defp operator_schema(:has, %{items: items}), do: items
+  defp operator_schema(:intersects, base_schema), do: base_schema
   defp operator_schema(:is_nil, _), do: %{type: :boolean}
   defp operator_schema(:in, base_schema), do: %{type: :array, items: base_schema}
-  defp operator_schema(:not_in, base_schema), do: %{type: :array, items: base_schema}
-  defp operator_schema(:has_any, base_schema), do: %{type: :array, items: base_schema}
-  defp operator_schema(:has_all, base_schema), do: %{type: :array, items: base_schema}
   defp operator_schema(_, base_schema), do: base_schema
 
   # Builds boolean filter operators (and, or, not)
-  @spec build_boolean_filters() :: map()
-  defp build_boolean_filters do
+  @spec build_boolean_filters(map()) :: map()
+  defp build_boolean_filters(filter) do
     %{
       "and" => %{
         type: :array,
-        items: %{type: :object},
+        items: filter,
         description: "All conditions must match"
       },
       "or" => %{
         type: :array,
-        items: %{type: :object},
+        items: filter,
         description: "Any condition must match"
       },
       "not" => %{
         type: :object,
+        allOf: [filter],
         description: "Condition must not match"
       }
     }
+  end
+
+  defp filter_reference(resource, opts) do
+    if Keyword.get(opts, :recursive?, false),
+      # Keep the object type explicit so Oaskit's parameter precaster does not
+      # recursively expand relationship cycles while summarizing scalar types.
+      do: %{
+        type: :object,
+        allOf: [SchemaRef.schema_ref("#{Config.resource_display_name(resource)}Filter")]
+      },
+      else: %{type: :object}
   end
 
   @spec derive_filter?(module()) :: boolean()

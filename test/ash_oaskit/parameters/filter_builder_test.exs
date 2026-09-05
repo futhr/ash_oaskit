@@ -5,6 +5,44 @@ defmodule AshOaskit.FilterBuilderTest do
 
   alias AshOaskit.FilterBuilder
 
+  test "documented operators are accepted by Ash's public filter parser" do
+    for {field, type, sample} <- [
+          {:title, :string, "hello"},
+          {:view_count, :integer, 1},
+          {:tags, {:array, :string}, "tag"}
+        ] do
+      [_, object] = FilterBuilder.build_attribute_filter_schema(%{type: type}).oneOf
+
+      for {operator, _} <- object.properties do
+        value =
+          cond do
+            operator == "is_nil" -> true
+            operator == "in" or (field == :tags and operator != "has") -> [sample]
+            true -> sample
+          end
+
+        assert {:ok, _} =
+                 Ash.Filter.parse_input(AshOaskit.Test.Post, %{field => %{operator => value}})
+      end
+    end
+  end
+
+  test "filter schemas include calculations, aggregates and recursive relationships" do
+    spec = AshOaskit.spec(domains: [AshOaskit.Test.Publishing])
+    schemas = spec["components"]["schemas"]
+    assert schemas["AuthorFilter"]["properties"]["full_name"]
+    assert schemas["AuthorFilter"]["properties"]["total_articles"]
+
+    validator =
+      schemas["ArticleFilter"] |> Map.put("components", spec["components"]) |> JSV.build!()
+
+    assert {:ok, _} =
+             JSV.validate(%{"author" => %{"first_name" => %{"contains" => "A"}}}, validator)
+
+    assert {:error, _} =
+             JSV.validate(%{"and" => [%{"title" => %{"icontains" => "A"}}]}, validator)
+  end
+
   describe "build_filter_parameter/2" do
     test "returns parameter with correct name" do
       param = FilterBuilder.build_filter_parameter(AshOaskit.Test.Post)
@@ -145,7 +183,7 @@ defmodule AshOaskit.FilterBuilderTest do
     end
 
     test "includes ne operator", %{operators: ops} do
-      assert Map.has_key?(ops, "ne")
+      assert Map.has_key?(ops, "not_eq")
     end
 
     test "includes contains operator", %{operators: ops} do
@@ -154,17 +192,17 @@ defmodule AshOaskit.FilterBuilderTest do
     end
 
     test "includes starts_with operator", %{operators: ops} do
-      assert Map.has_key?(ops, "starts_with")
+      assert Map.has_key?(ops, "string_starts_with")
     end
 
     test "includes ends_with operator", %{operators: ops} do
-      assert Map.has_key?(ops, "ends_with")
+      assert Map.has_key?(ops, "string_ends_with")
     end
 
-    test "includes case-insensitive operators", %{operators: ops} do
-      assert Map.has_key?(ops, "icontains")
-      assert Map.has_key?(ops, "istarts_with")
-      assert Map.has_key?(ops, "iends_with")
+    test "does not invent case-insensitive operator aliases", %{operators: ops} do
+      refute Map.has_key?(ops, "icontains")
+      refute Map.has_key?(ops, "istarts_with")
+      refute Map.has_key?(ops, "iends_with")
     end
 
     test "includes in operator", %{operators: ops} do
@@ -214,7 +252,7 @@ defmodule AshOaskit.FilterBuilderTest do
 
     test "includes only eq, ne, is_nil", %{operators: ops} do
       assert Map.has_key?(ops, "eq")
-      assert Map.has_key?(ops, "ne")
+      assert Map.has_key?(ops, "not_eq")
       assert Map.has_key?(ops, "is_nil")
     end
 
@@ -240,7 +278,7 @@ defmodule AshOaskit.FilterBuilderTest do
     end
 
     test "uses date-time format", %{operators: ops} do
-      assert ops["eq"].format == "date-time"
+      assert ops["eq"].format == :"date-time"
     end
   end
 
@@ -252,18 +290,14 @@ defmodule AshOaskit.FilterBuilderTest do
       {:ok, operators: operator_obj.properties}
     end
 
-    test "includes contains operator", %{operators: ops} do
-      assert Map.has_key?(ops, "contains")
+    test "includes array membership", %{operators: ops} do
+      assert ops["has"].type == :string
     end
 
-    test "includes has_any operator", %{operators: ops} do
-      assert Map.has_key?(ops, "has_any")
-      assert ops["has_any"].type == :array
-    end
-
-    test "includes has_all operator", %{operators: ops} do
-      assert Map.has_key?(ops, "has_all")
-      assert ops["has_all"].type == :array
+    test "includes array intersection", %{operators: ops} do
+      assert ops["intersects"].type == :array
+      assert ops["intersects"].items.type == :string
+      refute Map.has_key?(ops, "has_all")
     end
   end
 
@@ -330,7 +364,7 @@ defmodule AshOaskit.FilterBuilderTest do
 
       direct =
         Enum.find(schema.oneOf, fn s ->
-          s.type == :string and s[:format] == "uuid"
+          s.type == :string and s[:format] == :uuid
         end)
 
       assert direct != nil
@@ -342,7 +376,7 @@ defmodule AshOaskit.FilterBuilderTest do
 
       direct =
         Enum.find(schema.oneOf, fn s ->
-          s.type == :string and s[:format] == "date"
+          s.type == :string and s[:format] == :date
         end)
 
       assert direct != nil
@@ -404,28 +438,23 @@ defmodule AshOaskit.FilterBuilderTest do
     end
   end
 
-  describe "has_any operator schema" do
-    test "has_any operator produces array schema wrapping the base schema" do
+  describe "array operator schemas" do
+    test "intersects accepts a flat array of element values" do
       attr = %{name: :tags, type: {:array, :string}}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
       operator_obj = Enum.find(schema.oneOf, &(&1.type == :object))
 
-      has_any = operator_obj.properties["has_any"]
+      has_any = operator_obj.properties["intersects"]
       assert has_any.type == :array
-      # Base schema for {:array, :string} is %{type: :array, items: ...}
-      assert has_any.items.type == :array
-      assert has_any.items.items.type == :string
+      assert has_any.items.type == :string
     end
 
-    test "has_all operator produces array schema wrapping the base schema" do
+    test "has accepts a typed integer element" do
       attr = %{name: :tags, type: {:array, :integer}}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
       operator_obj = Enum.find(schema.oneOf, &(&1.type == :object))
 
-      has_all = operator_obj.properties["has_all"]
-      assert has_all.type == :array
-      assert has_all.items.type == :array
-      assert has_all.items.items.type == :integer
+      assert operator_obj.properties["has"].type == :integer
     end
   end
 end
