@@ -92,9 +92,10 @@ defmodule AshOaskit.Core.PathUtils do
   """
   @spec extract_path_params(String.t()) :: [String.t()]
   def extract_path_params(path) do
-    ~r/:([a-zA-Z_]+)/
+    ~r/:([a-zA-Z_][a-zA-Z_0-9]*)/
     |> Regex.scan(path)
     |> Enum.map(fn [_, name] -> name end)
+    |> Enum.uniq()
   end
 
   @doc """
@@ -120,6 +121,6 @@ defmodule AshOaskit.Core.PathUtils do
   """
   @spec convert_path_params(String.t()) :: String.t()
   def convert_path_params(path) do
-    Regex.replace(~r/:([a-zA-Z_]+)/, path, "{\\1}")
+    Regex.replace(~r/:([a-zA-Z_][a-zA-Z_0-9]*)/, path, "{\\1}")
   end
 end

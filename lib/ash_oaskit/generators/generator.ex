@@ -173,7 +173,8 @@ defmodule AshOaskit.Generators.Generator do
   # schemas the operations reference
   defp collect_input_actions(domains) do
     domains
-    |> Enum.flat_map(&RouteGathering.domain_routes/1)
+    |> Enum.flat_map(&RouteGathering.routes_with_paths/1)
+    |> Enum.map(&elem(&1, 1))
     |> Enum.filter(&body_bearing_route?/1)
     |> Enum.group_by(& &1.resource)
     |> Map.new(fn {resource, routes} ->

@@ -21,6 +21,10 @@ defmodule AshOaskit.Core.PathUtilsTest do
   end
 
   describe "extract_path_params/1" do
+    test "retains digits and emits each parameter once" do
+      assert PathUtils.extract_path_params("/:tenant2/:id_3/:tenant2") == ["tenant2", "id_3"]
+    end
+
     test "extracts single param" do
       assert PathUtils.extract_path_params("/posts/:id") == ["id"]
     end
@@ -36,6 +40,10 @@ defmodule AshOaskit.Core.PathUtilsTest do
   end
 
   describe "convert_path_params/1" do
+    test "retains digits within parameter names" do
+      assert PathUtils.convert_path_params("/:tenant2/:id_3") == "/{tenant2}/{id_3}"
+    end
+
     test "converts Phoenix style to OpenAPI style" do
       assert PathUtils.convert_path_params("/posts/:id") == "/posts/{id}"
     end

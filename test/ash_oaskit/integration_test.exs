@@ -149,7 +149,7 @@ defmodule AshOaskit.IntegrationTest do
 
       create = spec["paths"]["/edge/reconciliation-states"]["post"]
 
-      assert create["operationId"] == "post_reconciliation_state_create"
+      assert create["operationId"] == "post_edge_reconciliation_state_create"
       assert create["summary"] == "Create ReconciliationState"
       assert create["tags"] == ["ReconciliationState"]
 
