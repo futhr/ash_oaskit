@@ -10,6 +10,28 @@ defmodule Mix.Tasks.AshOaskit.GenerateTest do
   @moduletag :tmp_dir
 
   describe "run/1" do
+    test "rejects unknown flags, missing values and positional arguments before writing", %{tmp_dir: dir} do
+      output = Path.join(dir, "must-not-exist.json")
+
+      for args <- [["--titel", "API"], ["--title"], ["surprise"]] do
+        assert_raise Mix.Error, ~r/Invalid arguments/, fn ->
+          Generate.run(["--output", output] ++ args)
+        end
+
+        refute File.exists?(output)
+      end
+    end
+
+    test "reports unknown and non-domain modules clearly" do
+      assert_raise Mix.Error, ~r/Unknown Ash domain/, fn ->
+        Generate.run(["--domains", "DoesNotExist.Domain123"])
+      end
+
+      assert_raise Mix.Error, ~r/Not a loaded Ash domain/, fn ->
+        Generate.run(["--domains", "String"])
+      end
+    end
+
     test "generates OpenAPI 3.1 spec by default", %{tmp_dir: tmp_dir} do
       output_file = Path.join(tmp_dir, "openapi.json")
 

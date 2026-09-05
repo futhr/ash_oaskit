@@ -47,9 +47,7 @@ defmodule Mix.Tasks.AshOaskit.Generate do
   @impl Mix.Task
   @spec run([String.t()]) :: :ok
   def run(args) do
-    Mix.Task.run("app.start")
-
-    {opts, _, _} =
+    {opts, positional, invalid} =
       OptionParser.parse(args,
         strict: [
           domains: :string,
@@ -69,11 +67,21 @@ defmodule Mix.Tasks.AshOaskit.Generate do
         ]
       )
 
-    domains = parse_domains(opts[:domains])
+    if invalid != [] or positional != [] do
+      Mix.raise("Invalid arguments: #{inspect(invalid ++ positional)}")
+    end
+
     version = opts[:version] || "3.1"
     output = opts[:output] || default_output(version, opts[:format])
     format = opts[:format] || "json"
     pretty = Keyword.get(opts, :pretty, true)
+
+    if format not in ["json", "yaml"] do
+      Mix.raise("Unknown format: #{format}. Use 'json' or 'yaml'")
+    end
+
+    Mix.Task.run("app.start")
+    domains = parse_domains(opts[:domains])
 
     if domains == [] do
       Mix.raise("No domains specified. Use --domains MyApp.Domain1,MyApp.Domain2")
@@ -95,7 +103,6 @@ defmodule Mix.Tasks.AshOaskit.Generate do
       case format do
         "json" -> encode_json(spec, pretty)
         "yaml" -> encode_yaml(spec)
-        _ -> Mix.raise("Unknown format: #{format}. Use 'json' or 'yaml'")
       end
 
     File.write!(output, content)
@@ -109,7 +116,21 @@ defmodule Mix.Tasks.AshOaskit.Generate do
     domains_string
     |> String.split(",")
     |> Enum.map(&String.trim/1)
-    |> Enum.map(&Module.safe_concat([&1]))
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.map(&domain_module!/1)
+    |> Enum.uniq()
+  end
+
+  defp domain_module!(name) do
+    module = Module.safe_concat([name])
+
+    if Code.ensure_loaded?(module) and Spark.Dsl.is?(module, Ash.Domain) do
+      module
+    else
+      Mix.raise("Not a loaded Ash domain: #{name}")
+    end
+  rescue
+    ArgumentError -> Mix.raise("Unknown Ash domain: #{name}")
   end
 
   defp default_output(version, format) do
@@ -120,7 +141,7 @@ defmodule Mix.Tasks.AshOaskit.Generate do
   defp encode_json(spec, pretty), do: Oaskit.SpecDumper.to_json!(spec, pretty: pretty)
 
   defp encode_yaml(spec) do
-    if Code.ensure_loaded?(YamlElixir.Sigil) do
+    if Code.ensure_loaded?(Ymlr) and function_exported?(Ymlr, :document!, 1) do
       # Round-trip through JSON to normalize atoms/structs before YAML
       spec
       |> JSV.Codec.encode!()
