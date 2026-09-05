@@ -125,12 +125,12 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
       ref =
         cond do
           Map.has_key?(profile, "$ref") -> profile["$ref"]
-          Map.has_key?(profile, "allOf") -> hd(profile["allOf"])["$ref"]
+          Map.has_key?(profile, "anyOf") -> Enum.find_value(profile["anyOf"], & &1["$ref"])
           true -> nil
         end
 
       # The base reference should point to Profile
-      assert ref == nil or String.contains?(to_string(ref), "Profile")
+      assert ref == "#/components/schemas/Profile"
     end
   end
 
@@ -263,11 +263,8 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
     end
   end
 
-  describe "embedded cycle detection" do
-    # Tests that cycle detection prevents infinite recursion.
-
-    test "generating embedded schemas completes without hanging" do
-      # This should complete quickly, not hang
+  describe "nested embedded discovery and deduplication" do
+    test "generating nested embedded schemas reaches both levels" do
       builder =
         SchemaBuilder.add_resource_schemas(
           SchemaBuilder.new(version: "3.1"),
