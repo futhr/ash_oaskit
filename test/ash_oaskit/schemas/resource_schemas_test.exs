@@ -5,6 +5,15 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemasTest do
   alias AshOaskit.SchemaBuilder
   alias AshOaskit.SchemaBuilder.ResourceSchemas
 
+  test "repeated resources do not rebuild output or completed input components" do
+    builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Post)
+    no_write = fn _, _, _ -> flunk("a completed schema was rebuilt") end
+
+    assert SchemaBuilder.add_resource_schemas(builder, AshOaskit.Test.Post,
+             add_schema_fn: no_write
+           ) == builder
+  end
+
   test "the same action has distinct body schemas when routes move an argument into the path" do
     spec = AshOaskit.spec(domains: [AshOaskit.Test.SchemaAuditDomain])
 

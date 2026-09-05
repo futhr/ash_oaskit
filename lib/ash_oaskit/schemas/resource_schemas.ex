@@ -86,6 +86,20 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   """
   @spec add_resource_schemas(map(), module(), keyword()) :: map()
   def add_resource_schemas(builder, resource, opts) do
+    opts =
+      case Keyword.fetch(opts, :input_actions_by_resource) do
+        {:ok, actions} -> Keyword.put(opts, :input_actions, Map.get(actions, resource, []))
+        :error -> opts
+      end
+
+    if Keyword.fetch!(opts, :seen_fn).(builder, resource) do
+      add_input_schemas(builder, resource, resource_schema_name(resource), opts)
+    else
+      do_add_resource_schemas(builder, resource, opts)
+    end
+  end
+
+  defp do_add_resource_schemas(builder, resource, opts) do
     schema_name = resource_schema_name(resource)
     mark_seen_fn = Keyword.fetch!(opts, :mark_seen_fn)
     add_schema_fn = Keyword.fetch!(opts, :add_schema_fn)
@@ -108,7 +122,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
     rel_opts = [
       add_schema_fn: add_schema_fn,
       seen_fn: Keyword.fetch!(opts, :seen_fn),
-      add_resource_schemas_fn: &add_resource_schemas(&1, &2, opts)
+      add_resource_schemas_fn: &add_resource_schemas(&1, &2, Keyword.delete(opts, :input_actions))
     ]
 
     builder =
@@ -430,6 +444,17 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   """
   @spec add_action_input_schema(map(), module(), atom(), String.t(), keyword()) :: map()
   def add_action_input_schema(builder, resource, action_name, schema_name, opts) do
+    name = action_input_schema_name(schema_name, action_name, Keyword.get(opts, :route))
+    has_schema? = Keyword.get(opts, :has_schema_fn, &SchemaBuilder.has_schema?/2)
+
+    if has_schema?.(builder, name) do
+      builder
+    else
+      do_add_action_input_schema(builder, resource, action_name, schema_name, opts)
+    end
+  end
+
+  defp do_add_action_input_schema(builder, resource, action_name, schema_name, opts) do
     add_schema_fn = Keyword.fetch!(opts, :add_schema_fn)
 
     route =

@@ -105,6 +105,7 @@ defmodule AshOaskit.Generators.Generator do
   """
   @spec generate(list(module()), opts()) :: map()
   def generate(domains, opts) do
+    opts = prepare_context(domains, opts)
     version = Keyword.fetch!(opts, :version)
     openapi_version = if version == "3.0", do: "3.0.3", else: "3.1.0"
 
@@ -140,15 +141,16 @@ defmodule AshOaskit.Generators.Generator do
   """
   @spec build_components(list(module()), opts()) :: map()
   def build_components(domains, opts) do
+    opts = prepare_context(domains, opts)
     version = Keyword.fetch!(opts, :version)
-    input_actions = collect_input_actions(domains)
+    input_actions = collect_input_actions(Keyword.fetch!(opts, :route_pairs))
 
     builder =
-      domains
-      |> seed_resources(Keyword.get(opts, :resource_scope, :all))
+      opts
+      |> Keyword.fetch!(:seed_resources)
       |> Enum.reduce(SchemaBuilder.new(version: version), fn resource, builder ->
         SchemaBuilder.add_resource_schemas(builder, resource,
-          input_actions: Map.get(input_actions, resource, [])
+          input_actions_by_resource: input_actions
         )
       end)
 
@@ -167,19 +169,31 @@ defmodule AshOaskit.Generators.Generator do
     Enum.flat_map(domains, &get_domain_resources/1)
   end
 
-  defp seed_resources(domains, :routed) do
-    domains
-    |> Enum.flat_map(&RouteGathering.domain_routes/1)
-    |> Enum.map(& &1.resource)
-    |> Enum.uniq()
+  defp prepare_context(domains, opts) do
+    opts =
+      Keyword.put_new_lazy(opts, :route_pairs, fn ->
+        Enum.flat_map(domains, &RouteGathering.routes_with_paths/1) |> Enum.uniq()
+      end)
+
+    Keyword.put_new_lazy(opts, :seed_resources, fn ->
+      case Keyword.get(opts, :resource_scope, :all) do
+        :all ->
+          seed_resources(domains, :all) |> Enum.uniq()
+
+        :routed ->
+          opts
+          |> Keyword.fetch!(:route_pairs)
+          |> Enum.map(fn {_, route} -> route.resource end)
+          |> Enum.uniq()
+      end
+    end)
   end
 
   # Collects {action, route} pairs per resource for every route that
   # carries a request body, so components contain exactly the input
   # schemas the operations reference
-  defp collect_input_actions(domains) do
-    domains
-    |> Enum.flat_map(&RouteGathering.routes_with_paths/1)
+  defp collect_input_actions(route_pairs) do
+    route_pairs
     |> Enum.map(&elem(&1, 1))
     |> Enum.filter(&body_bearing_route?/1)
     |> Enum.group_by(& &1.resource)
@@ -195,8 +209,8 @@ defmodule AshOaskit.Generators.Generator do
   # Builds all tags from domains and optionally from router
   defp build_all_tags(domains, opts) do
     domain_tags =
-      domains
-      |> seed_resources(Keyword.get(opts, :resource_scope, :all))
+      opts
+      |> Keyword.fetch!(:seed_resources)
       |> InfoBuilder.build_resource_tags()
 
     domain_tags =

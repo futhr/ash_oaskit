@@ -208,8 +208,8 @@ defmodule AshOaskit.Generators.PathBuilder do
 
   # Builds paths from Ash domain routes
   defp build_ash_paths(domains, opts) do
-    domains
-    |> Enum.flat_map(&get_domain_routes/1)
+    opts
+    |> Keyword.get_lazy(:route_pairs, fn -> Enum.flat_map(domains, &get_domain_routes/1) end)
     |> Enum.uniq()
     |> Enum.reduce(%{}, fn {path, route}, paths ->
       PathRegistry.put(
