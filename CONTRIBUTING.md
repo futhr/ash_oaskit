@@ -148,11 +148,16 @@ The canonical repository must keep these external controls enabled:
 Verify the controls before every release:
 
 ```bash
-gh api repos/futhr/ash_oaskit/environments/hex-publish
-gh api repos/futhr/ash_oaskit/environments/hex-publish/deployment-branch-policies
-gh api repos/futhr/ash_oaskit/branches/main/protection
-gh api repos/futhr/ash_oaskit/rulesets
+mix run --no-start scripts/verify_release_controls.exs
 ```
+
+Run this with a maintainer's authenticated `gh` CLI. It checks effective rulesets,
+current CI job names, immutable release tags, environment approval, deployment tag
+policy, and the presence of the environment secret. GitHub cannot reveal an existing
+secret for migration: set a package-scoped key in `hex-publish` manually, then remove
+the repository-scoped copy. Confirm the key's package permissions in Hex itself.
+The environment reviewer is the repository owner; self-review remains allowed so
+a sole maintainer can explicitly approve a release. Administrator bypass is disabled.
 
 Then update the version and changelog, merge the release commit to `main`, wait for required CI,
 and create an annotated tag with `git tag -a vVERSION -m vVERSION`. Never move or reuse a tag.
