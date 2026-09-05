@@ -1,5 +1,9 @@
 import Config
 
+# Ash 3.33 requires an explicit string-length policy. JSON Schema counts
+# Unicode codepoints too; grapheme limits do not bound input size.
+config :ash, default_string_length_count: :codepoints
+
 # Dev/test configuration for AshOaskit itself. This file is NOT shipped
 # to consumers — all library defaults live in code (see
 # AshOaskit.OpenApi and AshOaskit.Generators.InfoBuilder). Consumers may
