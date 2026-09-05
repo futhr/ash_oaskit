@@ -2,6 +2,7 @@ defmodule AshOaskit.SchemaBuilderTest do
   @moduledoc false
 
   use ExUnit.Case, async: true
+  @moduletag capture_log: true
   doctest AshOaskit.SchemaBuilder
 
   alias AshOaskit.SchemaBuilder
@@ -1044,7 +1045,7 @@ defmodule AshOaskit.SchemaBuilderTest do
     end
 
     test "type_to_schema handles non-atom non-tuple type" do
-      assert PropertyBuilders.type_to_schema("string") == %{type: :string}
+      assert PropertyBuilders.type_to_schema("string") == %{}
     end
   end
 

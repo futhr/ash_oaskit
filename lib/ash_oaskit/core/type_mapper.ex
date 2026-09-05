@@ -210,6 +210,8 @@ defmodule AshOaskit.TypeMapper do
   defp embedded_types_for({:struct_fields, module}, _),
     do: embedded_field_types(module.subtype_constraints()[:fields] || [])
 
+  defp embedded_types_for({:fields, fields}, _), do: embedded_field_types(fields)
+
   defp embedded_types_for({:union, types}, _) when is_list(types) do
     Enum.flat_map(types, fn
       {_, config} when is_list(config) -> embedded_types(Map.new(config))
@@ -275,12 +277,24 @@ defmodule AshOaskit.TypeMapper do
     }
   }
 
+  defp ash_type_to_base_schema({:array, inner}, constraints, version) do
+    items = ash_type_to_base_schema(inner, Keyword.get(constraints, :items, []), version)
+
+    items =
+      if Keyword.get(constraints, :nil_items?, false),
+        do: make_nullable(items, version),
+        else: items
+
+    apply_constraint_keywords(%{"type" => "array", "items" => items}, constraints, :array)
+  end
+
   defp ash_type_to_base_schema(type, constraints, version) do
+    constraints = effective_constraints(type, constraints)
     normalized = normalize_type(type, constraints)
 
     normalized
     |> schema_for_normalized_type(version)
-    |> apply_constraints(constraint_type(type), effective_constraints(type, constraints), version)
+    |> apply_constraints(constraint_type(type), constraints, version)
   end
 
   defp schema_for_normalized_type(type, version) do
@@ -305,8 +319,10 @@ defmodule AshOaskit.TypeMapper do
   defp complex_type_schema({:struct_fields, module}, version),
     do: build_typed_struct_schema(module, version)
 
+  defp complex_type_schema({:fields, fields}, version), do: build_fields_schema(fields, version)
+
   defp complex_type_schema({:custom, custom_schema}, _), do: custom_schema
-  defp complex_type_schema(_, _), do: %{"type" => "string"}
+  defp complex_type_schema(_, _), do: %{}
 
   defp build_union_schema(types, version) when is_list(types) do
     any_of =
@@ -334,7 +350,7 @@ defmodule AshOaskit.TypeMapper do
       fields = module.__struct__() |> Map.keys() |> Enum.reject(&(&1 == :__struct__))
 
       properties =
-        Map.new(fields, fn field -> {to_string(field), %{"type" => "string"}} end)
+        Map.new(fields, fn field -> {to_string(field), %{}} end)
 
       %{
         "type" => "object",
@@ -356,6 +372,12 @@ defmodule AshOaskit.TypeMapper do
   defp build_typed_struct_schema(module, version) do
     fields = module.subtype_constraints()[:fields] || []
 
+    fields
+    |> build_fields_schema(version)
+    |> Map.put("description", "Struct of type #{inspect(module)}")
+  end
+
+  defp build_fields_schema(fields, version) do
     properties =
       Map.new(fields, fn {name, config} ->
         type = Keyword.get(config, :type, :string)
@@ -379,8 +401,7 @@ defmodule AshOaskit.TypeMapper do
 
     schema = %{
       "type" => "object",
-      "properties" => properties,
-      "description" => "Struct of type #{inspect(module)}"
+      "properties" => properties
     }
 
     if required == [] do
@@ -436,13 +457,33 @@ defmodule AshOaskit.TypeMapper do
   defp normalize_type({:struct, module}, _), do: {:struct, module}
   defp normalize_type({:embedded, module}, _), do: {:embedded, module}
 
+  defp normalize_type(type, constraints)
+       when type in [
+              :map,
+              :keyword,
+              :tuple,
+              :struct,
+              Ash.Type.Map,
+              Ash.Type.Keyword,
+              Ash.Type.Tuple,
+              Ash.Type.Struct
+            ] do
+    case Keyword.get(constraints, :fields) do
+      fields when is_list(fields) and fields != [] -> {:fields, fields}
+      _ -> {:custom, %{"type" => "object"}}
+    end
+  end
+
+  defp normalize_type(type, constraints) when type in [:union, Ash.Type.Union],
+    do: {:union, Keyword.get(constraints, :types, [])}
+
   defp normalize_type({:array, inner}, constraints) do
     {:array, normalize_type(inner, Keyword.get(constraints, :items, []))}
   end
 
   # Handle tuple types (legacy format) - first element is the type module
-  defp normalize_type(type, _) when is_tuple(type) do
-    Map.get(@ash_type_to_atom, elem(type, 0), :string)
+  defp normalize_type(type, constraints) when is_tuple(type) and tuple_size(type) > 0 do
+    normalize_type(elem(type, 0), constraints)
   end
 
   defp normalize_type(type, constraints) when is_atom(type) do
@@ -453,7 +494,7 @@ defmodule AshOaskit.TypeMapper do
     end
   end
 
-  defp normalize_type(_, _), do: :string
+  defp normalize_type(type, _), do: unknown_type(type)
 
   # Handle complex type checking for embedded resources, custom types, unions,
   # Ash.Type.Enum implementors, and NewType wrappers
@@ -466,9 +507,6 @@ defmodule AshOaskit.TypeMapper do
       embedded_resource?(type) ->
         {:embedded, type}
 
-      union_result = get_union_types(type) ->
-        union_result
-
       enum_type?(type) ->
         {:custom, enum_schema(type)}
 
@@ -476,7 +514,7 @@ defmodule AshOaskit.TypeMapper do
         normalize_newtype(type, constraints)
 
       true ->
-        :string
+        unknown_type(type)
     end
   end
 
@@ -547,16 +585,12 @@ defmodule AshOaskit.TypeMapper do
             stacktrace
   end
 
-  # Check if a type is a union type and return {:union, types} or false
-  # Only called from normalize_complex_type which guarantees type is an atom
-  defp get_union_types(type) do
-    with true <- Code.ensure_loaded?(type),
-         true <- function_exported?(type, :constraints, 0),
-         types when is_list(types) <- Keyword.get(type.constraints(), :types) do
-      {:union, types}
-    else
-      _ -> false
-    end
+  defp unknown_type(type) do
+    Logger.warning(
+      "AshOaskit: no JSON Schema mapping for #{inspect(type)}; using an unconstrained schema. Define json_schema/1 on custom types."
+    )
+
+    {:custom, %{}}
   end
 
   @spec embedded_resource?(atom()) :: boolean()

@@ -395,8 +395,7 @@ defmodule AshOaskit.FilterBuilderTest do
       attr = %{name: :unknown, type: :unknown_type}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
-      direct = Enum.find(schema.oneOf, &(&1.type == :string))
-      assert direct != nil
+      assert %{} in schema.anyOf
     end
 
     test "normalize_type handles non-atom/non-module types" do
@@ -404,8 +403,7 @@ defmodule AshOaskit.FilterBuilderTest do
       attr = %{name: :weird, type: {:custom, "something"}}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
-      direct = Enum.find(schema.oneOf, &(&1.type == :string))
-      assert direct != nil
+      assert %{} in schema.anyOf
     end
 
     test "operator_schema handles unknown operators" do
@@ -433,8 +431,7 @@ defmodule AshOaskit.FilterBuilderTest do
       attr = %{name: :num, type: 123}
       schema = FilterBuilder.build_attribute_filter_schema(attr)
 
-      direct = Enum.find(schema.oneOf, &(&1.type == :string))
-      assert direct != nil
+      assert %{} in schema.anyOf
     end
   end
 

@@ -1,6 +1,7 @@
 defmodule AshOaskit.SchemaBuilder.PropertyBuildersTest do
   @moduledoc false
   use ExUnit.Case, async: true
+  @moduletag capture_log: true
 
   alias AshOaskit.SchemaBuilder.PropertyBuilders
 
@@ -78,7 +79,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuildersTest do
     end
 
     test "defaults unknown types to string" do
-      assert PropertyBuilders.type_to_schema(:unknown_type) == %{type: :string}
+      assert PropertyBuilders.type_to_schema(:unknown_type) == %{}
     end
   end
 

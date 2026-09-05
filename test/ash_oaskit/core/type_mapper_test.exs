@@ -3,9 +3,48 @@ defmodule AshOaskit.TypeMapperTest do
 
   use ExUnit.Case, async: true
 
+  @moduletag capture_log: true
+
   doctest AshOaskit.TypeMapper
 
   alias AshOaskit.TypeMapper
+
+  test "compound fields and raw unions retain constraints in both versions" do
+    for mapper <- [&TypeMapper.to_json_schema_30/1, &TypeMapper.to_json_schema_31/1],
+        type <- [:map, :keyword, :tuple, Ash.Type.Map, Ash.Type.Tuple] do
+      schema =
+        mapper.(%{
+          type: type,
+          allow_nil?: false,
+          constraints: [
+            fields: [
+              count: [type: :integer, allow_nil?: false, constraints: [min: 2]],
+              choice: [
+                type: Ash.Type.Union,
+                allow_nil?: false,
+                constraints: [
+                  types: [
+                    text: [type: :string, constraints: [max_length: 4]],
+                    number: [type: :integer]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        })
+
+      assert schema["required"] == ["count", "choice"] |> Enum.sort()
+      assert schema["properties"]["count"] == %{"type" => "integer", "minimum" => 2}
+      assert hd(schema["properties"]["choice"]["anyOf"])["maxLength"] == 4
+    end
+  end
+
+  test "unknown types warn without restricting valid wire values" do
+    assert ExUnit.CaptureLog.capture_log(fn ->
+             assert TypeMapper.to_json_schema_31(%{type: :unmapped, allow_nil?: false}) == %{}
+             assert TypeMapper.to_json_schema_30(%{type: {}, allow_nil?: false}) == %{}
+           end) =~ "no JSON Schema mapping"
+  end
 
   test "discovers embedded types inside arrays, field constraints, and unions" do
     type = AshOaskit.Test.WrappedShippingInfo
@@ -178,7 +217,7 @@ defmodule AshOaskit.TypeMapperTest do
 
     test "maps unknown type as string (fallback)" do
       attr = %{type: :unknown_type, allow_nil?: false}
-      assert TypeMapper.to_json_schema_31(attr) == %{"type" => "string"}
+      assert TypeMapper.to_json_schema_31(attr) == %{}
     end
 
     # Additional constraint tests
@@ -210,7 +249,7 @@ defmodule AshOaskit.TypeMapperTest do
     test "ignores unknown constraints" do
       attr = %{type: :string, allow_nil?: false, constraints: [unknown_constraint: "value"]}
       result = TypeMapper.to_json_schema_31(attr)
-      assert result == %{"type" => "string"}
+      assert result["type"] == "string"
     end
 
     test "combines multiple constraints" do
@@ -601,7 +640,7 @@ defmodule AshOaskit.TypeMapperTest do
 
     test "normalizes unknown Ash.Type tuple as string" do
       attr = %{type: {Ash.Type.Unknown, []}, allow_nil?: false}
-      assert TypeMapper.to_json_schema_31(attr) == %{"type" => "string"}
+      assert TypeMapper.to_json_schema_31(attr) == %{}
     end
   end
 
@@ -937,15 +976,9 @@ defmodule AshOaskit.TypeMapperTest do
   describe "union type modules (Ash.Type.NewType)" do
     defmodule UnionTypeModule do
       @moduledoc false
-      @spec constraints() :: keyword()
-      def constraints do
-        [
-          types: [
-            text: [type: :string],
-            number: [type: :integer]
-          ]
-        ]
-      end
+      use Ash.Type.NewType,
+        subtype_of: :union,
+        constraints: [types: [text: [type: :string], number: [type: :integer]]]
     end
 
     defmodule NonUnionTypeModule do
@@ -976,15 +1009,13 @@ defmodule AshOaskit.TypeMapperTest do
       attr = %{type: NonUnionTypeModule, allow_nil?: false}
       result = TypeMapper.to_json_schema_31(attr)
       # Non-union constraint types fall back to string
-      assert result["type"] == "string"
+      assert result == %{}
     end
 
-    test "raises when module constraints callback fails" do
+    test "does not execute unrelated constraints callbacks" do
       attr = %{type: FailingConstraintsModule, allow_nil?: false}
 
-      assert_raise RuntimeError, "intentional error", fn ->
-        TypeMapper.to_json_schema_31(attr)
-      end
+      assert TypeMapper.to_json_schema_31(attr) == %{}
     end
   end
 
@@ -993,26 +1024,26 @@ defmodule AshOaskit.TypeMapperTest do
       attr = %{type: "string_as_binary", allow_nil?: false}
       result = TypeMapper.to_json_schema_31(attr)
       # Binary strings fall back to :string
-      assert result["type"] == "string"
+      assert result == %{}
     end
 
     test "handles nil type (fallback)" do
       attr = %{type: nil, allow_nil?: false}
       result = TypeMapper.to_json_schema_31(attr)
-      assert result["type"] == "string"
+      assert result == %{}
     end
 
     test "handles list type (fallback)" do
       attr = %{type: [:string, :integer], allow_nil?: false}
       result = TypeMapper.to_json_schema_31(attr)
-      assert result["type"] == "string"
+      assert result == %{}
     end
 
     test "handles module that is not an Ash resource" do
       # GenServer is a module but not an Ash resource
       attr = %{type: GenServer, allow_nil?: false}
       result = TypeMapper.to_json_schema_31(attr)
-      assert result["type"] == "string"
+      assert result == %{}
     end
   end
 
@@ -1071,13 +1102,13 @@ defmodule AshOaskit.TypeMapperTest do
     test "unknown tuple type falls back to string" do
       attr = %{type: {:unknown_complex, "some_data"}, allow_nil?: false}
       result = TypeMapper.to_json_schema_31(attr)
-      assert result["type"] == "string"
+      assert result == %{}
     end
 
     test "three-element tuple falls back to string" do
       attr = %{type: {:foo, :bar, :baz}, allow_nil?: false}
       result = TypeMapper.to_json_schema_31(attr)
-      assert result["type"] == "string"
+      assert result == %{}
     end
 
     test "custom type with json_schema/1 callback uses the returned schema" do
@@ -1133,7 +1164,7 @@ defmodule AshOaskit.TypeMapperTest do
     test "non-atom non-tuple type falls back to string" do
       attr = %{type: 42, allow_nil?: false}
       result = TypeMapper.to_json_schema_31(attr)
-      assert result["type"] == "string"
+      assert result == %{}
     end
   end
 
