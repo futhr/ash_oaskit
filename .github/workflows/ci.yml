@@ -128,6 +128,8 @@ jobs:
             otp: "27"
           - elixir: "1.20"
             otp: "28"
+          - elixir: "1.20"
+            otp: "29"
 
     steps:
       - name: Checkout code
@@ -157,6 +159,29 @@ jobs:
 
       - name: Run tests
         run: mix test
+
+  consumer:
+    name: Packaged consumer (${{ matrix.mode }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: minimal
+          - mode: minimum
+          - mode: integrations
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Elixir
+        uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1
+        with:
+          elixir-version: "1.20"
+          otp-version: "29"
+      - name: Install dependencies
+        run: mix deps.get
+      - name: Verify packaged consumer
+        run: mix run scripts/verify_consumer.exs ${{ matrix.mode }}
 
   coverage:
     name: Test Coverage

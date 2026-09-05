@@ -65,7 +65,7 @@ defmodule AshOaskit.MixProject do
     [
       # Core Ash dependencies
       {:ash, "~> 3.33"},
-      {:spark, "~> 2.0"},
+      {:spark, "~> 2.6"},
 
       # Security floor: decimal < 3.1.0 has a DoS via unbounded exponent
       # parsing (GHSA-rhv4-8758-jx7v / elixirforum 75261). Pulled
@@ -80,11 +80,11 @@ defmodule AshOaskit.MixProject do
       {:ash_json_api, ">= 1.7.1 and < 2.0.0", optional: true},
 
       # Igniter for installation task (optional)
-      {:igniter, "~> 0.5", optional: true},
+      {:igniter, ">= 0.6.29 and < 1.0.0", optional: true},
 
       # Phoenix integration (optional for consumers, available in test)
-      {:plug, "~> 1.16"},
-      {:phoenix, "~> 1.7", optional: true},
+      {:plug, ">= 1.20.3 and < 2.0.0"},
+      {:phoenix, ">= 1.8.13 and < 2.0.0", optional: true},
 
       # JSON encoding
       {:jason, "~> 1.4"},
