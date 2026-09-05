@@ -29,13 +29,11 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
       operation = RouteOperations.build_operation(route, version: "3.1")
   """
 
-  import AshOaskit.Core.PathUtils, only: [humanize: 1, extract_path_params: 1]
+  import AshOaskit.Core.PathUtils, only: [humanize: 1]
 
   alias AshOaskit.Config
-  alias AshOaskit.FilterBuilder
   alias AshOaskit.QueryParameters
   alias AshOaskit.RelationshipRoutes.RouteResponses
-  alias AshOaskit.SortBuilder
 
   @doc """
   Builds an OpenAPI operation object for a relationship route.
@@ -228,66 +226,31 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
   """
   @spec build_parameters(map(), keyword()) :: [map()]
   def build_parameters(route, opts \\ []) do
-    path_params =
-      route.route
-      |> extract_path_params()
-      |> Enum.map(fn param ->
-        %{
-          name: param,
-          in: :path,
-          required: true,
-          schema: %{type: :string},
-          description: "The #{param} of the resource"
-        }
-      end)
+    version = Keyword.get(opts, :version, "3.1")
 
-    path_params ++ related_query_parameters(route, Keyword.get(opts, :version, "3.1"))
+    AshOaskit.Generators.PathBuilder.build_path_parameters(route, version) ++
+      related_query_parameters(route, version)
   end
 
-  # Query parameters for :related routes, built against the destination
   defp related_query_parameters(%{type: :related} = route, version) do
     case RouteResponses.get_route_relationship(route) do
       nil ->
         []
 
       relationship ->
-        case RouteResponses.relationship_cardinality(relationship) do
-          :many -> to_many_query_parameters(route, relationship.destination, version)
-          _ -> [include_parameter(relationship.destination)]
-        end
+        destination = relationship.destination
+
+        action =
+          if relationship.read_action,
+            do: Ash.Resource.Info.action(destination, relationship.read_action),
+            else: Ash.Resource.Info.primary_action(destination, :read)
+
+        action = if RouteResponses.relationship_cardinality(relationship) == :many, do: action
+        QueryParameters.for_route(destination, action, route, version: version, recursive?: true)
     end
   end
 
   defp related_query_parameters(_, _), do: []
-
-  defp to_many_query_parameters(route, destination, version) do
-    filter_param =
-      if Map.get(route, :derive_filter?, true) do
-        FilterBuilder.build_filter_parameter(destination, version: version, recursive?: true)
-      end
-
-    sort_param =
-      if Map.get(route, :derive_sort?, true) do
-        SortBuilder.build_sort_parameter(destination, version: version)
-      end
-
-    Enum.reject(
-      [
-        filter_param,
-        sort_param,
-        QueryParameters.build_page_parameter([]),
-        include_parameter(destination)
-      ],
-      &is_nil/1
-    )
-  end
-
-  defp include_parameter(destination) do
-    destination
-    |> Ash.Resource.Info.public_relationships()
-    |> Enum.map(& &1.name)
-    |> QueryParameters.build_include_parameter()
-  end
 
   # Builds responses based on route type
   defp build_responses(route, opts) do

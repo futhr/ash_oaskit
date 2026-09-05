@@ -182,7 +182,7 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperationsTest do
       params = RouteOperations.build_parameters(route)
       query_names = params |> Enum.filter(&(&1.in == :query)) |> Enum.map(& &1.name)
 
-      assert Enum.sort(query_names) == ["filter", "include", "page", "sort"]
+      assert Enum.sort(query_names) == ["fields", "filter", "page", "sort"]
 
       # sort and filter are built against the DESTINATION (Review)
       sort_param = Enum.find(params, &(&1.name == "sort"))
@@ -207,7 +207,7 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperationsTest do
       params = RouteOperations.build_parameters(route)
       query_names = params |> Enum.filter(&(&1.in == :query)) |> Enum.map(& &1.name)
 
-      assert query_names == ["include"]
+      assert query_names == ["fields"]
     end
 
     test "derive_filter?/derive_sort? route flags suppress filter and sort" do
@@ -225,7 +225,7 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperationsTest do
       params = RouteOperations.build_parameters(route)
       query_names = params |> Enum.filter(&(&1.in == :query)) |> Enum.map(& &1.name)
 
-      assert Enum.sort(query_names) == ["include", "page"]
+      assert Enum.sort(query_names) == ["fields", "page"]
     end
 
     test "relationship routes have no query parameters" do

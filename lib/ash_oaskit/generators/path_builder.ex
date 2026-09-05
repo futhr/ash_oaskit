@@ -58,12 +58,11 @@ defmodule AshOaskit.Generators.PathBuilder do
   alias Ash.Resource.Info, as: ResourceInfo
 
   alias AshOaskit.Config
-  alias AshOaskit.FilterBuilder
   alias AshOaskit.PhoenixIntrospection
   alias AshOaskit.RelationshipRoutes
   alias AshOaskit.RouteGathering
   alias AshOaskit.SchemaBuilder.ResourceSchemas
-  alias AshOaskit.SortBuilder
+  alias AshOaskit.QueryParameters
   alias AshOaskit.TypeMapper
 
   @type opts :: keyword()
@@ -330,17 +329,9 @@ defmodule AshOaskit.Generators.PathBuilder do
 
   # Builds parameters for an operation (path + query params)
   defp build_parameters(route, version) do
-    path_params =
-      route.route
-      |> extract_path_params()
-      |> Enum.map(fn param ->
-        %{
-          name: param,
-          in: :path,
-          required: true,
-          schema: %{type: :string}
-        }
-      end)
+    path_params = build_path_parameters(route, version)
+
+    path_params = path_params ++ build_generic_query_parameters(route, version)
 
     params =
       if route.type in [:index, :get] do
@@ -355,44 +346,25 @@ defmodule AshOaskit.Generators.PathBuilder do
     end
   end
 
-  # Builds query parameters for GET operations
+  @doc "Builds typed path parameters using matching action arguments or resource attributes."
+  @spec build_path_parameters(map(), String.t()) :: [map()]
+  def build_path_parameters(route, version) do
+    action = ResourceInfo.action(route.resource, route.action)
+    arguments = if action, do: action.arguments, else: []
+
+    Enum.map(extract_path_params(route.route), fn name ->
+      field =
+        Enum.find(arguments, &(to_string(&1.name) == name)) ||
+          Enum.find(ResourceInfo.attributes(route.resource), &(to_string(&1.name) == name))
+
+      field = if field, do: Map.put(field, :allow_nil?, false)
+      %{name: name, in: :path, required: true, schema: query_parameter_schema(field, version)}
+    end)
+  end
+
   defp build_query_parameters(route, version) do
-    resource = route.resource
-
-    filter_param =
-      FilterBuilder.build_filter_parameter(resource, version: version, recursive?: true)
-
-    sort_param = SortBuilder.build_sort_parameter(resource, version: version)
-
-    base_params = [
-      %{
-        name: "page",
-        in: :query,
-        required: false,
-        schema: %{
-          type: :object,
-          properties: %{
-            offset: %{type: :integer, minimum: 0},
-            limit: %{type: :integer, minimum: 1},
-            after: %{type: :string},
-            before: %{type: :string},
-            count: %{type: :boolean}
-          }
-        },
-        style: :deepObject,
-        description: "Pagination parameters"
-      },
-      %{
-        name: "include",
-        in: :query,
-        required: false,
-        schema: %{type: :string},
-        description: "Comma-separated list of relationship paths to include"
-      }
-    ]
-
-    params = if sort_param, do: [sort_param | base_params], else: base_params
-    if filter_param, do: [filter_param | params], else: params
+    action = ResourceInfo.action(route.resource, route.action)
+    QueryParameters.for_route(route.resource, action, route, version: version, recursive?: true)
   end
 
   # Builds request body for POST/PATCH operations, referencing the
@@ -509,17 +481,7 @@ defmodule AshOaskit.Generators.PathBuilder do
   # route's :query_params, typed from the action's arguments (or the
   # resource attribute of the same name)
   defp build_generic_parameters(route, version) do
-    path_params =
-      route.route
-      |> extract_path_params()
-      |> Enum.map(fn param ->
-        %{
-          name: param,
-          in: :path,
-          required: true,
-          schema: %{type: :string}
-        }
-      end)
+    path_params = build_path_parameters(route, version)
 
     case path_params ++ build_generic_query_parameters(route, version) do
       [] -> nil

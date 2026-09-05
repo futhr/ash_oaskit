@@ -65,7 +65,75 @@ defmodule AshOaskit.QueryParameters do
   alias Ash.Resource.Info, as: ResourceInfo
   alias AshOaskit.Config
   alias AshOaskit.FilterBuilder
+  alias AshOaskit.IncludedResources
   alias AshOaskit.SortBuilder
+
+  @doc "Builds query parameters from the actual read action and route configuration."
+  @spec for_route(module(), map() | nil, map(), keyword()) :: [map()]
+  def for_route(resource, action, route, opts \\ []) do
+    read? = action && action.type == :read
+    includes = IncludedResources.configured_includes(resource)
+
+    [
+      if(read? && Map.get(route, :derive_filter?, true) && Config.derive_filter?(resource),
+        do: FilterBuilder.build_filter_parameter(resource, opts)
+      ),
+      if(read? && Map.get(route, :derive_sort?, true) && Config.derive_sort?(resource),
+        do: SortBuilder.build_sort_parameter(resource, opts)
+      ),
+      page_for_action(action),
+      if(includes != [], do: build_include_parameter(includes)),
+      build_fields_parameter([Config.resource_type(resource)])
+    ]
+    |> Enum.reject(&is_nil/1)
+  end
+
+  @doc "Builds pagination only for the strategies and limits supported by an action."
+  @spec page_for_action(map() | nil) :: map() | nil
+  def page_for_action(%{type: :read, pagination: pagination}) when is_map(pagination) do
+    if pagination.offset? or pagination.keyset? do
+      limit =
+        %{
+          type: :integer,
+          minimum: 1,
+          maximum: pagination.max_page_size,
+          default: pagination.default_limit
+        }
+        |> Map.reject(fn {_, value} -> is_nil(value) end)
+
+      properties = %{"limit" => limit}
+
+      properties =
+        if pagination.offset?,
+          do: Map.put(properties, "offset", %{type: :integer, minimum: 0}),
+          else: properties
+
+      properties =
+        if pagination.keyset?,
+          do: Map.merge(properties, %{"after" => %{type: :string}, "before" => %{type: :string}}),
+          else: properties
+
+      properties =
+        if pagination.countable,
+          do:
+            Map.put(properties, "count", %{
+              type: :boolean,
+              default: pagination.countable == :by_default
+            }),
+          else: properties
+
+      %{
+        name: "page",
+        in: :query,
+        style: :deepObject,
+        explode: true,
+        required: pagination.required? and is_nil(pagination.default_limit),
+        schema: %{type: :object, properties: properties, additionalProperties: false}
+      }
+    end
+  end
+
+  def page_for_action(_), do: nil
 
   @doc """
   Builds the page query parameter schema.

@@ -192,7 +192,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
 
       param_names = Enum.map(operation[:parameters], & &1[:name])
       assert "page" in param_names
-      assert "include" in param_names
+      assert "fields" in param_names
       assert "filter" in param_names
       assert "sort" in param_names
     end
@@ -572,7 +572,8 @@ defmodule AshOaskit.RelationshipRoutesTest do
       path_params = Enum.filter(operation[:parameters], &(&1[:in] == :path))
 
       Enum.each(path_params, fn param ->
-        assert param[:schema][:type] == :string
+        assert param[:schema]["type"] == "string"
+        assert param[:schema]["format"] == "uuid"
       end)
     end
   end

@@ -5,6 +5,32 @@ defmodule AshOaskit.QueryParametersTest do
 
   alias AshOaskit.QueryParameters
 
+  test "route parameters honor derivation flags and actual pagination" do
+    pagination = %{
+      offset?: true,
+      keyset?: false,
+      countable: false,
+      required?: true,
+      max_page_size: 75,
+      default_limit: nil
+    }
+
+    action = %{type: :read, pagination: pagination}
+
+    params =
+      QueryParameters.for_route(AshOaskit.Test.Post, action, %{
+        derive_filter?: false,
+        derive_sort?: false
+      })
+
+    assert Enum.map(params, & &1.name) == ["page", "fields"]
+    page = hd(params)
+    assert page.required
+    assert Map.keys(page.schema.properties) |> Enum.sort() == ["limit", "offset"]
+    assert page.schema.properties["limit"].maximum == 75
+    assert QueryParameters.page_for_action(%{type: :read, pagination: false}) == nil
+  end
+
   describe "build_page_parameter/1" do
     test "generates page parameter with deepObject style" do
       param = QueryParameters.build_page_parameter([])
