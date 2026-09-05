@@ -38,8 +38,8 @@ defmodule AshOaskit.RouteResponsesTest do
           version: "3.1"
         )
 
-      assert Map.has_key?(schema, :oneOf)
-      assert %{type: :null} in schema[:oneOf]
+      assert Map.has_key?(schema, :anyOf)
+      assert %{type: :null} in schema[:anyOf]
     end
 
     test "to-one relationship linkage is nullable in 3.0" do
@@ -86,8 +86,8 @@ defmodule AshOaskit.RouteResponsesTest do
         )
 
       data_schema = schema[:properties]["data"]
-      assert Map.has_key?(data_schema, :oneOf)
-      assert %{type: :null} in data_schema[:oneOf]
+      assert Map.has_key?(data_schema, :anyOf)
+      assert %{type: :null} in data_schema[:anyOf]
     end
 
     test "builds request body for relationship modification" do
@@ -202,9 +202,9 @@ defmodule AshOaskit.RouteResponsesTest do
           version: "3.1"
         )
 
-      # belongs_to produces nullable oneOf schema
-      assert Map.has_key?(schema, :oneOf)
-      non_null = Enum.find(schema[:oneOf], &(&1[:type] != :null))
+      # belongs_to produces nullable anyOf schema
+      assert Map.has_key?(schema, :anyOf)
+      non_null = Enum.find(schema[:anyOf], &(&1[:type] != :null))
       assert non_null[:properties]["type"][:enum] == ["article_tag"]
     end
 

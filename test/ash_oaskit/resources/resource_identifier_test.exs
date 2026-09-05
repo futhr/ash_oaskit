@@ -45,16 +45,16 @@ defmodule AshOaskit.ResourceIdentifierTest do
   end
 
   describe "build_nullable_identifier_schema/2" do
-    test "uses oneOf with null for OpenAPI 3.1" do
+    test "uses anyOf with null for OpenAPI 3.1" do
       schema = ResourceIdentifier.build_nullable_identifier_schema("author", version: "3.1")
 
-      assert is_list(schema[:oneOf])
-      assert length(schema[:oneOf]) == 2
+      assert is_list(schema[:anyOf])
+      assert length(schema[:anyOf]) == 2
 
-      null_option = Enum.find(schema[:oneOf], &(&1[:type] == :null))
+      null_option = Enum.find(schema[:anyOf], &(&1[:type] == :null))
       assert null_option != nil
 
-      object_option = Enum.find(schema[:oneOf], &(&1[:type] == :object))
+      object_option = Enum.find(schema[:anyOf], &(&1[:type] == :object))
       assert object_option != nil
     end
 
@@ -83,13 +83,13 @@ defmodule AshOaskit.ResourceIdentifierTest do
     test "returns nullable schema when not required" do
       schema = ResourceIdentifier.build_to_one_linkage_schema("author", required: false)
 
-      assert Map.has_key?(schema, :oneOf) or Map.has_key?(schema, :nullable)
+      assert Map.has_key?(schema, :anyOf) or Map.has_key?(schema, :nullable)
     end
 
     test "returns non-nullable schema when required" do
       schema = ResourceIdentifier.build_to_one_linkage_schema("author", required: true)
 
-      refute Map.has_key?(schema, :oneOf)
+      refute Map.has_key?(schema, :anyOf)
       refute Map.has_key?(schema, :nullable)
       assert schema[:type] == :object
     end
@@ -97,7 +97,7 @@ defmodule AshOaskit.ResourceIdentifierTest do
     test "defaults to not required (nullable)" do
       schema = ResourceIdentifier.build_to_one_linkage_schema("author")
 
-      assert Map.has_key?(schema, :oneOf) or Map.has_key?(schema, :nullable)
+      assert Map.has_key?(schema, :anyOf) or Map.has_key?(schema, :nullable)
     end
   end
 
@@ -175,7 +175,7 @@ defmodule AshOaskit.ResourceIdentifierTest do
 
       data = schema[:properties][:data]
       # To-one is nullable by default
-      assert Map.has_key?(data, :oneOf) or Map.has_key?(data, :nullable) or
+      assert Map.has_key?(data, :anyOf) or Map.has_key?(data, :nullable) or
                data[:type] == :object
     end
 
@@ -379,7 +379,7 @@ defmodule AshOaskit.ResourceIdentifierTest do
 
       for schema <- schemas do
         assert is_map(schema)
-        assert Map.has_key?(schema, :type) or Map.has_key?(schema, :oneOf)
+        assert Map.has_key?(schema, :type) or Map.has_key?(schema, :anyOf)
       end
     end
 
@@ -435,7 +435,7 @@ defmodule AshOaskit.ResourceIdentifierTest do
       # To-one can be null to unset the relationship
       data = schema[:properties][:data]
 
-      assert Map.has_key?(data, :oneOf) or Map.has_key?(data, :nullable) or
+      assert Map.has_key?(data, :anyOf) or Map.has_key?(data, :nullable) or
                data[:type] == :object
     end
 

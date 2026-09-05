@@ -1,154 +1,79 @@
 defmodule AshOaskit.Schemas.Nullable do
   @moduledoc """
-  Version-aware nullable schema construction for OpenAPI 3.0 and 3.1.
+  Adds null to a schema without discarding its constraints.
 
-  OpenAPI 3.0 and 3.1 represent nullable types differently. This module
-  provides version-dispatched helpers so callers can write
-  `make_nullable(schema, version)` without branching on the version
-  themselves.
-
-  ## Version Differences
-
-  | Version | Simple types | `$ref` schemas | Other complex schemas |
-  |---------|-------------|----------------|-----------------------|
-  | 3.0 | `nullable: true` added to schema | Wrapped in `allOf` + `nullable: true` (3.0 ignores siblings of `$ref`) | `nullable: true` added to schema |
-  | 3.1 | `type` becomes `[type, :null]` array | Wrapped in `oneOf: [%{type: :null}, schema]` | Wrapped in `oneOf: [%{type: :null}, schema]` |
-
-  ## Which function to use
-
-  - **`make_nullable/2`** — For schemas with a simple `:type` atom key
-    (e.g., `%{type: :string}`, `%{type: :integer, format: :int32}`).
-
-  - **`make_nullable_oneof/2`** — For complex schemas that cannot use
-    the type-array approach: `$ref` objects, resource identifiers, link
-    objects, or schemas that already contain a `:oneOf` key.
-
-  ## Relationship to TypeMapper
-
-  `TypeMapper` has its own string-key nullable helpers that operate on
-  `"type"` string keys for external-facing JSON Schema output. Those are
-  intentionally separate because they handle a different key convention.
-
-  ## Callers
-
-  | Module | Function used |
-  |--------|---------------|
-  | `PropertyBuilders` | `make_nullable/2` (via `defdelegate`) |
-  | `RelationshipSchemas` | `make_nullable/2` |
-  | `ResourceIdentifier` | `make_nullable_oneof/2` |
-  | `RouteResponses` | `make_nullable/2`, `make_nullable_oneof/2` |
-  | `ResponseLinks` | `make_nullable_oneof/2` |
-  | `ResponseMeta` | `make_nullable/2` |
-
-  ## Examples
-
-      iex> AshOaskit.Schemas.Nullable.make_nullable(%{type: :string}, "3.0")
-      %{type: :string, nullable: true}
-
-      iex> AshOaskit.Schemas.Nullable.make_nullable(%{type: :string}, "3.1")
-      %{type: [:string, :null]}
-
-      iex> AshOaskit.Schemas.Nullable.make_nullable_oneof(
-      ...>   %{"$ref" => "#/components/schemas/User"},
-      ...>   "3.1"
-      ...> )
-      %{oneOf: [%{type: :null}, %{"$ref" => "#/components/schemas/User"}]}
+  OpenAPI 3.1 uses type arrays for simple schemas; 3.0 uses an explicit
+  type with `nullable: true`. References and compositions use `anyOf`,
+  since `oneOf` rejects null when the original schema already accepts it.
+  Atom keys are the default; TypeMapper requests string keys.
   """
 
-  @doc """
-  Makes a schema nullable based on OpenAPI version.
+  @doc "Makes a schema nullable, preserving enum values and composition constraints."
+  @spec make_nullable(map(), String.t(), :atom | :string) :: map()
+  def make_nullable(schema, version, keys \\ :atom)
+  def make_nullable(schema, _, _) when map_size(schema) == 0, do: schema
 
-  For schemas with a simple `:type` atom key:
-  - OpenAPI 3.0: adds `nullable: true`
-  - OpenAPI 3.1: converts type to array `[type, :null]`
+  def make_nullable(schema, version, keys) do
+    type_key = key(:type, keys)
 
-  Returns the schema unchanged in 3.1 mode if no `:type` key is present.
-  Use `make_nullable_oneof/2` for complex schemas without a `:type` key.
+    if Map.has_key?(schema, type_key) and not complex?(schema, keys) do
+      schema
+      |> nullable_type(version, keys)
+      |> nullable_enum(keys)
+    else
+      wrap(schema, version, keys)
+    end
+  end
 
-  ## Parameters
-
-    - `schema` - A map with a `:type` atom key
-    - `version` - OpenAPI version string (`"3.0"` or `"3.1"`)
-
-  ## Examples
-
-      iex> AshOaskit.Schemas.Nullable.make_nullable(%{type: :string}, "3.1")
-      %{type: [:string, :null]}
-
-      iex> AshOaskit.Schemas.Nullable.make_nullable(%{type: :string}, "3.0")
-      %{type: :string, nullable: true}
-
-      iex> AshOaskit.Schemas.Nullable.make_nullable(%{type: :integer, format: :int32}, "3.1")
-      %{type: [:integer, :null], format: :int32}
-
-      iex> AshOaskit.Schemas.Nullable.make_nullable(%{oneOf: [%{type: :string}]}, "3.1")
-      %{oneOf: [%{type: :string}]}
-  """
-  @spec make_nullable(map(), String.t()) :: map()
-  def make_nullable(schema, "3.1"), do: make_nullable_31(schema)
-  def make_nullable(%{"$ref" => _} = schema, _), do: %{allOf: [schema], nullable: true}
-  def make_nullable(schema, _), do: Map.put(schema, :nullable, true)
-
-  @doc ~S"""
-  Makes a complex schema nullable using a `oneOf` wrapper.
-
-  For schemas that cannot use the simple type-array approach (e.g.,
-  `$ref` schemas, resource identifiers, link objects):
-  - OpenAPI 3.0: adds `nullable: true` to the schema; `$ref` schemas
-    are first wrapped in `allOf` because 3.0 ignores sibling keys
-    next to `$ref`
-  - OpenAPI 3.1: wraps in `%{oneOf: [%{type: :null}, schema]}`
-
-  If the schema already has a `:oneOf` key, prepends the null type
-  to the existing list instead of double-wrapping.
-
-  ## Parameters
-
-    - `schema` - Any map representing a JSON Schema
-    - `version` - OpenAPI version string (`"3.0"` or `"3.1"`)
-
-  ## Examples
-
-      iex> AshOaskit.Schemas.Nullable.make_nullable_oneof(%{type: :object, properties: %{}}, "3.0")
-      %{type: :object, properties: %{}, nullable: true}
-
-      iex> AshOaskit.Schemas.Nullable.make_nullable_oneof(
-      ...>   %{"$ref" => "#/components/schemas/User"},
-      ...>   "3.0"
-      ...> )
-      %{allOf: [%{"$ref" => "#/components/schemas/User"}], nullable: true}
-
-      iex> AshOaskit.Schemas.Nullable.make_nullable_oneof(%{type: :object, properties: %{}}, "3.1")
-      %{oneOf: [%{type: :null}, %{type: :object, properties: %{}}]}
-
-      iex> AshOaskit.Schemas.Nullable.make_nullable_oneof(
-      ...>   %{"$ref" => "#/components/schemas/User"},
-      ...>   "3.1"
-      ...> )
-      %{oneOf: [%{type: :null}, %{"$ref" => "#/components/schemas/User"}]}
-
-      iex> AshOaskit.Schemas.Nullable.make_nullable_oneof(
-      ...>   %{oneOf: [%{type: :string}, %{type: :integer}]},
-      ...>   "3.1"
-      ...> )
-      %{oneOf: [%{type: :null}, %{type: :string}, %{type: :integer}]}
-  """
+  @doc "Makes a complex schema nullable. The historical name is retained for compatibility."
   @spec make_nullable_oneof(map(), String.t()) :: map()
-  def make_nullable_oneof(schema, "3.1"), do: make_nullable_oneof_31(schema)
-  def make_nullable_oneof(%{"$ref" => _} = schema, _), do: %{allOf: [schema], nullable: true}
-  def make_nullable_oneof(schema, _), do: Map.put(schema, :nullable, true)
+  def make_nullable_oneof(schema, "3.1"), do: wrap(schema, "3.1", :atom)
+  def make_nullable_oneof(schema, version), do: make_nullable(schema, version)
 
-  defp make_nullable_31(%{type: type} = schema) when is_atom(type) do
-    Map.put(schema, :type, [type, :null])
+  defp nullable_type(schema, "3.1", keys) do
+    Map.update!(schema, key(:type, keys), fn type ->
+      Enum.uniq(List.wrap(type) ++ [key(:null, keys)])
+    end)
   end
 
-  defp make_nullable_31(schema), do: schema
+  defp nullable_type(schema, _, keys), do: Map.put(schema, key(:nullable, keys), true)
 
-  defp make_nullable_oneof_31(%{oneOf: schemas}) do
-    %{oneOf: [%{type: :null} | schemas]}
+  defp nullable_enum(schema, keys) do
+    enum_key = key(:enum, keys)
+
+    if Map.has_key?(schema, enum_key) do
+      Map.update!(schema, enum_key, &Enum.uniq(&1 ++ [nil]))
+    else
+      schema
+    end
   end
 
-  defp make_nullable_oneof_31(schema) do
-    %{oneOf: [%{type: :null}, schema]}
+  defp complex?(schema, keys) do
+    Map.has_key?(schema, "$ref") or
+      Enum.any?([:oneOf, :anyOf, :allOf, :not, :const, :if], &Map.has_key?(schema, key(&1, keys)))
   end
+
+  defp wrap(schema, version, keys) do
+    null_schema =
+      if version == "3.1" do
+        %{key(:type, keys) => key(:null, keys)}
+      else
+        %{
+          key(:type, keys) => key(:object, keys),
+          key(:nullable, keys) => true,
+          key(:enum, keys) => [nil]
+        }
+      end
+
+    case Map.get(schema, key(:anyOf, keys)) do
+      branches when is_list(branches) and map_size(schema) == 1 ->
+        %{key(:anyOf, keys) => Enum.uniq([null_schema | branches])}
+
+      _ ->
+        %{key(:anyOf, keys) => [null_schema, schema]}
+    end
+  end
+
+  defp key(atom, :atom), do: atom
+  defp key(atom, :string), do: Atom.to_string(atom)
 end

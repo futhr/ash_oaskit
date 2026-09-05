@@ -833,7 +833,7 @@ defmodule AshOaskit.SchemaBuilderTest do
 
       # status has one_of: [:draft, :published] - TypeMapper returns string keys
       status_schema = schema[:properties][:status]
-      assert status_schema["enum"] == ["draft", "published"]
+      assert status_schema["enum"] == ["draft", "published", nil]
     end
 
     test "includes descriptions" do
@@ -1019,7 +1019,7 @@ defmodule AshOaskit.SchemaBuilderTest do
     test "make_nullable for 3.1 with schema without type key" do
       schema = %{"$ref" => "#/components/schemas/Foo"}
       result = PropertyBuilders.make_nullable(schema, "3.1")
-      assert result == schema
+      assert result == %{anyOf: [%{type: :null}, schema]}
     end
 
     test "type_to_schema handles non-atom non-tuple type" do

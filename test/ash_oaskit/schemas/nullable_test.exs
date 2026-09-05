@@ -4,55 +4,75 @@ defmodule AshOaskit.Schemas.NullableTest do
 
   alias AshOaskit.Schemas.Nullable
 
-  doctest AshOaskit.Schemas.Nullable
+  test "simple schemas retain constraints and allow null exactly once" do
+    for version <- ["3.0", "3.1"] do
+      schema = %{type: :string, enum: ["draft"], description: "Status", maxLength: 10}
+      nullable = Nullable.make_nullable(schema, version)
 
-  describe "make_nullable/2" do
-    test "3.0: adds nullable true" do
-      assert Nullable.make_nullable(%{type: :string}, "3.0") ==
-               %{type: :string, nullable: true}
-    end
+      assert nullable.enum == ["draft", nil]
+      assert nullable.description == "Status"
+      assert nullable.maxLength == 10
+      assert Nullable.make_nullable(nullable, version) == nullable
 
-    test "3.1: converts atom type to array with null" do
-      assert Nullable.make_nullable(%{type: :string}, "3.1") ==
-               %{type: [:string, :null]}
-    end
-
-    test "3.1: preserves other fields" do
-      assert Nullable.make_nullable(%{type: :integer, format: :int32}, "3.1") ==
-               %{type: [:integer, :null], format: :int32}
-    end
-
-    test "3.1: schema without type key is unchanged" do
-      schema = %{oneOf: [%{type: :string}, %{type: :integer}]}
-      assert Nullable.make_nullable(schema, "3.1") == schema
+      if version == "3.1" do
+        assert nullable.type == [:string, :null]
+      else
+        assert nullable.type == :string
+        assert nullable.nullable
+      end
     end
   end
 
-  describe "make_nullable_oneof/2" do
-    test "3.0: adds nullable true" do
-      assert Nullable.make_nullable_oneof(%{type: :object}, "3.0") ==
-               %{type: :object, nullable: true}
+  test "compositions preserve sibling constraints and already-nullable branches" do
+    for schema <- [
+          %{oneOf: [%{type: :string}, %{type: :null}], description: "Value"},
+          %{anyOf: [%{type: :string}, %{type: :integer}], maxLength: 3},
+          %{type: [:string, :null], enum: ["ok"]},
+          %{type: :string, const: "ok"}
+        ] do
+      nullable = Nullable.make_nullable(schema, "3.1")
+      validator = nullable |> Jason.encode!() |> Jason.decode!() |> JSV.build!()
+
+      assert {:ok, _} = JSV.validate(nil, validator)
+      assert {:ok, _} = JSV.validate("ok", validator)
+      assert {:error, _} = JSV.validate(%{}, validator)
+      assert Nullable.make_nullable(nullable, "3.1") == nullable
     end
+  end
 
-    test "3.1: wraps schema in oneOf with null type first" do
-      schema = %{type: :object, properties: %{id: %{type: :string}}}
+  test "nullable refs allow null even when the referenced schema already allows it" do
+    nullable = Nullable.make_nullable_oneof(%{"$ref" => "#/$defs/value"}, "3.1")
 
-      assert Nullable.make_nullable_oneof(schema, "3.1") ==
-               %{oneOf: [%{type: :null}, schema]}
-    end
+    validator =
+      nullable
+      |> Jason.encode!()
+      |> Jason.decode!()
+      |> Map.put("$defs", %{"value" => %{"type" => ["string", "null"]}})
+      |> JSV.build!()
 
-    test "3.1: prepends null to existing oneOf list" do
-      schema = %{oneOf: [%{type: :string}, %{type: :integer}]}
+    assert {:ok, _} = JSV.validate(nil, validator)
+    assert {:ok, _} = JSV.validate("value", validator)
+    assert {:error, _} = JSV.validate(123, validator)
+  end
 
-      assert Nullable.make_nullable_oneof(schema, "3.1") ==
-               %{oneOf: [%{type: :null}, %{type: :string}, %{type: :integer}]}
-    end
+  test "3.0 reference nullability has an explicit null-only typed branch" do
+    ref = %{"$ref" => "#/components/schemas/User"}
 
-    test "3.1: works with ref schemas" do
-      schema = %{"$ref" => "#/components/schemas/User"}
+    assert Nullable.make_nullable(ref, "3.0") ==
+             %{anyOf: [%{type: :object, nullable: true, enum: [nil]}, ref]}
+  end
 
-      assert Nullable.make_nullable_oneof(schema, "3.1") ==
-               %{oneOf: [%{type: :null}, schema]}
-    end
+  test "string-key schemas share the same nullable implementation" do
+    assert Nullable.make_nullable(
+             %{"type" => ["string", "null"], "enum" => ["ok"]},
+             "3.1",
+             :string
+           ) ==
+             %{"type" => ["string", "null"], "enum" => ["ok", nil]}
+  end
+
+  test "unconstrained schemas already accept null" do
+    assert Nullable.make_nullable(%{}, "3.0") == %{}
+    assert Nullable.make_nullable(%{}, "3.1") == %{}
   end
 end

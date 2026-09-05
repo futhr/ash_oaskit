@@ -49,7 +49,7 @@ defmodule AshOaskit.KitchenSinkTest do
     test "3.0 uses anyOf with nullable flag", %{spec_30: spec} do
       content = get_attr(spec, "content")
       assert %{"anyOf" => _} = content
-      assert content["nullable"] == true
+      assert hd(content["anyOf"]) == %{"type" => "object", "nullable" => true, "enum" => [nil]}
     end
   end
 
@@ -112,8 +112,8 @@ defmodule AshOaskit.KitchenSinkTest do
     test "3.0 uses anyOf with nullable flag", %{spec_30: spec} do
       actor = get_attr(spec, "actor")
 
-      assert actor["nullable"] == true
-      assert [person, _] = actor["anyOf"]
+      assert [null, person, _] = actor["anyOf"]
+      assert null == %{"type" => "object", "nullable" => true, "enum" => [nil]}
       assert person["properties"]["age"]["type"] == "integer"
       assert person["properties"]["age"]["nullable"] == true
     end
@@ -143,13 +143,19 @@ defmodule AshOaskit.KitchenSinkTest do
   describe "deeply nested embedded resources" do
     test "venue references Venue via $ref (3.1)", %{spec_31: spec} do
       venue_attr = get_attr(spec, "venue")
-      assert %{"oneOf" => [%{"type" => "null"}, %{"$ref" => ref}]} = venue_attr
+      assert %{"anyOf" => [%{"type" => "null"}, %{"$ref" => ref}]} = venue_attr
       assert ref == "#/components/schemas/Venue"
     end
 
     test "venue references Venue via $ref (3.0)", %{spec_30: spec} do
       venue_attr = get_attr(spec, "venue")
-      assert venue_attr["nullable"] == true
+
+      assert %{
+               "anyOf" => [
+                 %{"nullable" => true, "enum" => [nil]},
+                 %{"$ref" => "#/components/schemas/Venue"}
+               ]
+             } = venue_attr
     end
 
     test "Venue schema references Location", %{spec_31: spec} do
@@ -208,7 +214,7 @@ defmodule AshOaskit.KitchenSinkTest do
 
       expected_units = Enum.map(Ash.Type.DurationName.values(), &to_string/1)
 
-      assert billing["enum"] == expected_units
+      assert billing["enum"] == expected_units ++ [nil]
       refute "nanosecond" in billing["enum"]
     end
 

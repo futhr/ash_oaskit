@@ -339,7 +339,7 @@ defmodule AshOaskit.TypeMapperTest do
 
     test "maps term type as empty schema with nullable" do
       attr = %{type: :term, allow_nil?: true}
-      assert TypeMapper.to_json_schema_30(attr) == %{"nullable" => true}
+      assert TypeMapper.to_json_schema_30(attr) == %{}
     end
 
     test "adds constraints in 3.0 format" do
@@ -697,7 +697,7 @@ defmodule AshOaskit.TypeMapperTest do
       spec = AshOaskit.spec_31(domains: [AshOaskit.Test.SimpleDomain])
       attrs = spec["components"]["schemas"]["PostAttributes"]["properties"]
 
-      assert attrs["priority"]["enum"] == ["low", "medium", "high"]
+      assert attrs["priority"]["enum"] == ["low", "medium", "high", nil]
       assert attrs["external_id"]["format"] == "uuid"
       assert "string" in List.wrap(attrs["subject"]["type"])
       assert attrs["subject"]["maxLength"] == 120

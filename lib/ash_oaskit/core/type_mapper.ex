@@ -8,11 +8,10 @@ defmodule AshOaskit.TypeMapper do
 
   ## Version Differences
 
-  - **OpenAPI 3.0**: Uses `nullable: true` for nullable fields. `$ref`
-    schemas are wrapped in `allOf` first, because 3.0 ignores sibling
-    keys next to `$ref`.
+  - **OpenAPI 3.0**: Uses `nullable: true` with an explicit type. `$ref`
+    schemas use `anyOf` with a typed, null-only alternative.
   - **OpenAPI 3.1**: Uses type arrays like `["string", "null"]`; `$ref`
-    schemas are wrapped in `oneOf` with a null type.
+    schemas are wrapped in `anyOf` with a null type.
 
   ## Supported Types
 
@@ -81,14 +80,10 @@ defmodule AshOaskit.TypeMapper do
   - `default` - Copied from attribute default (non-function values only)
   """
 
-  # Suppress dialyzer warning for make_nullable_31/1 - the is_list guard is valid
-  # at runtime even though dialyzer thinks the type is narrowed to binary/map.
-  # OpenAPI 3.1 schemas can have "type" as either a string or list of strings.
-  @dialyzer {:nowarn_function, make_nullable_31: 1}
-
   import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
 
   alias Ash.Type.NewType
+  alias AshOaskit.Schemas.Nullable
 
   @uuid_v7_pattern "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
 
@@ -525,35 +520,11 @@ defmodule AshOaskit.TypeMapper do
   defp allow_nil?(%{allow_nil?: allow_nil?}), do: allow_nil?
   defp allow_nil?(_), do: true
 
-  # Make nullable for OpenAPI 3.1 (type array)
-  # Base schemas always have single type strings, so we convert to array with null
-  defp make_nullable_31(%{"type" => type} = schema) when is_binary(type) do
-    Map.put(schema, "type", [type, "null"])
-  end
+  defp make_nullable_31(schema),
+    do: Nullable.make_nullable(schema, "3.1", :string)
 
-  # For $ref schemas, wrap in oneOf with null type
-  defp make_nullable_31(%{"$ref" => _} = schema) do
-    %{"oneOf" => [%{"type" => "null"}, schema]}
-  end
-
-  # For anyOf schemas, prepend null type to existing list
-  defp make_nullable_31(%{"anyOf" => schemas}) do
-    %{"anyOf" => [%{"type" => "null"} | schemas]}
-  end
-
-  # Empty schema (e.g. :term) already accepts any value including null
-  defp make_nullable_31(schema), do: schema
-
-  # Make nullable for OpenAPI 3.0 (nullable flag)
-  # Sibling keys next to $ref are ignored in 3.0, so the ref must be
-  # wrapped in allOf for nullable to take effect
-  defp make_nullable_30(%{"$ref" => _} = schema) do
-    %{"allOf" => [schema], "nullable" => true}
-  end
-
-  defp make_nullable_30(schema) do
-    Map.put(schema, "nullable", true)
-  end
+  defp make_nullable_30(schema),
+    do: Nullable.make_nullable(schema, "3.0", :string)
 
   defp apply_constraints(schema, {:array, inner_type}, constraints, version) do
     schema

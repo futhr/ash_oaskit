@@ -277,7 +277,7 @@ defmodule AshOaskit.Generators.PathBuilderTest do
 
       params_by_name = Map.new(operation[:parameters], &{&1[:name], &1})
 
-      assert params_by_name["status"][:schema]["enum"] == ["idle", "active"]
+      assert params_by_name["status"][:schema]["enum"] == ["idle", "active", nil]
       assert params_by_name["unknown"][:schema] == %{type: :string}
     end
   end

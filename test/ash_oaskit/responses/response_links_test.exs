@@ -444,32 +444,34 @@ defmodule AshOaskit.ResponseLinksTest do
     test "adds null type for OpenAPI 3.1" do
       schema = ResponseLinks.build_nullable_link_object_schema(version: "3.1")
 
-      assert is_list(schema[:oneOf])
-      null_option = Enum.find(schema[:oneOf], &(&1[:type] == :null))
+      assert is_list(schema[:anyOf])
+      null_option = Enum.find(schema[:anyOf], &(&1[:type] == :null))
       assert null_option != nil
     end
 
     test "uses nullable flag for OpenAPI 3.0" do
       schema = ResponseLinks.build_nullable_link_object_schema(version: "3.0")
 
-      assert schema[:nullable] == true
+      assert hd(schema[:anyOf]) == %{type: :object, nullable: true, enum: [nil]}
     end
 
-    test "3.1 has three options in oneOf" do
+    test "3.1 preserves the non-null union in anyOf" do
       schema = ResponseLinks.build_nullable_link_object_schema(version: "3.1")
 
-      assert length(schema[:oneOf]) == 3
+      assert [%{type: :null}, %{oneOf: options}] = schema[:anyOf]
+      assert length(options) == 2
     end
 
     test "3.0 preserves two options in oneOf" do
       schema = ResponseLinks.build_nullable_link_object_schema(version: "3.0")
 
-      assert length(schema[:oneOf]) == 2
+      assert [_, %{oneOf: options}] = schema[:anyOf]
+      assert length(options) == 2
     end
 
     test "3.1 null option is first in oneOf" do
       schema = ResponseLinks.build_nullable_link_object_schema(version: "3.1")
-      first_option = Enum.at(schema[:oneOf], 0)
+      first_option = Enum.at(schema[:anyOf], 0)
 
       assert first_option[:type] == :null
     end

@@ -89,13 +89,15 @@ defmodule AshOaskit.OpenAPI30ComplianceTest do
       refute is_list(schema["type"])
     end
 
-    test "nullable embedded $ref is wrapped in allOf (3.0 ignores $ref siblings)" do
+    test "nullable embedded $ref uses a typed null-only alternative" do
       schema =
         TypeMapper.to_json_schema_30(mock_attr(%{type: AshOaskit.Test.Address, allow_nil?: true}))
 
       assert schema == %{
-               "allOf" => [%{"$ref" => "#/components/schemas/Address"}],
-               "nullable" => true
+               "anyOf" => [
+                 %{"type" => "object", "nullable" => true, "enum" => [nil]},
+                 %{"$ref" => "#/components/schemas/Address"}
+               ]
              }
     end
 

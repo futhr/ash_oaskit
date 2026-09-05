@@ -84,9 +84,9 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
       data_schema = Map.get(author_rel[:properties], :data)
 
       # Required belongs_to should not be nullable
-      # It should be a oneOf with object or null for nullable ones
+      # It should be a anyOf with object or null for nullable ones
       # For required (allow_nil?: false), it should just be the object
-      assert data_schema[:type] == :object or Map.has_key?(data_schema, :oneOf)
+      assert data_schema[:type] == :object or Map.has_key?(data_schema, :anyOf)
     end
 
     test "belongs_to identifier has resource identifier structure", %{builder: builder} do
@@ -95,10 +95,10 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
       author_rel = Map.get(schema[:properties], :author)
       data_schema = Map.get(author_rel[:properties], :data)
 
-      # Get the actual object schema (may be wrapped in oneOf for nullable)
+      # Get the actual object schema (may be wrapped in anyOf for nullable)
       object_schema =
-        if Map.has_key?(data_schema, :oneOf) do
-          Enum.find(data_schema[:oneOf], &(&1[:type] == :object))
+        if Map.has_key?(data_schema, :anyOf) do
+          Enum.find(data_schema[:anyOf], &(&1[:type] == :object))
         else
           data_schema
         end
@@ -115,8 +115,8 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
       data_schema = Map.get(author_rel[:properties], :data)
 
       object_schema =
-        if Map.has_key?(data_schema, :oneOf) do
-          Enum.find(data_schema[:oneOf], &(&1[:type] == :object))
+        if Map.has_key?(data_schema, :anyOf) do
+          Enum.find(data_schema[:anyOf], &(&1[:type] == :object))
         else
           data_schema
         end
@@ -175,8 +175,8 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
       # Parent is optional, so should be nullable
       # Get the object schema
       object_schema =
-        if Map.has_key?(data_schema, :oneOf) do
-          Enum.find(data_schema[:oneOf], &(&1[:type] == :object))
+        if Map.has_key?(data_schema, :anyOf) do
+          Enum.find(data_schema[:anyOf], &(&1[:type] == :object))
         else
           data_schema
         end
@@ -232,12 +232,12 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
       data_schema = Map.get(parent_rel[:properties], :data)
 
       # In 3.0, nullable relationships should use nullable: true
-      assert data_schema[:nullable] == true or Map.has_key?(data_schema, :oneOf)
+      assert data_schema[:nullable] == true or Map.has_key?(data_schema, :anyOf)
     end
   end
 
   describe "OpenAPI 3.1 nullable handling for relationships" do
-    test "optional belongs_to uses oneOf with null in 3.1" do
+    test "optional belongs_to uses anyOf with null in 3.1" do
       base = SchemaBuilder.new(version: "3.1")
       builder = SchemaBuilder.add_resource_schemas(base, AshOaskit.Test.Category)
 
@@ -245,10 +245,10 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
       parent_rel = Map.get(schema[:properties], :parent)
       data_schema = Map.get(parent_rel[:properties], :data)
 
-      # In 3.1, nullable relationships should use oneOf
-      assert Map.has_key?(data_schema, :oneOf)
+      # In 3.1, nullable relationships should use anyOf
+      assert Map.has_key?(data_schema, :anyOf)
 
-      null_option = Enum.find(data_schema[:oneOf], &(&1[:type] == :null))
+      null_option = Enum.find(data_schema[:anyOf], &(&1[:type] == :null))
       assert null_option != nil
     end
   end
@@ -314,8 +314,8 @@ defmodule AshOaskit.SchemaBuilder.RelationshipSchemasTest do
       schema = SchemaBuilder.get_schema(builder, "ArticleRelationships")
 
       author = schema[:properties][:author][:properties][:data]
-      # To-one: object (possibly with oneOf for nullable)
-      assert author[:type] == :object or Map.has_key?(author, :oneOf)
+      # To-one: object (possibly with anyOf for nullable)
+      assert author[:type] == :object or Map.has_key?(author, :anyOf)
     end
 
     test "has_many is to-many", %{builder: builder} do

@@ -114,13 +114,13 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
       # address attribute value comes from TypeMapper (string keys)
       address = schema[:properties][:address]
 
-      # Check for $ref (may be wrapped in allOf or oneOf for nullable) - TypeMapper uses string keys
+      # Check for $ref (may be wrapped in allOf or anyOf for nullable) - TypeMapper uses string keys
       has_ref =
         cond do
           is_nil(address) -> false
           Map.has_key?(address, "$ref") -> true
           Map.has_key?(address, "allOf") -> Enum.any?(address["allOf"], &Map.has_key?(&1, "$ref"))
-          Map.has_key?(address, "oneOf") -> Enum.any?(address["oneOf"], &Map.has_key?(&1, "$ref"))
+          Map.has_key?(address, "anyOf") -> Enum.any?(address["anyOf"], &Map.has_key?(&1, "$ref"))
           true -> false
         end
 
@@ -255,12 +255,18 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
 
       # profile is nullable - value from TypeMapper
       profile = schema[:properties][:profile]
-      assert profile["nullable"] == true or Map.has_key?(profile, "$ref")
+
+      assert %{
+               "anyOf" => [
+                 %{"type" => "object", "nullable" => true, "enum" => [nil]},
+                 %{"$ref" => "#/components/schemas/Profile"}
+               ]
+             } = profile
     end
   end
 
   describe "embedded resources in OpenAPI 3.1" do
-    test "nullable embedded fields use type array or oneOf" do
+    test "nullable embedded fields use type array or anyOf" do
       builder =
         SchemaBuilder.add_resource_schemas(
           SchemaBuilder.new(version: "3.1"),
@@ -277,7 +283,7 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
       has_nullable_pattern =
         cond do
           is_list(profile["type"]) and "null" in profile["type"] -> true
-          Map.has_key?(profile, "oneOf") -> true
+          Map.has_key?(profile, "anyOf") -> true
           Map.has_key?(profile, "allOf") -> true
           Map.has_key?(profile, "$ref") -> true
           true -> false
