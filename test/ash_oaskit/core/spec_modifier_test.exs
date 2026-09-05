@@ -7,6 +7,29 @@ defmodule AshOaskit.SpecModifierTest do
 
   alias AshOaskit.SpecModifier
 
+  test "helpers modify generated specs without atom/string key collisions" do
+    for version <- ["3.0", "3.1"] do
+      spec =
+        AshOaskit.spec(
+          domains: [AshOaskit.Test.Blog],
+          version: version,
+          modify_open_api: [
+            &SpecModifier.add_header_to_operations(&1, "X-Trace", %{"type" => "string"}),
+            &SpecModifier.update_info(&1, %{"title" => "Customized"}),
+            &SpecModifier.add_schema(&1, "Custom", %{"type" => "string"}),
+            &SpecModifier.add_extension(&1, ["info"], "x-tested", true)
+          ]
+        )
+
+      assert spec["info"]["title"] == "Customized"
+      assert spec["info"]["x-tested"]
+      assert spec["components"]["schemas"]["Custom"] == %{"type" => "string"}
+      assert spec["components"]["schemas"]["PostResource"]
+      assert Enum.any?(spec["paths"]["/posts"]["get"]["parameters"], &(&1["name"] == "X-Trace"))
+      refute Map.has_key?(spec, :paths)
+    end
+  end
+
   describe "apply_modifier/2" do
     test "applies function modifier" do
       spec = %{"info" => %{"title" => "API"}}

@@ -115,6 +115,7 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_extension(map(), list(String.t()), String.t(), any()) :: map()
   def add_extension(spec, path, extension_name, value) do
+    spec = normalize_spec(spec)
     full_path = path ++ [extension_name]
     put_in(spec, Enum.map(full_path, &Access.key(&1, %{})), value)
   end
@@ -176,6 +177,7 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_server(map(), String.t(), keyword()) :: map()
   def add_server(spec, url, opts \\ []) do
+    spec = normalize_spec(spec)
     description = Keyword.get(opts, :description)
     variables = Keyword.get(opts, :variables)
 
@@ -202,6 +204,7 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec set_servers(map(), list(map())) :: map()
   def set_servers(spec, servers) when is_list(servers) do
+    spec = normalize_spec(spec)
     Map.put(spec, "servers", servers)
   end
 
@@ -223,6 +226,7 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_tag(map(), String.t(), keyword()) :: map()
   def add_tag(spec, name, opts \\ []) do
+    spec = normalize_spec(spec)
     description = Keyword.get(opts, :description)
     external_docs = Keyword.get(opts, :external_docs)
 
@@ -255,6 +259,7 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_external_docs(map(), String.t(), keyword()) :: map()
   def add_external_docs(spec, url, opts \\ []) do
+    spec = normalize_spec(spec)
     description = Keyword.get(opts, :description)
 
     external_docs = maybe_put(%{"url" => url}, "description", description)
@@ -274,6 +279,7 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_schema(map(), String.t(), map()) :: map()
   def add_schema(spec, name, schema) do
+    spec = normalize_spec(spec)
     components = Map.get(spec, "components", %{})
     schemas = Map.get(components, "schemas", %{})
     updated_schemas = Map.put(schemas, name, schema)
@@ -292,6 +298,7 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_response(map(), String.t(), map()) :: map()
   def add_response(spec, name, response) do
+    spec = normalize_spec(spec)
     components = Map.get(spec, "components", %{})
     responses = Map.get(components, "responses", %{})
     updated_responses = Map.put(responses, name, response)
@@ -310,6 +317,7 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_parameter(map(), String.t(), map()) :: map()
   def add_parameter(spec, name, parameter) do
+    spec = normalize_spec(spec)
     components = Map.get(spec, "components", %{})
     parameters = Map.get(components, "parameters", %{})
     updated_parameters = Map.put(parameters, name, parameter)
@@ -337,6 +345,7 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_webhook(map(), String.t(), map()) :: map()
   def add_webhook(spec, name, webhook) do
+    spec = normalize_spec(spec)
     webhooks = Map.get(spec, "webhooks", %{})
     updated_webhooks = Map.put(webhooks, name, webhook)
     Map.put(spec, "webhooks", updated_webhooks)
@@ -356,6 +365,7 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec update_info(map(), map()) :: map()
   def update_info(spec, info_updates) do
+    spec = normalize_spec(spec)
     info = Map.get(spec, "info", %{})
     updated_info = Map.merge(info, info_updates)
     Map.put(spec, "info", updated_info)
@@ -372,6 +382,7 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_schema_examples(map(), String.t(), list(map())) :: map()
   def add_schema_examples(spec, schema_name, examples) do
+    spec = normalize_spec(spec)
     access_path = Enum.map(["components", "schemas", schema_name], &Access.key/1)
 
     case get_in(spec, access_path) do
@@ -507,6 +518,7 @@ defmodule AshOaskit.SpecModifier do
 
   @spec update_operations(map(), list(String.t()) | nil, (map() -> map())) :: map()
   defp update_operations(spec, operation_ids, update_fn) do
+    spec = normalize_spec(spec)
     paths = Map.get(spec, "paths", %{})
 
     updated_paths =
@@ -533,6 +545,9 @@ defmodule AshOaskit.SpecModifier do
   end
 
   defp maybe_update_operation(operation, _, _), do: operation
+
+  defp normalize_spec(%{openapi: _} = spec), do: Oaskit.normalize_spec!(spec)
+  defp normalize_spec(spec), do: spec
 
   defp maybe_put(map, _, nil), do: map
   defp maybe_put(map, key, value), do: Map.put(map, key, value)

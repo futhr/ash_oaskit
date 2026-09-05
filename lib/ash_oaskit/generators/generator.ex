@@ -64,6 +64,7 @@ defmodule AshOaskit.Generators.Generator do
   alias AshOaskit.PhoenixIntrospection
   alias AshOaskit.RouteGathering
   alias AshOaskit.SchemaBuilder
+  alias AshOaskit.SpecModifier
 
   require Logger
 
@@ -220,6 +221,9 @@ defmodule AshOaskit.Generators.Generator do
       fun when is_function(fun, 1) ->
         fun.(spec)
 
+      modifiers when is_list(modifiers) ->
+        SpecModifier.apply_modifier(spec, modifiers)
+
       other ->
         Logger.warning(fn ->
           "AshOaskit: ignoring invalid modify_open_api hook: #{inspect(other)}"
@@ -230,7 +234,8 @@ defmodule AshOaskit.Generators.Generator do
   end
 
   defp validate_local_schema_refs!(spec) do
-    SchemaBuilder.validate_refs!(spec, get_in(spec, [:components, :schemas]))
+    components = spec[:components] || spec["components"] || %{}
+    SchemaBuilder.validate_refs!(spec, components[:schemas] || components["schemas"] || %{})
     spec
   end
 
