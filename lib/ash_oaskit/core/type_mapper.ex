@@ -190,6 +190,43 @@ defmodule AshOaskit.TypeMapper do
   defp constraints(%{constraints: constraints}) when is_list(constraints), do: constraints
   defp constraints(_), do: []
 
+  @doc "Returns embedded resource modules reachable through a field's declared type and constraints."
+  @spec embedded_types(map()) :: [module()]
+  def embedded_types(attr) do
+    type = resolve_type(attr)
+    constraints = constraints(attr)
+
+    type
+    |> normalize_type(constraints)
+    |> embedded_types_for(effective_constraints(type, constraints))
+    |> Enum.uniq()
+  end
+
+  defp embedded_types_for({:embedded, module}, _), do: [module]
+
+  defp embedded_types_for({:array, inner}, constraints),
+    do: embedded_types_for(inner, Keyword.get(constraints, :items, []))
+
+  defp embedded_types_for({:struct_fields, module}, _),
+    do: embedded_field_types(module.subtype_constraints()[:fields] || [])
+
+  defp embedded_types_for({:union, types}, _) when is_list(types) do
+    Enum.flat_map(types, fn
+      {_, config} when is_list(config) -> embedded_types(Map.new(config))
+      type when is_atom(type) -> embedded_types(%{type: type})
+      _ -> []
+    end)
+  end
+
+  defp embedded_types_for(type, constraints) when type in [:map, :keyword, :struct],
+    do: embedded_field_types(Keyword.get(constraints, :fields, []))
+
+  defp embedded_types_for(_, _), do: []
+
+  defp embedded_field_types(fields) do
+    Enum.flat_map(fields, fn {_, config} -> embedded_types(Map.new(config)) end)
+  end
+
   defp union_newtype?(type) do
     Code.ensure_loaded?(type) and
       function_exported?(type, :subtype_of, 0) and

@@ -7,6 +7,18 @@ defmodule AshOaskit.TypeMapperTest do
 
   alias AshOaskit.TypeMapper
 
+  test "discovers embedded types inside arrays, field constraints, and unions" do
+    type = AshOaskit.Test.WrappedShippingInfo
+
+    for attr <- [
+          %{type: {:array, type}},
+          %{type: :map, constraints: [fields: [nested: [type: type]]]},
+          %{type: {:union, [nested: [type: type]]}}
+        ] do
+      assert TypeMapper.embedded_types(attr) == [AshOaskit.Test.ShippingInfo]
+    end
+  end
+
   test "decimal schemas accept exact serialized output without rounding defaults or bounds" do
     decimal = Decimal.new("12345678901234567890.123456")
 

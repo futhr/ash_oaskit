@@ -54,9 +54,11 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
 
   alias Ash.Resource.Info, as: ResourceInfo
   alias AshOaskit.Config
+  alias AshOaskit.SchemaBuilder
   alias AshOaskit.SchemaBuilder.EmbeddedSchemas
   alias AshOaskit.SchemaBuilder.PropertyBuilders
   alias AshOaskit.SchemaBuilder.RelationshipSchemas
+  alias AshOaskit.TypeMapper
 
   @doc """
   Adds all schemas for a resource to the builder.
@@ -110,7 +112,22 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
     # Build input schemas
     builder = add_input_schemas(builder, resource, schema_name, opts)
 
-    builder
+    add_return_schemas(builder, resource, opts)
+  end
+
+  defp add_return_schemas(builder, resource, opts) do
+    handler =
+      embedded_schema_handler(
+        Keyword.fetch!(opts, :has_schema_fn),
+        Keyword.fetch!(opts, :mark_seen_fn),
+        Keyword.fetch!(opts, :add_schema_fn)
+      )
+
+    resource
+    |> ResourceInfo.actions()
+    |> Enum.filter(&(Map.get(&1, :returns) != nil))
+    |> Enum.flat_map(&TypeMapper.embedded_types(%{type: &1.returns, constraints: &1.constraints}))
+    |> Enum.reduce(builder, &handler.(&2, &1))
   end
 
   @doc """
@@ -385,8 +402,18 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
         arguments = body_arguments(action, route)
         argument_names = Enum.map(arguments, & &1.name)
 
-        properties =
-          PropertyBuilders.build_attribute_properties(builder, attributes ++ arguments,
+        handler =
+          embedded_schema_handler(
+            Keyword.get(opts, :has_schema_fn, &SchemaBuilder.has_schema?/2),
+            Keyword.get(opts, :mark_seen_fn, &SchemaBuilder.mark_seen/2),
+            add_schema_fn
+          )
+
+        {properties, builder} =
+          PropertyBuilders.build_attribute_properties_with_embedded(
+            builder,
+            attributes ++ arguments,
+            handler,
             action_name: action.name,
             argument_names: argument_names,
             field_name_fn: &Config.json_field_name(resource, &1),

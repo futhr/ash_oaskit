@@ -171,13 +171,17 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
 
     Enum.reduce(attributes, {%{}, builder}, fn attr, {props, bldr} ->
       # Check if this attribute is an embedded type
-      bldr = embedded_handler.(bldr, attr.type)
+      bldr = Enum.reduce(TypeMapper.embedded_types(attr), bldr, &embedded_handler.(&2, &1))
 
       schema =
         if bldr.version == "3.1" do
-          TypeMapper.to_json_schema_31(attr)
+          TypeMapper.to_json_schema_31(attr,
+            direction: if(action_name, do: :input, else: :output)
+          )
         else
-          TypeMapper.to_json_schema_30(attr)
+          TypeMapper.to_json_schema_30(attr,
+            direction: if(action_name, do: :input, else: :output)
+          )
         end
 
       {Map.put(

@@ -179,6 +179,18 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemas do
   @spec add_embedded_resource_schema(map(), module(), function(), function()) :: map()
   def add_embedded_resource_schema(builder, embedded_type, mark_seen_fn, add_schema_fn) do
     builder = reserve_name(builder, embedded_type)
+    seen = Map.get(builder, :seen_embedded_types, MapSet.new())
+
+    if MapSet.member?(seen, embedded_type) do
+      builder
+    else
+      builder
+      |> Map.put(:seen_embedded_types, MapSet.put(seen, embedded_type))
+      |> build_embedded_schema(embedded_type, mark_seen_fn, add_schema_fn)
+    end
+  end
+
+  defp build_embedded_schema(builder, embedded_type, mark_seen_fn, add_schema_fn) do
     schema_name = embedded_type |> Module.split() |> List.last()
 
     # Mark as seen to prevent cycles

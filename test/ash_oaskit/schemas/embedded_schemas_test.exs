@@ -6,6 +6,42 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
   alias AshOaskit.SchemaBuilder
   alias AshOaskit.SchemaBuilder.EmbeddedSchemas
 
+  test "input-only NewType arguments and action returns generate their embedded closure" do
+    for version <- ["3.0", "3.1"] do
+      spec = AshOaskit.spec(domains: [AshOaskit.Test.SchemaAuditDomain], version: version)
+      schemas = spec["components"]["schemas"]
+
+      assert schemas["ShippingInfo"]["properties"]["address"]["$ref"] ==
+               "#/components/schemas/Address"
+
+      assert schemas["Address"]["properties"]["city"]["type"] == "string"
+
+      assert schemas["SchemaAuditCreateInput"]["properties"]["shipping"]["$ref"] ==
+               "#/components/schemas/ShippingInfo"
+    end
+  end
+
+  test "embedded traversal marks a type before invoking recursive callbacks" do
+    mark_seen = fn builder, type ->
+      EmbeddedSchemas.add_embedded_resource_schema(
+        builder,
+        type,
+        fn _, _ -> flunk("re-entered a type that was already being generated") end,
+        &SchemaBuilder.add_schema/3
+      )
+    end
+
+    builder =
+      EmbeddedSchemas.add_embedded_resource_schema(
+        SchemaBuilder.new(),
+        AshOaskit.Test.Address,
+        mark_seen,
+        &SchemaBuilder.add_schema/3
+      )
+
+    assert builder.schemas["Address"].properties.city["type"] == "string"
+  end
+
   test "embedded component collisions fail rather than selecting the first definition" do
     builder = SchemaBuilder.new()
 
