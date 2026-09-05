@@ -287,12 +287,22 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
 
     response_schema = %{
       type: :object,
+      required: ["data"],
       properties: %{
         data: data_schema
       }
     }
 
-    add_schema_fn.(builder, "#{schema_name}Response", response_schema)
+    collection_schema =
+      put_in(response_schema, [:properties, :data], %{
+        type: :array,
+        items: schema_ref("#{schema_name}Resource")
+      })
+
+    builder
+    |> add_schema_fn.("#{schema_name}Resource", data_schema)
+    |> add_schema_fn.("#{schema_name}Response", response_schema)
+    |> add_schema_fn.("#{schema_name}CollectionResponse", collection_schema)
   end
 
   @doc """

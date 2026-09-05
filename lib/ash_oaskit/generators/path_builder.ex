@@ -463,6 +463,11 @@ defmodule AshOaskit.Generators.PathBuilder do
 
     schema_name = Config.resource_display_name(route.resource)
 
+    response_name =
+      if route.type == :index,
+        do: "#{schema_name}CollectionResponse",
+        else: "#{schema_name}Response"
+
     success_response =
       if route.type == :delete do
         %{description: "Deleted successfully"}
@@ -471,7 +476,7 @@ defmodule AshOaskit.Generators.PathBuilder do
           description: "Successful response",
           content: %{
             "application/vnd.api+json" => %{
-              schema: schema_ref("#{schema_name}Response")
+              schema: schema_ref(response_name)
             }
           }
         }

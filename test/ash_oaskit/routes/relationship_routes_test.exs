@@ -483,7 +483,7 @@ defmodule AshOaskit.RelationshipRoutesTest do
           version: "3.1"
         )
 
-      assert schema[:properties]["data"][:items]["$ref"] =~ "Response"
+      assert schema[:properties]["data"][:items]["$ref"] == "#/components/schemas/CommentResource"
     end
 
     test "to-one relationship has single nullable data" do

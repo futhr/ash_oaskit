@@ -74,7 +74,7 @@ defmodule AshOaskit.RouteResponsesTest do
         )
 
       assert schema[:properties]["data"][:type] == :array
-      assert schema[:properties]["data"][:items]["$ref"] =~ "ReviewResponse"
+      assert schema[:properties]["data"][:items]["$ref"] == "#/components/schemas/ReviewResource"
     end
 
     test "builds related response for to-one" do

@@ -186,14 +186,14 @@ defmodule AshOaskit.RelationshipRoutes.RouteResponses do
       case relationship_cardinality(relationship) do
         :one ->
           make_nullable_oneof(
-            schema_ref("#{schema_name}Response"),
+            schema_ref("#{schema_name}Resource"),
             version
           )
 
         :many ->
           %{
             type: :array,
-            items: schema_ref("#{schema_name}Response")
+            items: schema_ref("#{schema_name}Resource")
           }
       end
 

@@ -5,6 +5,62 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemasTest do
   alias AshOaskit.SchemaBuilder
   alias AshOaskit.SchemaBuilder.ResourceSchemas
 
+  test "collection responses accept arrays, while member responses accept resource objects" do
+    spec = AshOaskit.spec(domains: [AshOaskit.Test.Blog])
+    schemas = spec["components"]["schemas"]
+    resource = %{"id" => "123", "type" => "post"}
+
+    for {name, valid, invalid} <- [
+          {"PostCollectionResponse", [resource], resource},
+          {"PostResponse", resource, [resource]}
+        ] do
+      validator =
+        schemas[name]
+        |> Map.put("components", spec["components"])
+        |> JSV.build!()
+
+      assert {:ok, _} = JSV.validate(%{"data" => valid}, validator)
+      assert {:error, _} = JSV.validate(%{"data" => invalid}, validator)
+      assert {:error, _} = JSV.validate(%{}, validator)
+    end
+
+    assert get_in(spec, [
+             "paths",
+             "/posts",
+             "get",
+             "responses",
+             "200",
+             "content",
+             "application/vnd.api+json",
+             "schema",
+             "$ref"
+           ]) ==
+             "#/components/schemas/PostCollectionResponse"
+  end
+
+  test "related responses reference resource objects, not nested documents" do
+    spec = AshOaskit.spec(domains: [AshOaskit.Test.Publishing])
+
+    for {relationship, data} <- [
+          {:author, %{"id" => "a", "type" => "author"}},
+          {:reviews, [%{"id" => "r", "type" => "review"}]}
+        ] do
+      rel = Ash.Resource.Info.relationship(AshOaskit.Test.Article, relationship)
+
+      validator =
+        rel
+        |> AshOaskit.RelationshipRoutes.RouteResponses.build_related_response_schema([])
+        |> Jason.encode!()
+        |> Jason.decode!()
+        |> Map.put("components", spec["components"])
+        |> JSV.build!()
+
+      assert {:ok, _} = JSV.validate(%{"data" => data}, validator)
+      nested = if is_list(data), do: Enum.map(data, &%{"data" => &1}), else: %{"data" => data}
+      assert {:error, _} = JSV.validate(%{"data" => nested}, validator)
+    end
+  end
+
   describe "resource_schema_name/1" do
     test "extracts last module segment" do
       assert ResourceSchemas.resource_schema_name(AshOaskit.Test.Post) == "Post"
