@@ -4,6 +4,37 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuildersTest do
 
   alias AshOaskit.SchemaBuilder.PropertyBuilders
 
+  test "calculation schemas retain declared constraints and non-nullability" do
+    calc = %{type: :string, constraints: [min_length: 2, max_length: 8], allow_nil?: false}
+    schema = PropertyBuilders.calculation_to_schema(%{version: "3.1"}, calc)
+    assert schema == %{type: :string, minLength: 2, maxLength: 8}
+  end
+
+  test "aggregate field types and item constraints come from Ash metadata" do
+    aggregate = Ash.Resource.Info.aggregate(AshOaskit.Test.Article, :review_ratings)
+    resolved = PropertyBuilders.resolve_aggregate(AshOaskit.Test.Article, aggregate)
+    {type, constraints} = resolved.resolved_type
+    field = Ash.Resource.Info.attribute(AshOaskit.Test.Review, :rating)
+
+    assert {:ok, ^type, ^constraints} =
+             Ash.Query.Aggregate.kind_to_type(:list, field.type, field.constraints)
+
+    schema = PropertyBuilders.aggregate_to_schema(%{version: "3.1"}, resolved)
+    assert schema.items.type == :integer
+    assert schema.items.minimum == 1
+    assert schema.items.maximum == 5
+  end
+
+  test "decimal sums reuse the exact decimal type mapping" do
+    schema = PropertyBuilders.aggregate_kind_to_schema(:sum, %{type: Ash.Type.Decimal})
+    assert schema.type == :string
+
+    assert schema.pattern ==
+             AshOaskit.TypeMapper.to_json_schema_31(%{type: :decimal, allow_nil?: false})[
+               "pattern"
+             ]
+  end
+
   doctest AshOaskit.SchemaBuilder.PropertyBuilders
 
   describe "type_to_schema/1" do
@@ -15,7 +46,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuildersTest do
 
     test "maps types with formats" do
       assert PropertyBuilders.type_to_schema(:float) == %{type: :number, format: :float}
-      assert PropertyBuilders.type_to_schema(:decimal) == %{type: :string}
+      assert %{type: :string, pattern: _} = PropertyBuilders.type_to_schema(:decimal)
       assert PropertyBuilders.type_to_schema(:uuid) == %{type: :string, format: :uuid}
 
       assert PropertyBuilders.type_to_schema(:datetime) == %{

@@ -51,48 +51,18 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   """
 
   alias AshOaskit.TypeMapper
+  alias Ash.Resource.Info, as: ResourceInfo
 
-  # Map of types to their JSON Schema representation
-  @type_to_schema_map %{
-    string: %{type: :string},
-    ci_string: %{type: :string},
-    integer: %{type: :integer},
-    float: %{type: :number, format: :float},
-    decimal: %{type: :string},
-    boolean: %{type: :boolean},
-    date: %{type: :string, format: :date},
-    time: %{type: :string, format: :time},
-    datetime: %{type: :string, format: :"date-time"},
-    utc_datetime: %{type: :string, format: :"date-time"},
-    utc_datetime_usec: %{type: :string, format: :"date-time"},
-    naive_datetime: %{type: :string, format: :"date-time"},
-    uuid: %{type: :string, format: :uuid},
-    binary: %{type: :string, format: :binary},
-    map: %{type: :object},
-    atom: %{type: :string},
-    term: %{},
-    number: %{type: :number}
-  }
-
-  # Map of Ash.Type.* modules to their atom equivalents
-  @ash_type_to_atom %{
-    Ash.Type.String => :string,
-    Ash.Type.Integer => :integer,
-    Ash.Type.Float => :float,
-    Ash.Type.Decimal => :decimal,
-    Ash.Type.Boolean => :boolean,
-    Ash.Type.Date => :date,
-    Ash.Type.Time => :time,
-    Ash.Type.DateTime => :datetime,
-    Ash.Type.UtcDatetime => :utc_datetime,
-    Ash.Type.UtcDatetimeUsec => :utc_datetime_usec,
-    Ash.Type.NaiveDatetime => :naive_datetime,
-    Ash.Type.UUID => :uuid,
-    Ash.Type.Binary => :binary,
-    Ash.Type.Map => :map,
-    Ash.Type.Atom => :atom,
-    Ash.Type.Term => :term
-  }
+  @schema_keys Map.new(
+                 ~w(type format items properties required description enum anyOf oneOf allOf nullable
+       pattern minimum maximum minLength maxLength minItems maxItems additionalProperties
+       default uniqueItems multipleOf discriminator)a,
+                 &{Atom.to_string(&1), &1}
+               )
+  @schema_values Map.new(
+                   ~w(string integer number boolean object array null float double uuid date time date-time binary)a,
+                   &{Atom.to_string(&1), &1}
+                 )
 
   # Static aggregate kinds with fixed schemas
   @static_aggregate_schemas %{
@@ -235,11 +205,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   """
   @spec calculation_to_schema(map(), map()) :: map()
   def calculation_to_schema(builder, calc) do
-    base_schema = type_to_schema(calc.type)
-
-    base_schema
-    |> make_nullable(builder.version)
-    |> maybe_add_description(calc)
+    field_schema(builder, Map.put_new(calc, :allow_nil?, true))
   end
 
   @doc """
@@ -285,10 +251,49 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   """
   @spec aggregate_to_schema(map(), map()) :: map()
   def aggregate_to_schema(builder, agg) do
-    agg.kind
-    |> aggregate_kind_to_schema(agg)
-    |> make_nullable(builder.version)
-    |> maybe_add_description(agg)
+    case Map.get(agg, :resolved_type) do
+      {type, constraints} ->
+        field_schema(builder, %{
+          type: type,
+          constraints: constraints,
+          allow_nil?: true,
+          description: Map.get(agg, :description)
+        })
+
+      nil ->
+        agg.kind
+        |> aggregate_kind_to_schema(agg)
+        |> make_nullable(builder.version)
+        |> maybe_add_description(agg)
+    end
+  end
+
+  @doc "Resolves an aggregate's effective type and constraints from its related field using Ash."
+  @spec resolve_aggregate(module(), map()) :: map()
+  def resolve_aggregate(resource, aggregate) do
+    related = ResourceInfo.related(resource, Map.get(aggregate, :relationship_path, []))
+    field = Map.get(aggregate, :field)
+    field = if related && is_atom(field) && field, do: ResourceInfo.field(related, field)
+
+    result =
+      if aggregate.kind == :custom do
+        {:ok, Map.get(aggregate, :type) || :term, Map.get(aggregate, :constraints, [])}
+      else
+        Ash.Query.Aggregate.kind_to_type(
+          aggregate.kind,
+          if(field, do: field.type),
+          if(field, do: field.constraints, else: [])
+        )
+      end
+
+    case result do
+      {:ok, type, constraints} ->
+        Map.put(aggregate, :resolved_type, {type, constraints})
+
+      {:error, error} ->
+        raise ArgumentError,
+              "cannot resolve aggregate #{inspect(aggregate.name)}: #{inspect(error)}"
+    end
   end
 
   @doc """
@@ -308,6 +313,18 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   A JSON Schema map for the aggregate kind.
   """
   @spec aggregate_kind_to_schema(atom(), map()) :: map()
+  def aggregate_kind_to_schema(kind, %{type: type} = agg) when not is_nil(type) do
+    kind = if kind == :custom, do: {:custom, type}, else: kind
+
+    case Ash.Query.Aggregate.kind_to_type(kind, type, Map.get(agg, :constraints, [])) do
+      {:ok, type, constraints} ->
+        field_schema(%{version: "3.1"}, %{type: type, constraints: constraints, allow_nil?: false})
+
+      {:error, _} ->
+        %{}
+    end
+  end
+
   def aggregate_kind_to_schema(kind, agg) do
     case Map.get(@static_aggregate_schemas, kind) do
       nil -> dynamic_aggregate_schema(kind, agg)
@@ -339,14 +356,8 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
       %{type: :array, items: %{type: :integer}}
   """
   @spec type_to_schema(atom() | tuple()) :: map()
-  def type_to_schema({:array, inner}), do: %{type: :array, items: type_to_schema(inner)}
-
-  def type_to_schema(type) when is_atom(type) do
-    normalized = normalize_type(type)
-    Map.get(@type_to_schema_map, normalized, %{type: :string})
-  end
-
-  def type_to_schema(_), do: %{type: :string}
+  def type_to_schema(:number), do: %{type: :number}
+  def type_to_schema(type), do: field_schema(%{version: "3.1"}, %{type: type, allow_nil?: false})
 
   @doc """
   Normalizes Ash.Type.* modules to their atom equivalents.
@@ -371,7 +382,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
       :boolean
   """
   @spec normalize_type(atom()) :: atom()
-  def normalize_type(type), do: Map.get(@ash_type_to_atom, type, type)
+  defdelegate normalize_type(type), to: TypeMapper
 
   defdelegate make_nullable(schema, version), to: AshOaskit.Schemas.Nullable
 
@@ -430,6 +441,27 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   defp json_property_key(_, json_name), do: json_name
 
   defp default_name(name), do: name
+
+  defp field_schema(builder, field) do
+    schema =
+      if builder.version == "3.1",
+        do: TypeMapper.to_json_schema_31(field),
+        else: TypeMapper.to_json_schema_30(field)
+
+    atom_schema(schema)
+  end
+
+  defp atom_schema(schema) when is_map(schema) do
+    Map.new(schema, fn {key, value} ->
+      value = if key in ["type", "format"], do: atom_type(value), else: atom_schema(value)
+      {Map.get(@schema_keys, key, key), value}
+    end)
+  end
+
+  defp atom_schema(values) when is_list(values), do: Enum.map(values, &atom_schema/1)
+  defp atom_schema(value), do: value
+  defp atom_type(values) when is_list(values), do: Enum.map(values, &atom_type/1)
+  defp atom_type(value), do: Map.get(@schema_values, value, value)
 
   defp opt([{key, value} | _], key, _), do: value
   defp opt([_ | rest], key, default), do: opt(rest, key, default)

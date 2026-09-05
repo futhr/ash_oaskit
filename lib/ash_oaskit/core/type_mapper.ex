@@ -426,6 +426,10 @@ defmodule AshOaskit.TypeMapper do
     Ash.Type.DurationName => :duration_name
   }
 
+  @doc "Normalizes built-in Ash type modules to their atom aliases without resolving custom types."
+  @spec normalize_type(atom()) :: atom()
+  def normalize_type(type), do: Map.get(@ash_type_to_atom, type, type)
+
   defp normalize_type(type, constraints)
 
   defp normalize_type({:union, types}, _), do: {:union, types}

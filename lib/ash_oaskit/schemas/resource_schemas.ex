@@ -193,13 +193,27 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
     # Build properties from calculations
     calculations = get_public_calculations(resource)
 
+    builder =
+      calculations
+      |> Enum.flat_map(&TypeMapper.embedded_types/1)
+      |> Enum.reduce(builder, &embedded_handler.(&2, &1))
+
     calc_properties =
       PropertyBuilders.build_calculation_properties(builder, calculations,
         field_name_fn: &Config.json_field_name(resource, &1)
       )
 
     # Build properties from aggregates
-    aggregates = get_public_aggregates(resource)
+    aggregates =
+      Enum.map(get_public_aggregates(resource), &PropertyBuilders.resolve_aggregate(resource, &1))
+
+    builder =
+      aggregates
+      |> Enum.flat_map(fn aggregate ->
+        {type, constraints} = aggregate.resolved_type
+        TypeMapper.embedded_types(%{type: type, constraints: constraints})
+      end)
+      |> Enum.reduce(builder, &embedded_handler.(&2, &1))
 
     agg_properties =
       PropertyBuilders.build_aggregate_properties(builder, aggregates,
