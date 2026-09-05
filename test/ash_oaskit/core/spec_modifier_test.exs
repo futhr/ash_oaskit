@@ -561,14 +561,31 @@ defmodule AshOaskit.SpecModifierTest do
       assert result["info"]["x-rateLimit"]["window"] == "1 minute"
     end
 
-    test "adds rate limit headers to operations" do
+    test "adds rate limit response headers without request parameters or reference siblings" do
       modifier = SpecModifier.rate_limiting_modifier()
-      spec = %{"info" => %{}, "paths" => %{"/posts" => %{"get" => %{}}}}
+
+      spec = %{
+        "info" => %{},
+        "paths" => %{
+          "/posts" => %{
+            "get" => %{
+              "responses" => %{
+                "200" => %{"description" => "OK"},
+                "400" => %{"$ref" => "#/components/responses/Error"}
+              }
+            },
+            "x-metadata" => %{"keep" => true}
+          }
+        }
+      }
 
       result = SpecModifier.apply_modifier(spec, modifier)
 
-      params = result["paths"]["/posts"]["get"]["parameters"]
-      header_names = Enum.map(params, & &1["name"])
+      operation = result["paths"]["/posts"]["get"]
+      refute Map.has_key?(operation, "parameters")
+      assert operation["responses"]["400"] == %{"$ref" => "#/components/responses/Error"}
+      assert result["paths"]["/posts"]["x-metadata"] == %{"keep" => true}
+      header_names = Map.keys(operation["responses"]["200"]["headers"])
 
       assert "X-RateLimit-Limit" in header_names
       assert "X-RateLimit-Remaining" in header_names

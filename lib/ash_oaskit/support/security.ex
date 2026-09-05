@@ -444,7 +444,7 @@ defmodule AshOaskit.Security do
   @doc """
   Builds security for an operation based on route configuration.
 
-  Returns nil for public routes, or the default security requirement
+  Returns an empty list for public routes to override global security, or the default requirement
   for authenticated routes.
 
   ## Options
@@ -454,7 +454,7 @@ defmodule AshOaskit.Security do
   ## Examples
 
       iex> AshOaskit.Security.build_operation_security(%{public?: true})
-      nil
+      []
 
       iex> AshOaskit.Security.build_operation_security(%{public?: false})
       [%{"bearerAuth" => []}]
@@ -466,7 +466,7 @@ defmodule AshOaskit.Security do
     if requires_authentication?(route) do
       default_security
     else
-      nil
+      []
     end
   end
 

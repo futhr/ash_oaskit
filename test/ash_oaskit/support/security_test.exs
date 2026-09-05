@@ -380,10 +380,10 @@ defmodule AshOaskit.SecurityTest do
   end
 
   describe "build_operation_security/2" do
-    test "returns nil for public routes" do
+    test "overrides global security for public routes" do
       security = Security.build_operation_security(%{public?: true})
 
-      assert security == nil
+      assert security == []
     end
 
     test "returns default security for non-public routes" do
@@ -425,12 +425,12 @@ defmodule AshOaskit.SecurityTest do
       assert result[:security] == custom_security
     end
 
-    test "does not add security for public routes" do
+    test "explicitly removes inherited security for public routes" do
       operation = %{operationId: "getPublicPost"}
 
       result = Security.add_security_to_operation(operation, route: %{public?: true})
 
-      refute Map.has_key?(result, :security)
+      assert result[:security] == []
     end
 
     test "preserves existing operation properties" do

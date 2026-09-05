@@ -158,6 +158,31 @@ defmodule AshOaskit.SpecModifier do
     end)
   end
 
+  @doc "Adds a response header to inline responses without changing request parameters or references."
+  @spec add_header_to_responses(map(), String.t(), map(), keyword()) :: map()
+  def add_header_to_responses(spec, name, schema, opts \\ []) do
+    update_operations(spec, Keyword.get(opts, :operations), fn operation ->
+      responses =
+        Map.new(Map.get(operation, "responses", %{}), fn {code, response} ->
+          response =
+            if is_map(response) and not Map.has_key?(response, "$ref") do
+              Map.update(
+                response,
+                "headers",
+                %{name => %{"schema" => schema}},
+                &Map.put(&1, name, %{"schema" => schema})
+              )
+            else
+              response
+            end
+
+          {code, response}
+        end)
+
+      Map.put(operation, "responses", responses)
+    end)
+  end
+
   @doc """
   Adds a server to the spec's servers list.
 
@@ -449,7 +474,7 @@ defmodule AshOaskit.SpecModifier do
 
   - `:limit` - Rate limit value (e.g., 100)
   - `:window` - Time window (e.g., "1 minute")
-  - `:headers` - Custom header names for rate limit info
+  - `:headers` - Map of custom names keyed by `:limit`, `:remaining`, and `:reset`
 
   ## Examples
 
@@ -461,6 +486,7 @@ defmodule AshOaskit.SpecModifier do
   def rate_limiting_modifier(opts \\ []) do
     limit = Keyword.get(opts, :limit, 100)
     window = Keyword.get(opts, :window, "1 minute")
+    headers = Keyword.get(opts, :headers, %{})
 
     fn spec ->
       spec
@@ -468,9 +494,15 @@ defmodule AshOaskit.SpecModifier do
         "limit" => limit,
         "window" => window
       })
-      |> add_header_to_operations("X-RateLimit-Limit", %{"type" => "integer"})
-      |> add_header_to_operations("X-RateLimit-Remaining", %{"type" => "integer"})
-      |> add_header_to_operations("X-RateLimit-Reset", %{"type" => "integer"})
+      |> add_header_to_responses(Map.get(headers, :limit, "X-RateLimit-Limit"), %{
+        "type" => "integer"
+      })
+      |> add_header_to_responses(Map.get(headers, :remaining, "X-RateLimit-Remaining"), %{
+        "type" => "integer"
+      })
+      |> add_header_to_responses(Map.get(headers, :reset, "X-RateLimit-Reset"), %{
+        "type" => "integer"
+      })
     end
   end
 
@@ -531,7 +563,11 @@ defmodule AshOaskit.SpecModifier do
 
   defp update_methods(methods, operation_ids, update_fn) do
     Map.new(methods, fn {method, operation} ->
-      {method, maybe_update_operation(operation, operation_ids, update_fn)}
+      if method in ~w(get put post delete options head patch trace) do
+        {method, maybe_update_operation(operation, operation_ids, update_fn)}
+      else
+        {method, operation}
+      end
     end)
   end
 
