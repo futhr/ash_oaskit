@@ -3,11 +3,11 @@ defmodule AshOaskit.TypeMapperTest do
 
   use ExUnit.Case, async: true
 
-  @moduletag capture_log: true
-
   doctest AshOaskit.TypeMapper
 
   alias AshOaskit.TypeMapper
+
+  @moduletag capture_log: true
 
   test "compound fields and raw unions retain constraints in both versions" do
     for mapper <- [&TypeMapper.to_json_schema_30/1, &TypeMapper.to_json_schema_31/1],
@@ -33,7 +33,7 @@ defmodule AshOaskit.TypeMapperTest do
           ]
         })
 
-      assert schema["required"] == ["count", "choice"] |> Enum.sort()
+      assert schema["required"] == ["choice", "count"]
       assert schema["properties"]["count"] == %{"type" => "integer", "minimum" => 2}
       assert hd(schema["properties"]["choice"]["anyOf"])["maxLength"] == 4
     end
@@ -44,6 +44,21 @@ defmodule AshOaskit.TypeMapperTest do
              assert TypeMapper.to_json_schema_31(%{type: :unmapped, allow_nil?: false}) == %{}
              assert TypeMapper.to_json_schema_30(%{type: {}, allow_nil?: false}) == %{}
            end) =~ "no JSON Schema mapping"
+  end
+
+  test "decimal input handling reaches constrained map fields" do
+    attr = %{
+      type: :map,
+      allow_nil?: false,
+      constraints: [fields: [amount: [type: :decimal, allow_nil?: false]]]
+    }
+
+    for mapper <- [&TypeMapper.to_json_schema_30/2, &TypeMapper.to_json_schema_31/2] do
+      schema = mapper.(attr, direction: :input)
+      validator = JSV.build!(schema)
+      assert {:ok, _} = JSV.validate(%{"amount" => 12.5}, validator)
+      assert {:ok, _} = JSV.validate(%{"amount" => "12.500000000000001"}, validator)
+    end
   end
 
   test "discovers embedded types inside arrays, field constraints, and unions" do

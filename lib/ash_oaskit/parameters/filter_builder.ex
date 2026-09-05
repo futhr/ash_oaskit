@@ -90,9 +90,11 @@ defmodule AshOaskit.FilterBuilder do
   """
 
   alias Ash.Resource.Info, as: ResourceInfo
+  alias Ash.Type.NewType
   alias AshOaskit.Config
   alias AshOaskit.Core.SchemaRef
   alias AshOaskit.SchemaBuilder.PropertyBuilders
+  alias AshOaskit.TypeMapper
   alias AshOaskit.TypeMapper
 
   @typedoc """
@@ -253,8 +255,8 @@ defmodule AshOaskit.FilterBuilder do
   defp normalize_type({:array, inner}), do: {:array, normalize_type(inner)}
 
   defp normalize_type(type) when is_atom(type) do
-    if Ash.Type.NewType.new_type?(type) do
-      normalize_type(Ash.Type.NewType.subtype_of(type))
+    if NewType.new_type?(type) do
+      normalize_type(NewType.subtype_of(type))
     else
       TypeMapper.normalize_type(type)
     end
@@ -287,11 +289,13 @@ defmodule AshOaskit.FilterBuilder do
 
   @spec operators_for_type(atom() | tuple()) :: [atom()]
   defp operators_for_type(type) do
-    case normalize_type(type) do
-      {:array, _} -> @array_ops
-      t -> Map.get(@type_operators, t, @base_ops)
-    end
-    |> Enum.filter(fn op ->
+    operators =
+      case normalize_type(type) do
+        {:array, _} -> @array_ops
+        t -> Map.get(@type_operators, t, @base_ops)
+      end
+
+    Enum.filter(operators, fn op ->
       Ash.Filter.get_operator(op) != nil or
         Ash.Filter.get_predicate_function(op, nil, true) != nil
     end)

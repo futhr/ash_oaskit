@@ -31,6 +31,7 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
 
   import AshOaskit.Core.PathUtils, only: [humanize: 1]
 
+  alias Ash.Resource.Info, as: ResourceInfo
   alias AshOaskit.Config
   alias AshOaskit.QueryParameters
   alias AshOaskit.RelationshipRoutes.RouteResponses
@@ -242,8 +243,8 @@ defmodule AshOaskit.RelationshipRoutes.RouteOperations do
 
         action =
           if relationship.read_action,
-            do: Ash.Resource.Info.action(destination, relationship.read_action),
-            else: Ash.Resource.Info.primary_action(destination, :read)
+            do: ResourceInfo.action(destination, relationship.read_action),
+            else: ResourceInfo.primary_action(destination, :read)
 
         action = if RouteResponses.relationship_cardinality(relationship) == :many, do: action
         QueryParameters.for_route(destination, action, route, version: version, recursive?: true)

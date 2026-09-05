@@ -621,6 +621,17 @@ defmodule AshOaskit.TypeMapper do
   defp decimal_input_schema(schema, {:array, inner}),
     do: Map.update!(schema, "items", &decimal_input_schema(&1, inner))
 
+  defp decimal_input_schema(schema, {:struct_fields, module}),
+    do: decimal_input_schema(schema, {:fields, module.subtype_constraints()[:fields] || []})
+
+  defp decimal_input_schema(schema, {:fields, fields}) do
+    Enum.reduce(fields, schema, fn {name, config}, schema ->
+      key = to_string(name)
+      type = normalize_type(Keyword.fetch!(config, :type), Keyword.get(config, :constraints, []))
+      update_in(schema, ["properties", key], &decimal_input_schema(&1, type))
+    end)
+  end
+
   defp decimal_input_schema(schema, _), do: schema
 
   defp make_nullable_31(schema),

@@ -67,9 +67,7 @@ defmodule Mix.Tasks.AshOaskit.Generate do
         ]
       )
 
-    if invalid != [] or positional != [] do
-      Mix.raise("Invalid arguments: #{inspect(invalid ++ positional)}")
-    end
+    validate_arguments!(invalid, positional)
 
     version = opts[:version] || "3.1"
     output = opts[:output] || default_output(version, opts[:format])
@@ -109,6 +107,11 @@ defmodule Mix.Tasks.AshOaskit.Generate do
 
     Mix.shell().info("Generated #{output}")
   end
+
+  defp validate_arguments!([], []), do: :ok
+
+  defp validate_arguments!(invalid, positional),
+    do: Mix.raise("Invalid arguments: #{inspect(invalid ++ positional)}")
 
   defp parse_domains(nil), do: []
 

@@ -10,7 +10,7 @@ defmodule Mix.Tasks.AshOaskit.GenerateTest do
   @moduletag :tmp_dir
 
   describe "run/1" do
-    test "rejects unknown flags, missing values and positional arguments before writing", %{tmp_dir: dir} do
+    test "rejects invalid arguments before writing", %{tmp_dir: dir} do
       output = Path.join(dir, "must-not-exist.json")
 
       for args <- [["--titel", "API"], ["--title"], ["surprise"]] do

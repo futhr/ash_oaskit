@@ -95,7 +95,7 @@ defmodule AshOaskit.RouteGathering do
     |> domain_routes()
     |> Enum.map(fn route ->
       path = prefixed_path(prefix, route.route)
-      {path, %{route | route: path}}
+      {path, route |> Map.put(:route, path) |> Map.put(:domain, domain)}
     end)
   end
 

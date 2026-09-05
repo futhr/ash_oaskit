@@ -95,7 +95,9 @@ defmodule AshOaskit.Spec do
           | {:security, [map()]}
           | {:external_docs, map()}
           | {:router, module()}
-          | {:modify_open_api, function() | {module(), atom(), [term()]}}
+          | {:modify_open_api, function() | {module(), atom(), [term()]} | [term()]}
+          | {:resource_scope, :all | :routed}
+          | {:group_by, :resource | :domain | :custom}
           | {:spec_builder, module()}
           | {:cache, boolean()}
 

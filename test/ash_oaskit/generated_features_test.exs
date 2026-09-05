@@ -1,6 +1,13 @@
 defmodule AshOaskit.GeneratedFeaturesTest do
   use ExUnit.Case, async: true
 
+  test "domain grouping uses the serving domain rather than the resource's default domain" do
+    spec = AshOaskit.spec(domains: [AshOaskit.Test.Blog], group_by: :domain)
+    tags = Enum.map(spec["tags"], & &1["name"])
+    assert spec["paths"]["/posts"]["get"]["tags"] == ["Blog"]
+    assert "Blog" in tags
+  end
+
   test "generated documents connect errors, included data, links, metadata, and multipart input" do
     for version <- ["3.0", "3.1"] do
       spec =

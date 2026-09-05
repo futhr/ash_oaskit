@@ -153,7 +153,14 @@ defmodule AshOaskit.SpecModifier do
     }
 
     update_operations(spec, operation_ids, fn operation ->
-      params = Map.get(operation, "parameters", [])
+      params =
+        operation
+        |> Map.get("parameters", [])
+        |> Enum.reject(fn param ->
+          param["in"] == "header" and
+            String.downcase(param["name"] || "") == String.downcase(header_name)
+        end)
+
       Map.put(operation, "parameters", params ++ [header_param])
     end)
   end
@@ -164,17 +171,7 @@ defmodule AshOaskit.SpecModifier do
     update_operations(spec, Keyword.get(opts, :operations), fn operation ->
       responses =
         Map.new(Map.get(operation, "responses", %{}), fn {code, response} ->
-          response =
-            if is_map(response) and not Map.has_key?(response, "$ref") do
-              Map.update(
-                response,
-                "headers",
-                %{name => %{"schema" => schema}},
-                &Map.put(&1, name, %{"schema" => schema})
-              )
-            else
-              response
-            end
+          response = add_response_header(response, name, schema)
 
           {code, response}
         end)
@@ -182,6 +179,19 @@ defmodule AshOaskit.SpecModifier do
       Map.put(operation, "responses", responses)
     end)
   end
+
+  defp add_response_header(%{"$ref" => _} = response, _, _), do: response
+
+  defp add_response_header(response, name, schema) when is_map(response) do
+    Map.update(
+      response,
+      "headers",
+      %{name => %{"schema" => schema}},
+      &Map.put(&1, name, %{"schema" => schema})
+    )
+  end
+
+  defp add_response_header(response, _, _), do: response
 
   @doc """
   Adds a server to the spec's servers list.

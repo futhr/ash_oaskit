@@ -62,14 +62,15 @@ defmodule AshOaskit.Core.PathRegistry do
   @doc "Checks global operationId uniqueness, including explicit controller identifiers."
   @spec validate_ids!(map()) :: map()
   def validate_ids!(paths) do
-    Enum.reduce(operations(paths), %{}, fn {path, method, op}, seen ->
-      id = op[:operationId] || op["operationId"]
+    _ =
+      Enum.reduce(operations(paths), %{}, fn {path, method, op}, seen ->
+        id = op[:operationId] || op["operationId"]
 
-      if id && Map.has_key?(seen, id),
-        do: raise(ArgumentError, "Duplicate operationId #{inspect(id)} at #{method} #{path}")
+        if id && Map.has_key?(seen, id),
+          do: raise(ArgumentError, "Duplicate operationId #{inspect(id)} at #{method} #{path}")
 
-      if id, do: Map.put(seen, id, true), else: seen
-    end)
+        if id, do: Map.put(seen, id, true), else: seen
+      end)
 
     paths
   end
@@ -78,7 +79,8 @@ defmodule AshOaskit.Core.PathRegistry do
   @spec suffix(atom() | String.t(), String.t()) :: String.t()
   def suffix(method, path),
     do:
-      :crypto.hash(:sha256, "#{method} #{path}")
+      :sha256
+      |> :crypto.hash("#{method} #{path}")
       |> Base.encode16(case: :lower)
       |> binary_part(0, 16)
 

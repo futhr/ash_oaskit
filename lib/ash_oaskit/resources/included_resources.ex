@@ -201,7 +201,7 @@ defmodule AshOaskit.IncludedResources do
 
     paths
     |> flatten_paths()
-    |> Enum.map(&(String.split(&1, ".") |> Enum.take(max_depth) |> Enum.join(".")))
+    |> Enum.map(&(&1 |> String.split(".") |> Enum.take(max_depth) |> Enum.join(".")))
     |> then(&get_resources_from_paths(resource, &1))
     |> Enum.sort()
   end

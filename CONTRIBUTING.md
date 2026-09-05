@@ -86,12 +86,12 @@ test: add coverage for edge cases in V31 generator
 lib/
 ├── ash_oaskit.ex              # Main module with public API
 ├── ash_oaskit/
-│   ├── controller.ex          # Phoenix controller
+│   ├── support/controller.ex  # Phoenix controller
 │   ├── generators/
 │   │   ├── v30.ex             # OpenAPI 3.0 generator
 │   │   └── v31.ex             # OpenAPI 3.1 generator
 │   ├── open_api.ex            # Core spec generation logic
-│   └── type_mapper.ex         # Ash type to JSON Schema mapping
+│   └── core/type_mapper.ex    # Ash type to JSON Schema mapping
 └── mix/
     └── tasks/
         ├── ash_oaskit.generate.ex  # Mix task for CLI generation
@@ -166,10 +166,13 @@ and create an annotated tag with `git tag -a vVERSION -m vVERSION`. Never move o
 
 Releases are managed by maintainers using git_ops:
 
-1. Ensure all tests pass: `mix check`
-2. Run `mix release` (alias for `mix git_ops.release`) — updates changelog, bumps version, commits, and tags
-3. Push with tags: `git push --follow-tags`
-4. CI will publish to Hex.pm on the `v*` tag
+1. Run `mix check` and the release-controls verifier above.
+2. Preview changes with `mix git_ops.release --dry-run --output /path/to/release-preview`.
+3. Apply the proposed version/changelog changes on a branch and merge them through a reviewed PR.
+4. After required CI passes on `main`, create and push only the annotated release tag.
+
+Do not use the local `mix release` alias to push a release commit directly to protected `main`.
+It commits and tags locally and does not replace the reviewed release process.
 
 ## Questions?
 

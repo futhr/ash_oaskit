@@ -23,8 +23,8 @@ defmodule AshOaskit.SerializedPayloadTest do
     }
 
     page = %Ash.Page.Offset{results: [record], limit: 10, offset: 0, count: 1}
-    member = AshJsonApi.Serializer.serialize_one(request, record, []) |> Jason.decode!()
-    collection = AshJsonApi.Serializer.serialize_many(request, page, [], %{}) |> Jason.decode!()
+    member = Jason.decode!(AshJsonApi.Serializer.serialize_one(request, record, []))
+    collection = Jason.decode!(AshJsonApi.Serializer.serialize_many(request, page, [], %{}))
 
     assert member["data"]["attributes"] == %{
              "title" => "Published",
@@ -36,7 +36,7 @@ defmodule AshOaskit.SerializedPayloadTest do
     for version <- ["3.0", "3.1"],
         {name, payload} <- [{"PostResponse", member}, {"PostCollectionResponse", collection}] do
       spec = AshOaskit.spec(domains: [Blog], version: version)
-      schema = spec["components"]["schemas"][name] |> Map.put("components", spec["components"])
+      schema = Map.put(spec["components"]["schemas"][name], "components", spec["components"])
       schema = if version == "3.0", do: upgrade_nullable(schema), else: schema
       validator = JSV.build!(schema)
       assert {:ok, _} = JSV.validate(payload, validator)

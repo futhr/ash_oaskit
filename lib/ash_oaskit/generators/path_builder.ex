@@ -57,13 +57,13 @@ defmodule AshOaskit.Generators.PathBuilder do
 
   alias Ash.Resource.Info, as: ResourceInfo
 
-  alias AshOaskit.Core.PathRegistry
   alias AshOaskit.Config
+  alias AshOaskit.Core.PathRegistry
   alias AshOaskit.PhoenixIntrospection
+  alias AshOaskit.QueryParameters
   alias AshOaskit.RelationshipRoutes
   alias AshOaskit.RouteGathering
   alias AshOaskit.SchemaBuilder.ResourceSchemas
-  alias AshOaskit.QueryParameters
   alias AshOaskit.TypeMapper
 
   @type opts :: keyword()
@@ -156,14 +156,7 @@ defmodule AshOaskit.Generators.PathBuilder do
       end
 
     operation
-    |> Map.update!(:responses, &Map.merge(AshOaskit.ErrorSchemas.all_error_responses(), &1))
-    |> Map.update!(:responses, fn responses ->
-      Map.new(responses, fn {code, response} ->
-        if code in ["400", "401", "403", "404", "409", "422", "500"],
-          do: {code, AshOaskit.ErrorSchemas.error_response(code)},
-          else: {code, response}
-      end)
-    end)
+    |> Map.update!(:responses, &Map.merge(&1, AshOaskit.ErrorSchemas.all_error_responses()))
     |> Map.put(:tags, AshOaskit.TagBuilder.operation_tags(route, opts))
     |> AshOaskit.MultipartSupport.add_route_content(route, opts)
   end

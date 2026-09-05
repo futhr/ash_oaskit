@@ -2,10 +2,10 @@ defmodule AshOaskit.SchemaBuilderTest do
   @moduledoc false
 
   use ExUnit.Case, async: true
-  @moduletag capture_log: true
   doctest AshOaskit.SchemaBuilder
 
   alias AshOaskit.SchemaBuilder
+  @moduletag capture_log: true
 
   test "resolves nested, escaped, and array-index JSON Pointers without creating atoms" do
     schemas = %{

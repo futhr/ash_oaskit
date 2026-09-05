@@ -182,11 +182,14 @@ defmodule AshOaskit.TagBuilder do
   def operation_tag(route, opts \\ []) do
     group_by = Keyword.get(opts, :group_by, :resource)
     resource = Map.get(route, :resource)
+    domain = Map.get(route, :domain)
 
     case group_by do
-      :domain -> get_resource_domain_tag(resource)
-      :custom -> get_resource_domain_tag(resource)
-      _ -> resource_tag_name(resource)
+      grouping when grouping in [:domain, :custom] ->
+        if domain, do: domain_tag_name(domain), else: get_resource_domain_tag(resource)
+
+      _ ->
+        resource_tag_name(resource)
     end
   end
 

@@ -52,7 +52,7 @@ OpenAPI 3.1 brings full alignment with JSON Schema 2020-12, enabling:
 
 This library complements AshJsonApi by reading its route configurations and generating modern OpenAPI specifications while maintaining backwards compatibility with 3.0 for teams that need it.
 
-AshOaskit is built on top of [Oaskit](https://hexdocs.pm/oaskit), a toolkit for building and manipulating OpenAPI specifications in Elixir. All generated specs are normalized and validated through Oaskit's pipeline, and JSON output uses Oaskit's `SpecDumper` for proper key ordering.
+AshOaskit uses [Oaskit](https://hexdocs.pm/oaskit) to normalize generated specs and render ordered JSON. Generation checks local schema references; call `AshOaskit.validate/1` for full OpenAPI validation.
 
 ## Features
 

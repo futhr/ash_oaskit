@@ -1,69 +1,19 @@
 defmodule AshOaskit.MultipartSupport do
   @moduledoc """
-  Generates OpenAPI schemas for file upload and multipart/form-data requests.
+  Documents file uploads using AshJsonApi's `multipart/x.ash+form-data` protocol.
 
-  This module handles the detection and schema generation for actions that
-  accept file uploads, generating appropriate multipart/form-data request
-  body schemas.
+  Generated operations and `build_request_body/3` use route-derived input
+  contracts, a JSON `data` part, and arbitrary binary upload parts referenced
+  by name from the JSON data.
 
-  ## File Upload Detection
-
-  An action is considered to support file uploads if any of its arguments
-  have a type of `Ash.Type.File` or if the action is explicitly marked
-  for file upload.
-
-  ## Generated Schema Structure
-
-  For actions with file arguments, the request body includes both
-  `application/vnd.api+json` and `multipart/form-data` content types:
-
-      %{
-        requestBody: %{
-          content: %{
-            "application/vnd.api+json" => %{
-              schema: json_schema
-            },
-            "multipart/form-data" => %{
-              schema: multipart_schema
-            }
-          }
-        }
-      }
-
-  ## Multipart Schema Format
-
-  The multipart schema uses standard OpenAPI binary format:
-
-      %{
-        type: :object,
-        properties: %{
-          file: %{
-            type: :string,
-            format: :binary,
-            description: "The file to upload"
-          },
-          data: %{
-            type: :object,
-            description: "JSON:API resource data"
-          }
-        }
-      }
-
-  ## Usage
-
-      # Check if an action supports file uploads
-      MultipartSupport.has_file_upload?(action)
-
-      # Build multipart request body schema
-      request_body = MultipartSupport.build_request_body(action, resource, opts)
-
-      # Build just the multipart content schema
-      schema = MultipartSupport.build_multipart_schema(action, opts)
+  The lower-level `build_multipart_schema/2`, `build_encoding/1`, and
+  `build_multipart_content/2` helpers retain their legacy, conventional form
+  layout for custom endpoints. They are not the AshJsonApi upload protocol.
   """
 
-  import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
-
   alias AshOaskit.Config
+  alias AshOaskit.SchemaBuilder.ResourceSchemas
+  alias AshOaskit.TypeMapper
 
   @doc """
   Checks if an action has any file upload arguments.
@@ -100,7 +50,7 @@ defmodule AshOaskit.MultipartSupport do
   @doc "Adds AshJsonApi's multipart media type using the same route-specific input contract."
   @spec add_route_content(map(), map(), keyword()) :: map()
   def add_route_content(operation, route, opts) do
-    {attributes, arguments} = AshOaskit.SchemaBuilder.ResourceSchemas.input_fields(route)
+    {attributes, arguments} = ResourceSchemas.input_fields(route)
     body = operation[:requestBody]
 
     if body && Enum.any?(attributes ++ arguments, &file_type?(&1.type)) do
@@ -138,7 +88,7 @@ defmodule AshOaskit.MultipartSupport do
         {name, schema}
       end)
 
-    required = AshOaskit.SchemaBuilder.ResourceSchemas.input_required(route)
+    required = ResourceSchemas.input_required(route)
     schema = %{type: :object, properties: properties}
     if required == [], do: schema, else: Map.put(schema, :required, required)
   end
@@ -152,10 +102,10 @@ defmodule AshOaskit.MultipartSupport do
         %{type: :array, items: multipart_field(%{field | type: elem(type, 1)}, version)}
 
       version == "3.0" ->
-        AshOaskit.TypeMapper.to_json_schema_30(field, direction: :input)
+        TypeMapper.to_json_schema_30(field, direction: :input)
 
       true ->
-        AshOaskit.TypeMapper.to_json_schema_31(field, direction: :input)
+        TypeMapper.to_json_schema_31(field, direction: :input)
     end
   end
 
@@ -218,40 +168,29 @@ defmodule AshOaskit.MultipartSupport do
   """
   @spec build_request_body(map() | struct(), module(), keyword()) :: map()
   def build_request_body(action, resource, opts) do
-    schema_name = Config.resource_display_name(resource)
+    action =
+      Ash.Resource.Info.action(resource, action.name) ||
+        raise ArgumentError, "action does not belong to #{inspect(resource)}"
 
-    json_schema = %{
-      type: :object,
-      properties: %{
-        data: %{
-          type: :object,
-          properties: %{
-            type: %{type: :string},
-            attributes: schema_ref("#{schema_name}Attributes")
-          }
-        }
-      }
-    }
-
-    content = %{
-      "application/vnd.api+json" => %{
-        schema: json_schema
-      }
-    }
-
-    content =
-      if has_file_upload?(action) do
-        Map.put(content, "multipart/form-data", %{
-          schema: build_multipart_schema(action, Keyword.put(opts, :resource, resource))
-        })
-      else
-        content
+    {type, method} =
+      case action.type do
+        :create -> {:post, :post}
+        :update -> {:patch, :patch}
+        :action -> {:route, :post}
+        _ -> raise ArgumentError, "multipart request bodies require a write or generic action"
       end
 
-    %{
-      required: true,
-      content: content
-    }
+    route =
+      Keyword.get(opts, :route) ||
+        %{resource: resource, action: action.name, type: type, method: method, route: ""}
+
+    operation =
+      AshOaskit.Generators.PathBuilder.build_operation(
+        route,
+        Keyword.put_new(opts, :version, "3.1")
+      )
+
+    operation[:requestBody]
   end
 
   @doc """

@@ -74,7 +74,7 @@ defmodule AshOaskit.QueryParameters do
     read? = action && action.type == :read
     includes = IncludedResources.configured_includes(resource)
 
-    [
+    parameters = [
       if(read? && Map.get(route, :derive_filter?, true) && Config.derive_filter?(resource),
         do: FilterBuilder.build_filter_parameter(resource, opts)
       ),
@@ -85,21 +85,23 @@ defmodule AshOaskit.QueryParameters do
       if(includes != [], do: build_include_parameter(includes)),
       build_fields_parameter([Config.resource_type(resource)])
     ]
-    |> Enum.reject(&is_nil/1)
+
+    Enum.reject(parameters, &is_nil/1)
   end
 
   @doc "Builds pagination only for the strategies and limits supported by an action."
   @spec page_for_action(map() | nil) :: map() | nil
   def page_for_action(%{type: :read, pagination: pagination}) when is_map(pagination) do
     if pagination.offset? or pagination.keyset? do
-      limit =
+      limit_schema =
         %{
           type: :integer,
           minimum: 1,
           maximum: pagination.max_page_size,
           default: pagination.default_limit
         }
-        |> Map.reject(fn {_, value} -> is_nil(value) end)
+
+      limit = Map.reject(limit_schema, fn {_, value} -> is_nil(value) end)
 
       properties = %{"limit" => limit}
 

@@ -26,7 +26,7 @@ defmodule AshOaskit.QueryParametersTest do
     assert Enum.map(params, & &1.name) == ["page", "fields"]
     page = hd(params)
     assert page.required
-    assert Map.keys(page.schema.properties) |> Enum.sort() == ["limit", "offset"]
+    assert Enum.sort(Map.keys(page.schema.properties)) == ["limit", "offset"]
     assert page.schema.properties["limit"].maximum == 75
     assert QueryParameters.page_for_action(%{type: :read, pagination: false}) == nil
   end

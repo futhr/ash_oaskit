@@ -119,8 +119,10 @@ Tests mirror the lib/ directory structure 1:1. Each source module has a correspo
 
 ### Version Differences
 
-- **3.0**: `nullable: true` for optional fields
-- **3.1**: `type: ["string", "null"]` for optional fields
+- **3.0**: `nullable: true` for values that may be null
+- **3.1**: `type: ["string", "null"]` for values that may be null
+
+Optionality is separate: membership in `required` controls whether a property may be omitted.
 
 Handled by `Schemas.Nullable` (atom-key schemas) and `TypeMapper` (string-key schemas).
 
@@ -132,7 +134,7 @@ All type conversions go through `TypeMapper`. When adding new types:
 2. Handle in `complex_type_schema/1` for compound types
 3. Add to `@ash_type_to_atom` for Ash.Type.* module normalization
 
-`PropertyBuilders` also maintains a parallel `@type_to_schema_map` for calculation/aggregate type resolution.
+`PropertyBuilders` delegates calculation and aggregate schemas to `TypeMapper`; do not add parallel type maps.
 
 ### Schema Building
 

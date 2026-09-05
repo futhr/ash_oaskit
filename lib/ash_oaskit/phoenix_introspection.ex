@@ -48,6 +48,7 @@ defmodule AshOaskit.PhoenixIntrospection do
   """
 
   import AshOaskit.Core.PathUtils
+  alias AshOaskit.Core.PathRegistry
 
   @doc """
   Extracts routes from a Phoenix router that implement OpenApiController.
@@ -111,7 +112,7 @@ defmodule AshOaskit.PhoenixIntrospection do
   @spec routes_to_paths([map()]) :: map()
   def routes_to_paths(routes) do
     Enum.reduce(routes, %{}, fn route, paths ->
-      AshOaskit.Core.PathRegistry.put(
+      PathRegistry.put(
         paths,
         route.path,
         verb_to_string(route.verb),
@@ -173,7 +174,7 @@ defmodule AshOaskit.PhoenixIntrospection do
         operation,
         :operationId,
         build_operation_id(controller, action) <>
-          "_" <> AshOaskit.Core.PathRegistry.suffix(route.verb, route.path)
+          "_" <> PathRegistry.suffix(route.verb, route.path)
       )
 
     # Add path parameters if not present

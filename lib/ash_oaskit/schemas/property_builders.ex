@@ -50,8 +50,9 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
       agg_props = PropertyBuilders.build_aggregate_properties(builder, aggregates)
   """
 
-  alias AshOaskit.TypeMapper
+  alias Ash.Query.Aggregate
   alias Ash.Resource.Info, as: ResourceInfo
+  alias AshOaskit.TypeMapper
 
   @schema_keys Map.new(
                  ~w(type format items properties required description enum anyOf oneOf allOf nullable
@@ -96,10 +97,10 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   """
   @spec build_attribute_properties(map(), [map()], keyword()) :: map()
   def build_attribute_properties(builder, attributes, opts \\ []) do
-    action_name = opt(opts, :action_name, nil)
-    argument_names = opt(opts, :argument_names, [])
-    field_name_fn = opt(opts, :field_name_fn, &default_name/1)
-    argument_name_fn = opt(opts, :argument_name_fn, field_name_fn)
+    action_name = Keyword.get(opts, :action_name, nil)
+    argument_names = Keyword.get(opts, :argument_names, [])
+    field_name_fn = Keyword.get(opts, :field_name_fn, &default_name/1)
+    argument_name_fn = Keyword.get(opts, :argument_name_fn, field_name_fn)
     mapper_opts = if action_name, do: [direction: :input], else: []
 
     Map.new(attributes, fn attr ->
@@ -134,10 +135,10 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   @spec build_attribute_properties_with_embedded(map(), [map()], function(), keyword()) ::
           {map(), map()}
   def build_attribute_properties_with_embedded(builder, attributes, embedded_handler, opts \\ []) do
-    action_name = opt(opts, :action_name, nil)
-    argument_names = opt(opts, :argument_names, [])
-    field_name_fn = opt(opts, :field_name_fn, &default_name/1)
-    argument_name_fn = opt(opts, :argument_name_fn, field_name_fn)
+    action_name = Keyword.get(opts, :action_name, nil)
+    argument_names = Keyword.get(opts, :argument_names, [])
+    field_name_fn = Keyword.get(opts, :field_name_fn, &default_name/1)
+    argument_name_fn = Keyword.get(opts, :argument_name_fn, field_name_fn)
 
     Enum.reduce(attributes, {%{}, builder}, fn attr, {props, bldr} ->
       # Check if this attribute is an embedded type
@@ -180,7 +181,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   """
   @spec build_calculation_properties(map(), [map()], keyword()) :: map()
   def build_calculation_properties(builder, calculations, opts \\ []) do
-    field_name_fn = opt(opts, :field_name_fn, &default_name/1)
+    field_name_fn = Keyword.get(opts, :field_name_fn, &default_name/1)
 
     Map.new(calculations, fn calc ->
       schema = calculation_to_schema(builder, calc)
@@ -226,7 +227,7 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   """
   @spec build_aggregate_properties(map(), [map()], keyword()) :: map()
   def build_aggregate_properties(builder, aggregates, opts \\ []) do
-    field_name_fn = opt(opts, :field_name_fn, &default_name/1)
+    field_name_fn = Keyword.get(opts, :field_name_fn, &default_name/1)
 
     Map.new(aggregates, fn agg ->
       schema = aggregate_to_schema(builder, agg)
@@ -272,14 +273,13 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   @spec resolve_aggregate(module(), map()) :: map()
   def resolve_aggregate(resource, aggregate) do
     related = ResourceInfo.related(resource, Map.get(aggregate, :relationship_path, []))
-    field = Map.get(aggregate, :field)
-    field = if related && is_atom(field) && field, do: ResourceInfo.field(related, field)
+    field = aggregate_field(related, Map.get(aggregate, :field))
 
     result =
       if aggregate.kind == :custom do
         {:ok, Map.get(aggregate, :type) || :term, Map.get(aggregate, :constraints, [])}
       else
-        Ash.Query.Aggregate.kind_to_type(
+        Aggregate.kind_to_type(
           aggregate.kind,
           if(field, do: field.type),
           if(field, do: field.constraints, else: [])
@@ -295,6 +295,14 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
               "cannot resolve aggregate #{inspect(aggregate.name)}: #{inspect(error)}"
     end
   end
+
+  defp aggregate_field(nil, _), do: nil
+  defp aggregate_field(_, nil), do: nil
+
+  defp aggregate_field(resource, field) when is_atom(field),
+    do: ResourceInfo.field(resource, field)
+
+  defp aggregate_field(_, _), do: nil
 
   @doc """
   Maps aggregate kind to JSON Schema type.
@@ -313,10 +321,10 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   A JSON Schema map for the aggregate kind.
   """
   @spec aggregate_kind_to_schema(atom(), map()) :: map()
-  def aggregate_kind_to_schema(kind, %{type: type} = agg) when not is_nil(type) do
+  def aggregate_kind_to_schema(kind, %{type: type} = agg) when type != nil do
     kind = if kind == :custom, do: {:custom, type}, else: kind
 
-    case Ash.Query.Aggregate.kind_to_type(kind, type, Map.get(agg, :constraints, [])) do
+    case Aggregate.kind_to_type(kind, type, Map.get(agg, :constraints, [])) do
       {:ok, type, constraints} ->
         field_schema(%{version: "3.1"}, %{type: type, constraints: constraints, allow_nil?: false})
 
@@ -469,8 +477,4 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
   defp atom_schema(value), do: value
   defp atom_type(values) when is_list(values), do: Enum.map(values, &atom_type/1)
   defp atom_type(value), do: Map.get(@schema_values, value, value)
-
-  defp opt([{key, value} | _], key, _), do: value
-  defp opt([_ | rest], key, default), do: opt(rest, key, default)
-  defp opt([], _, default), do: default
 end

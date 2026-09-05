@@ -50,15 +50,9 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
       builder = ResourceSchemas.add_resource_schemas(builder, MyApp.Post)
   """
 
-  import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
-
   alias Ash.Resource.Info, as: ResourceInfo
   alias AshOaskit.Config
   alias AshOaskit.Core.PathUtils
-  alias AshOaskit.FilterBuilder
-  alias AshOaskit.IncludedResources
-  alias AshOaskit.ResponseLinks
-  alias AshOaskit.ResponseMeta
   alias AshOaskit.SchemaBuilder
   alias AshOaskit.SchemaBuilder.EmbeddedSchemas
   alias AshOaskit.SchemaBuilder.PropertyBuilders
@@ -132,11 +126,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
     builder = add_input_schemas(builder, resource, schema_name, opts)
 
     builder =
-      add_schema_fn.(
-        builder,
-        "#{schema_name}Filter",
-        FilterBuilder.build_filter_schema(resource, recursive?: true, version: builder.version)
-      )
+      SchemaBuilder.add_filter_schema(builder, resource, schema_name, add_schema_fn)
 
     add_return_schemas(builder, resource, opts)
   end
@@ -313,64 +303,8 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   Updated builder with response schema added.
   """
   @spec add_response_schema(map(), module(), String.t(), function()) :: map()
-  def add_response_schema(builder, resource, schema_name, add_schema_fn) do
-    json_api_type = RelationshipSchemas.get_json_api_type(resource)
-
-    data_schema = %{
-      type: :object,
-      properties: %{
-        id: %{type: :string},
-        type: %{type: :string, enum: [json_api_type]},
-        attributes: schema_ref("#{schema_name}Attributes"),
-        links: ResponseLinks.build_resource_links_schema(),
-        meta: ResponseMeta.build_resource_meta_schema()
-      },
-      required: ["id", "type"]
-    }
-
-    # Add relationships reference if resource has relationships
-    data_schema =
-      if RelationshipSchemas.has_relationships?(resource) do
-        put_in(
-          data_schema,
-          [:properties, :relationships],
-          schema_ref("#{schema_name}Relationships")
-        )
-      else
-        data_schema
-      end
-
-    response_schema = %{
-      type: :object,
-      required: ["data"],
-      properties: %{
-        data: data_schema,
-        links: ResponseLinks.build_document_links_schema(version: builder.version),
-        meta: ResponseMeta.build_resource_meta_schema(),
-        jsonapi: ResponseMeta.build_jsonapi_object_schema(supported_versions: ["1.0"]),
-        included: IncludedResources.build_included_schema(resource)
-      }
-    }
-
-    collection_schema =
-      put_in(response_schema, [:properties, :data], %{
-        type: :array,
-        items: schema_ref("#{schema_name}Resource")
-      })
-
-    collection_schema =
-      collection_schema
-      |> put_in(
-        [:properties, :links],
-        ResponseLinks.build_collection_links_schema(version: builder.version)
-      )
-      |> put_in([:properties, :meta], ResponseMeta.build_ash_page_meta_schema())
-
-    builder
-    |> add_schema_fn.("#{schema_name}Resource", data_schema)
-    |> add_schema_fn.("#{schema_name}Response", response_schema)
-    |> add_schema_fn.("#{schema_name}CollectionResponse", collection_schema)
-  end
+  defdelegate add_response_schema(builder, resource, schema_name, add_schema_fn),
+    to: AshOaskit.SchemaBuilder.DocumentSchemas
 
   @doc """
   Adds action-derived input schemas.
@@ -520,7 +454,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
         name
 
       excluded ->
-        suffix = :crypto.hash(:sha256, Enum.join(excluded, "\0")) |> Base.encode16(case: :lower)
+        suffix = :sha256 |> :crypto.hash(Enum.join(excluded, "\0")) |> Base.encode16(case: :lower)
         name <> "_" <> binary_part(suffix, 0, 32)
     end
   end
@@ -650,28 +584,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
         nil
 
       arguments ->
-        properties =
-          Map.new(arguments, fn argument ->
-            identifier = %{
-              type: :object,
-              properties: %{id: %{type: :string}, type: %{type: :string}, meta: %{type: :object}},
-              anyOf: [%{required: ["id"]}, %{required: ["meta"]}]
-            }
-
-            identifier =
-              if {:id, argument.name} in configured,
-                do: Map.put(identifier, :required, ["id"]),
-                else: identifier
-
-            data =
-              case argument.type do
-                {:array, _} -> %{type: :array, items: identifier}
-                _ -> identifier
-              end
-
-            {to_string(argument.name),
-             %{type: :object, required: ["data"], properties: %{data: data}}}
-          end)
+        properties = Map.new(arguments, &relationship_input_property(&1, configured))
 
         required =
           arguments
@@ -680,6 +593,27 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
 
         maybe_add_required(%{type: :object, properties: properties}, required)
     end
+  end
+
+  defp relationship_input_property(argument, configured) do
+    identifier = %{
+      type: :object,
+      properties: %{id: %{type: :string}, type: %{type: :string}, meta: %{type: :object}},
+      anyOf: [%{required: ["id"]}, %{required: ["meta"]}]
+    }
+
+    identifier =
+      if {:id, argument.name} in configured,
+        do: Map.put(identifier, :required, ["id"]),
+        else: identifier
+
+    data =
+      case argument.type do
+        {:array, _} -> %{type: :array, items: identifier}
+        _ -> identifier
+      end
+
+    {to_string(argument.name), %{type: :object, required: ["data"], properties: %{data: data}}}
   end
 
   # Required body members, mirroring AshJsonApi.OpenApi.required_write_attributes/4

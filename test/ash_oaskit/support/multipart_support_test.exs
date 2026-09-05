@@ -224,20 +224,20 @@ defmodule AshOaskit.MultipartSupportTest do
     test "includes both JSON:API and multipart content types" do
       request_body =
         MultipartSupport.build_request_body(
-          mock_action_with_file(),
-          AshOaskit.Test.Post,
+          %{name: :upload},
+          AshOaskit.Test.SchemaAuditResource,
           []
         )
 
       assert Map.has_key?(request_body[:content], "application/vnd.api+json")
-      assert Map.has_key?(request_body[:content], "multipart/form-data")
+      assert Map.has_key?(request_body[:content], "multipart/x.ash+form-data")
     end
 
     test "marks request body as required" do
       request_body =
         MultipartSupport.build_request_body(
-          mock_action_with_file(),
-          AshOaskit.Test.Post,
+          %{name: :upload},
+          AshOaskit.Test.SchemaAuditResource,
           []
         )
 
@@ -247,8 +247,8 @@ defmodule AshOaskit.MultipartSupportTest do
     test "JSON:API content references schema" do
       request_body =
         MultipartSupport.build_request_body(
-          mock_action_with_file(),
-          AshOaskit.Test.Post,
+          %{name: :upload},
+          AshOaskit.Test.SchemaAuditResource,
           []
         )
 
@@ -259,12 +259,12 @@ defmodule AshOaskit.MultipartSupportTest do
     test "multipart content has schema" do
       request_body =
         MultipartSupport.build_request_body(
-          mock_action_with_file(),
-          AshOaskit.Test.Post,
+          %{name: :upload},
+          AshOaskit.Test.SchemaAuditResource,
           []
         )
 
-      multipart_content = request_body[:content]["multipart/form-data"]
+      multipart_content = request_body[:content]["multipart/x.ash+form-data"]
       assert Map.has_key?(multipart_content, :schema)
     end
 
@@ -277,7 +277,7 @@ defmodule AshOaskit.MultipartSupportTest do
         )
 
       assert Map.has_key?(request_body[:content], "application/vnd.api+json")
-      refute Map.has_key?(request_body[:content], "multipart/form-data")
+      refute Map.has_key?(request_body[:content], "multipart/x.ash+form-data")
     end
   end
 

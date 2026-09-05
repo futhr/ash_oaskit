@@ -1,26 +1,6 @@
 defmodule AshOaskit.Generators.Shared do
   @moduledoc """
-  Shared functionality between OpenAPI 3.0 and 3.1 generators.
-
-  This module serves as the main entry point for spec generation, delegating
-  to specialized builder modules for focused functionality.
-
-  ## Module Organization
-
-  The generation logic is split across focused modules:
-
-  - `AshOaskit.Generators.Generator` - Main orchestration and components
-  - `AshOaskit.Generators.InfoBuilder` - Info object, servers, and tags
-  - `AshOaskit.Generators.PathBuilder` - Paths and operations
-
-  ## Usage
-
-      # Generate a complete OpenAPI spec
-      spec = Shared.generate([MyApp.Domain], version: "3.1", title: "My API")
-
-  ## Options
-
-  See `AshOaskit.Generators.Generator.generate/2` for full options list.
+  Compatibility entry point for the shared generator. See `AshOaskit.Generators.Generator.generate/2`.
   """
 
   alias AshOaskit.Generators.Generator

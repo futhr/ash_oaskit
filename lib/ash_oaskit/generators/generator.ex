@@ -106,6 +106,12 @@ defmodule AshOaskit.Generators.Generator do
   @spec generate(list(module()), opts()) :: map()
   def generate(domains, opts) do
     opts = prepare_context(domains, opts)
+
+    opts =
+      Keyword.put_new_lazy(opts, :group_by, fn ->
+        AshOaskit.TagBuilder.get_default_grouping(domains)
+      end)
+
     version = Keyword.fetch!(opts, :version)
     openapi_version = if version == "3.0", do: "3.0.3", else: "3.1.0"
 
@@ -172,13 +178,13 @@ defmodule AshOaskit.Generators.Generator do
   defp prepare_context(domains, opts) do
     opts =
       Keyword.put_new_lazy(opts, :route_pairs, fn ->
-        Enum.flat_map(domains, &RouteGathering.routes_with_paths/1) |> Enum.uniq()
+        domains |> Enum.flat_map(&RouteGathering.routes_with_paths/1) |> Enum.uniq()
       end)
 
     Keyword.put_new_lazy(opts, :seed_resources, fn ->
       case Keyword.get(opts, :resource_scope, :all) do
         :all ->
-          seed_resources(domains, :all) |> Enum.uniq()
+          Enum.uniq(seed_resources(domains, :all))
 
         :routed ->
           opts

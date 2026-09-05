@@ -87,18 +87,24 @@ if Code.ensure_loaded?(Igniter) do
         |> String.split(",", trim: true)
         |> Enum.map(&String.trim/1)
         |> Enum.reject(&(&1 == ""))
-        |> Enum.map(&Module.concat([&1]))
+        |> Enum.map(&module_name!/1)
 
       if domains == [] do
         spec_source(nil)
       else
         """
         use AshOaskit,
-          domains: #{inspect(domains)},
+          domains: [#{Enum.join(domains, ", ")}],
           title: "API",
           api_version: "1.0.0"
         """
       end
+    end
+
+    defp module_name!(name) do
+      if Regex.match?(~r/^(Elixir\.)?[A-Z][A-Za-z0-9_]*(\.[A-Z][A-Za-z0-9_]*)*$/, name),
+        do: String.trim_leading(name, "Elixir."),
+        else: Mix.raise("Invalid domain module: #{inspect(name)}")
     end
   end
 else

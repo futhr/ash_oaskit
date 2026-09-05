@@ -1,9 +1,11 @@
 defmodule AshOaskit.SchemaBuilder.PropertyBuildersTest do
   @moduledoc false
   use ExUnit.Case, async: true
-  @moduletag capture_log: true
 
+  alias Ash.Resource.Info, as: ResourceInfo
   alias AshOaskit.SchemaBuilder.PropertyBuilders
+
+  @moduletag capture_log: true
 
   test "calculation schemas retain declared constraints and non-nullability" do
     calc = %{type: :string, constraints: [min_length: 2, max_length: 8], allow_nil?: false}
@@ -12,10 +14,10 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuildersTest do
   end
 
   test "aggregate field types and item constraints come from Ash metadata" do
-    aggregate = Ash.Resource.Info.aggregate(AshOaskit.Test.Article, :review_ratings)
+    aggregate = ResourceInfo.aggregate(AshOaskit.Test.Article, :review_ratings)
     resolved = PropertyBuilders.resolve_aggregate(AshOaskit.Test.Article, aggregate)
     {type, constraints} = resolved.resolved_type
-    field = Ash.Resource.Info.attribute(AshOaskit.Test.Review, :rating)
+    field = ResourceInfo.attribute(AshOaskit.Test.Review, :rating)
 
     assert {:ok, ^type, ^constraints} =
              Ash.Query.Aggregate.kind_to_type(:list, field.type, field.constraints)
