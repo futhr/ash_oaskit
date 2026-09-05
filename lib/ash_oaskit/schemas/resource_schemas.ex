@@ -54,6 +54,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
 
   alias Ash.Resource.Info, as: ResourceInfo
   alias AshOaskit.Config
+  alias AshOaskit.Core.PathUtils
   alias AshOaskit.SchemaBuilder
   alias AshOaskit.SchemaBuilder.EmbeddedSchemas
   alias AshOaskit.SchemaBuilder.PropertyBuilders
@@ -391,7 +392,12 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   @spec add_action_input_schema(map(), module(), atom(), String.t(), keyword()) :: map()
   def add_action_input_schema(builder, resource, action_name, schema_name, opts) do
     add_schema_fn = Keyword.fetch!(opts, :add_schema_fn)
-    route = Keyword.get(opts, :route)
+
+    route =
+      case Keyword.get(opts, :route) do
+        nil -> nil
+        route -> Map.put_new(route, :resource, resource)
+      end
 
     case ResourceInfo.action(resource, action_name) do
       nil ->
@@ -426,7 +432,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
             action_input_required(resource, action, attributes, arguments)
           )
 
-        add_schema_fn.(builder, action_input_schema_name(schema_name, action_name), schema)
+        add_schema_fn.(builder, action_input_schema_name(schema_name, action_name, route), schema)
     end
   end
 
@@ -441,9 +447,32 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
       iex> ResourceSchemas.action_input_schema_name("Post", :bulk_archive)
       "PostBulkArchiveInput"
   """
-  @spec action_input_schema_name(String.t(), atom()) :: String.t()
-  def action_input_schema_name(schema_name, action_name) do
-    "#{schema_name}#{action_name |> to_string() |> Macro.camelize()}Input"
+  @spec action_input_schema_name(String.t(), atom(), map() | nil) :: String.t()
+  def action_input_schema_name(schema_name, action_name, route \\ nil) do
+    name = "#{schema_name}#{action_name |> to_string() |> Macro.camelize()}Input"
+
+    case excluded_body_arguments(route, action_name) do
+      [] ->
+        name
+
+      excluded ->
+        suffix = :crypto.hash(:sha256, Enum.join(excluded, "\0")) |> Base.encode16(case: :lower)
+        name <> "_" <> binary_part(suffix, 0, 32)
+    end
+  end
+
+  defp excluded_body_arguments(nil, _), do: []
+
+  defp excluded_body_arguments(route, action_name) do
+    case ResourceInfo.action(route.resource, action_name) do
+      nil ->
+        []
+
+      action ->
+        (body_arguments(action, nil) -- body_arguments(action, route))
+        |> Enum.map(&to_string(&1.name))
+        |> Enum.sort()
+    end
   end
 
   # All create/update actions, used when no routes are known
@@ -479,11 +508,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   end
 
   defp reject_path_arguments(arguments, %{route: route_path}) when is_binary(route_path) do
-    path_params =
-      route_path
-      |> Path.split()
-      |> Enum.filter(&String.starts_with?(&1, ":"))
-      |> Enum.map(&String.trim_leading(&1, ":"))
+    path_params = PathUtils.extract_path_params(route_path)
 
     Enum.reject(arguments, &(to_string(&1.name) in path_params))
   end

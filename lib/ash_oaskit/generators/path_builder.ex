@@ -445,7 +445,7 @@ defmodule AshOaskit.Generators.PathBuilder do
   defp action_input_ref(route) do
     schema_name = Config.resource_display_name(route.resource)
 
-    schema_ref(ResourceSchemas.action_input_schema_name(schema_name, route.action))
+    schema_ref(ResourceSchemas.action_input_schema_name(schema_name, route.action, route))
   end
 
   defp json_api_type_member(resource) do

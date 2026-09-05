@@ -31,6 +31,7 @@ defmodule AshOaskit.Test.SchemaAuditResource do
     routes do
       base "/schema-audit"
       post :create
+      post :create, route: "/:label"
       route :get, "/shipping", :shipping
     end
   end
@@ -43,6 +44,7 @@ defmodule AshOaskit.Test.SchemaAuditResource do
     create :create do
       accept []
       argument :shipping, AshOaskit.Test.WrappedShippingInfo, allow_nil?: false
+      argument :label, :string, allow_nil?: false
     end
 
     action :shipping, {:array, AshOaskit.Test.ShippingInfo} do

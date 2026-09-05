@@ -5,6 +5,39 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemasTest do
   alias AshOaskit.SchemaBuilder
   alias AshOaskit.SchemaBuilder.ResourceSchemas
 
+  test "the same action has distinct body schemas when routes move an argument into the path" do
+    spec = AshOaskit.spec(domains: [AshOaskit.Test.SchemaAuditDomain])
+
+    schemas =
+      for path <- ["/schema-audit", "/schema-audit/{label}"] do
+        ref =
+          get_in(spec, [
+            "paths",
+            path,
+            "post",
+            "requestBody",
+            "content",
+            "application/vnd.api+json",
+            "schema",
+            "properties",
+            "data",
+            "properties",
+            "attributes",
+            "$ref"
+          ])
+
+        name = String.replace_prefix(ref, "#/components/schemas/", "")
+        spec["components"]["schemas"][name]
+      end
+
+    [plain, parameterized] = schemas
+    assert plain["properties"]["label"]["type"] == "string"
+    assert "label" in plain["required"]
+    refute Map.has_key?(parameterized["properties"], "label")
+    refute "label" in parameterized["required"]
+    assert parameterized["properties"]["shipping"] == plain["properties"]["shipping"]
+  end
+
   test "sparse output fieldsets may omit non-null attributes" do
     spec = AshOaskit.spec(domains: [AshOaskit.Test.Blog])
     attributes = spec["components"]["schemas"]["PostAttributes"]
@@ -366,7 +399,12 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemasTest do
     end
 
     test "path params and query_params are excluded from the input" do
-      route = %{route: "/:id/activate", query_params: [:force], relationship_arguments: []}
+      route = %{
+        resource: AshOaskit.Test.Gadget,
+        route: "/:id/activate",
+        query_params: [:force],
+        relationship_arguments: []
+      }
 
       builder = SchemaBuilder.new(version: "3.1")
 
@@ -380,7 +418,8 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemasTest do
           route: route
         )
 
-      properties = builder.schemas["GadgetActivateInput"][:properties]
+      name = ResourceSchemas.action_input_schema_name("Gadget", :activate, route)
+      properties = builder.schemas[name][:properties]
 
       refute Map.has_key?(properties, :force)
       refute Map.has_key?(properties, :id)

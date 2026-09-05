@@ -180,7 +180,7 @@ defmodule AshOaskit.Generators.Generator do
     |> Enum.filter(&body_bearing_route?/1)
     |> Enum.group_by(& &1.resource)
     |> Map.new(fn {resource, routes} ->
-      {resource, routes |> Enum.uniq_by(& &1.action) |> Enum.map(&{&1.action, &1})}
+      {resource, routes |> Enum.map(&{&1.action, &1}) |> Enum.uniq()}
     end)
   end
 
