@@ -5,6 +5,18 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemasTest do
   alias AshOaskit.SchemaBuilder
   alias AshOaskit.SchemaBuilder.ResourceSchemas
 
+  test "sparse output fieldsets may omit non-null attributes" do
+    spec = AshOaskit.spec(domains: [AshOaskit.Test.Blog])
+    attributes = spec["components"]["schemas"]["PostAttributes"]
+    refute Map.has_key?(attributes, "required")
+
+    validator = JSV.build!(attributes)
+    assert {:ok, _} = JSV.validate(%{}, validator)
+    assert {:ok, _} = JSV.validate(%{"body" => "Only this field was selected"}, validator)
+    assert {:error, _} = JSV.validate(%{"title" => nil}, validator)
+    assert "title" in spec["components"]["schemas"]["PostCreateInput"]["required"]
+  end
+
   test "collection responses accept arrays, while member responses accept resource objects" do
     spec = AshOaskit.spec(domains: [AshOaskit.Test.Blog])
     schemas = spec["components"]["schemas"]

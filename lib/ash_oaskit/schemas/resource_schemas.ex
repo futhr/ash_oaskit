@@ -194,19 +194,13 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
       |> Map.merge(calc_properties)
       |> Map.merge(attr_properties)
 
-    # Only attributes can be required (calculations/aggregates are computed)
-    required =
-      attributes
-      |> Enum.filter(&EmbeddedSchemas.required_attribute?/1)
-      |> Enum.map(&Config.json_field_name(resource, &1.name))
-
+    # Fieldsets and field policies can omit even non-null attributes. Required
+    # input members are derived separately from the action, not the response.
     schema =
       %{
         type: :object,
         properties: properties
       }
-
-    schema = maybe_add_required(schema, required)
 
     add_schema_fn.(builder, "#{schema_name}Attributes", schema)
   rescue

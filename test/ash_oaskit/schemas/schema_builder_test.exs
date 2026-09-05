@@ -472,13 +472,13 @@ defmodule AshOaskit.SchemaBuilderTest do
   end
 
   describe "required fields in schemas" do
-    test "attributes schema includes required for non-nullable fields" do
+    test "non-nullable output fields are not unconditionally present" do
       builder = SchemaBuilder.add_resource_schemas(SchemaBuilder.new(), AshOaskit.Test.Post)
 
       schema = SchemaBuilder.get_schema(builder, "PostAttributes")
 
-      # title has allow_nil?: false
-      assert "title" in (schema[:required] || [])
+      refute Map.has_key?(schema, :required)
+      assert schema.properties.title["type"] == "string"
     end
 
     test "create input has required for non-nullable fields without defaults" do

@@ -263,14 +263,11 @@ defmodule AshOaskit.CalculationsAggregatesTest do
       assert Map.has_key?(props, :total_articles)
     end
 
-    test "only regular attributes can be required", %{builder: builder} do
+    test "output fields may be omitted by sparse fieldsets", %{builder: builder} do
       schema = SchemaBuilder.get_schema(builder, "AuthorAttributes")
       required = schema[:required] || []
 
-      # first_name, last_name, email have allow_nil?: false
-      assert "first_name" in required
-      assert "last_name" in required
-      assert "email" in required
+      assert required == []
 
       # Calculations and aggregates should never be required
       refute "full_name" in required
