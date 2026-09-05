@@ -537,11 +537,80 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
     end)
   end
 
+  @doc "Returns required body attributes and arguments for a route's action."
+  @spec input_required(map()) :: [String.t()]
+  def input_required(route) do
+    case ResourceInfo.action(route.resource, route.action) do
+      nil ->
+        []
+
+      action ->
+        action_input_required(
+          route.resource,
+          action,
+          accepted_writable_attributes(route.resource, action),
+          body_arguments(action, route)
+        )
+    end
+  end
+
+  @doc "Builds the JSON:API relationships input object for configured relationship arguments."
+  @spec relationship_input_schema(map()) :: map() | nil
+  def relationship_input_schema(route) do
+    action = ResourceInfo.action(route.resource, route.action)
+    configured = Map.get(route, :relationship_arguments, []) || []
+
+    arguments =
+      if action,
+        do:
+          Enum.filter(
+            action.arguments,
+            &(&1.public? and relationship_argument?(configured, &1.name))
+          ),
+        else: []
+
+    case arguments do
+      [] ->
+        nil
+
+      arguments ->
+        properties =
+          Map.new(arguments, fn argument ->
+            identifier = %{
+              type: :object,
+              properties: %{id: %{type: :string}, type: %{type: :string}, meta: %{type: :object}},
+              anyOf: [%{required: ["id"]}, %{required: ["meta"]}]
+            }
+
+            identifier =
+              if {:id, argument.name} in configured,
+                do: Map.put(identifier, :required, ["id"]),
+                else: identifier
+
+            data =
+              case argument.type do
+                {:array, _} -> %{type: :array, items: identifier}
+                _ -> identifier
+              end
+
+            {to_string(argument.name),
+             %{type: :object, required: ["data"], properties: %{data: data}}}
+          end)
+
+        required =
+          arguments
+          |> Enum.reject(&(&1.allow_nil? or not is_nil(&1.default)))
+          |> Enum.map(&to_string(&1.name))
+
+        maybe_add_required(%{type: :object, properties: properties}, required)
+    end
+  end
+
   # Required body members, mirroring AshJsonApi.OpenApi.required_write_attributes/4
   defp action_input_required(resource, action, attributes, arguments) do
     argument_names =
       arguments
-      |> Enum.reject(& &1.allow_nil?)
+      |> Enum.reject(&(&1.allow_nil? or not is_nil(&1.default)))
       |> Enum.map(&Config.json_argument_name(resource, action.name, &1.name))
 
     attribute_names =
@@ -569,7 +638,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
     require_attributes =
       action
       |> Map.get(:require_attributes, [])
-      |> Enum.filter(&Config.show_field?(resource, &1))
+      |> Enum.filter(fn name -> Enum.any?(attributes, &(&1.name == name)) end)
       |> Enum.map(&Config.json_field_name(resource, &1))
 
     Enum.uniq(attribute_names ++ argument_names ++ require_attributes)

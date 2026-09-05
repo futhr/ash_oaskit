@@ -396,27 +396,36 @@ defmodule AshOaskit.Generators.PathBuilder do
   # Builds request body for POST/PATCH operations, referencing the
   # action-derived input schema in a JSON:API envelope
   defp build_request_body(%{type: type} = route) when type in [:post, :patch] do
+    relationships = ResourceSchemas.relationship_input_schema(route)
+
+    required =
+      if(type == :patch, do: ["id"], else: []) ++
+        if(ResourceSchemas.input_required(route) == [], do: [], else: ["attributes"]) ++
+        if relationships && relationships[:required], do: ["relationships"], else: []
+
     data =
       reject_nil_values(%{
         type: :object,
-        required: if(type == :patch, do: [:id]),
+        required: if(required != [], do: required),
         properties:
           reject_nil_values(%{
             id: if(type == :patch, do: %{type: :string}),
             type: json_api_type_member(route.resource),
-            attributes: action_input_ref(route)
+            attributes: action_input_ref(route),
+            relationships: relationships
           })
       })
 
     %{
-      required: true,
+      required: required != [],
       content: %{
         "application/vnd.api+json" => %{
-          schema: %{
-            type: :object,
-            required: [:data],
-            properties: %{data: data}
-          }
+          schema:
+            reject_nil_values(%{
+              type: :object,
+              required: if(required != [], do: [:data]),
+              properties: %{data: data}
+            })
         }
       }
     }
@@ -428,15 +437,18 @@ defmodule AshOaskit.Generators.PathBuilder do
   defp build_generic_request_body(%{method: method}) when method in [:get, :delete], do: nil
 
   defp build_generic_request_body(route) do
+    required? = ResourceSchemas.input_required(route) != []
+
     %{
-      required: true,
+      required: required?,
       content: %{
         "application/vnd.api+json" => %{
-          schema: %{
-            type: :object,
-            required: [:data],
-            properties: %{data: action_input_ref(route)}
-          }
+          schema:
+            reject_nil_values(%{
+              type: :object,
+              required: if(required?, do: [:data]),
+              properties: %{data: action_input_ref(route)}
+            })
         }
       }
     }

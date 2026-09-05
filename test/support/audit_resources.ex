@@ -32,6 +32,7 @@ defmodule AshOaskit.Test.SchemaAuditResource do
       base "/schema-audit"
       post :create
       post :create, route: "/:label"
+      post :relate, route: "/relate", relationship_arguments: [{:id, :author}, :tags]
       route :get, "/shipping", :shipping
     end
   end
@@ -45,6 +46,13 @@ defmodule AshOaskit.Test.SchemaAuditResource do
       accept []
       argument :shipping, AshOaskit.Test.WrappedShippingInfo, allow_nil?: false
       argument :label, :string, allow_nil?: false
+      argument :mode, :string, allow_nil?: false, default: "standard"
+    end
+
+    create :relate do
+      accept []
+      argument :author, :uuid, allow_nil?: false
+      argument :tags, {:array, :map}, allow_nil?: false, default: []
     end
 
     action :shipping, {:array, AshOaskit.Test.ShippingInfo} do
