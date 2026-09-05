@@ -211,7 +211,7 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
       assert health_route.controller == TestHealthController
       assert health_route.action == :index
       assert health_route.operation[:summary] == "Health check"
-      assert health_route.operation[:operationId] == "test_health_index"
+      assert health_route.operation[:operationId] == "test_health_index_5f2110c8501b45eb"
     end
 
     test "converts path params from Phoenix to OpenAPI format" do

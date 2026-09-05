@@ -71,18 +71,14 @@ defmodule AshOaskit.Generators.PathBuilderTest do
       end
     end
 
-    test "controller route merges into existing ash path" do
-      paths =
+    test "controller route cannot silently replace an Ash operation" do
+      assert_raise ArgumentError, ~r/Conflicting OpenAPI operations for GET \/posts/, fn ->
         PathBuilder.build_paths(
           [Blog],
           version: "3.1",
           router: OverlappingRouter
         )
-
-      # The controller GET /posts should override the ash GET /posts
-      assert paths["/posts"]["get"]["operationId"] == "searchPosts"
-      # But the ash POST /posts should remain
-      assert Map.has_key?(paths["/posts"], "post")
+      end
     end
 
     defmodule NonOverlappingController do

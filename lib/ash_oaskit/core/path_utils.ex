@@ -123,4 +123,9 @@ defmodule AshOaskit.Core.PathUtils do
   def convert_path_params(path) do
     Regex.replace(~r/:([a-zA-Z_][a-zA-Z_0-9]*)/, path, "{\\1}")
   end
+
+  @doc "Returns a path template independent of parameter names for conflict detection."
+  @spec template_shape(String.t()) :: String.t()
+  def template_shape(path),
+    do: path |> convert_path_params() |> String.replace(~r/\{[^}]+\}/, "{}")
 end

@@ -57,6 +57,7 @@ defmodule AshOaskit.Generators.PathBuilder do
 
   alias Ash.Resource.Info, as: ResourceInfo
 
+  alias AshOaskit.Core.PathRegistry
   alias AshOaskit.Config
   alias AshOaskit.PhoenixIntrospection
   alias AshOaskit.RelationshipRoutes
@@ -115,7 +116,7 @@ defmodule AshOaskit.Generators.PathBuilder do
     ash_paths = build_ash_paths(domains, opts)
     controller_paths = build_controller_paths(opts)
 
-    deep_merge_paths(ash_paths, controller_paths)
+    ash_paths |> PathRegistry.merge(controller_paths) |> PathRegistry.validate_ids!()
   end
 
   @doc """
@@ -196,18 +197,16 @@ defmodule AshOaskit.Generators.PathBuilder do
   defp build_ash_paths(domains, opts) do
     domains
     |> Enum.flat_map(&get_domain_routes/1)
-    |> Enum.group_by(fn {path, _} -> convert_path_params(path) end)
-    |> Enum.map(fn {path, routes} ->
-      operations =
-        routes
-        |> Enum.map(fn {_, route} ->
-          {route_to_method(route), build_operation(route, opts)}
-        end)
-        |> Map.new()
-
-      {path, operations}
+    |> Enum.uniq()
+    |> Enum.reduce(%{}, fn {path, route}, paths ->
+      PathRegistry.put(
+        paths,
+        convert_path_params(path),
+        route_to_method(route),
+        build_operation(route, opts)
+      )
     end)
-    |> Map.new()
+    |> PathRegistry.disambiguate()
   end
 
   # Builds paths from Phoenix controller routes (if router is provided)
@@ -221,13 +220,6 @@ defmodule AshOaskit.Generators.PathBuilder do
         |> PhoenixIntrospection.extract_routes()
         |> PhoenixIntrospection.routes_to_paths()
     end
-  end
-
-  # Deep merges two path maps, combining operations for the same path
-  defp deep_merge_paths(map1, map2) do
-    Map.merge(map1, map2, fn _, ops1, ops2 ->
-      Map.merge(ops1, ops2)
-    end)
   end
 
   # Gets routes from a domain with their served paths (domain-level and

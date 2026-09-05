@@ -110,19 +110,14 @@ defmodule AshOaskit.PhoenixIntrospection do
   """
   @spec routes_to_paths([map()]) :: map()
   def routes_to_paths(routes) do
-    routes
-    |> Enum.group_by(& &1.path)
-    |> Enum.map(fn {path, grouped_routes} ->
-      operations =
-        grouped_routes
-        |> Enum.map(fn route ->
-          {verb_to_string(route.verb), route.operation}
-        end)
-        |> Map.new()
-
-      {path, operations}
+    Enum.reduce(routes, %{}, fn route, paths ->
+      AshOaskit.Core.PathRegistry.put(
+        paths,
+        route.path,
+        verb_to_string(route.verb),
+        route.operation
+      )
     end)
-    |> Map.new()
   end
 
   @doc """
@@ -177,7 +172,8 @@ defmodule AshOaskit.PhoenixIntrospection do
       Map.put_new(
         operation,
         :operationId,
-        build_operation_id(controller, action)
+        build_operation_id(controller, action) <>
+          "_" <> AshOaskit.Core.PathRegistry.suffix(route.verb, route.path)
       )
 
     # Add path parameters if not present
