@@ -144,6 +144,36 @@ defmodule AshOaskit.SpecModifierTest do
   end
 
   describe "add_header_to_operations/4" do
+    test "replaces headers case-insensitively while preserving other parameters" do
+      query = %{"in" => "query", "name" => "X-Request-ID"}
+      reference = %{"$ref" => "#/components/parameters/Page"}
+
+      spec = %{
+        "paths" => %{
+          "/posts" => %{
+            "get" => %{
+              "parameters" => [
+                %{"in" => "header", "name" => "x-request-id"},
+                query,
+                reference
+              ]
+            }
+          }
+        }
+      }
+
+      result = SpecModifier.add_header_to_operations(spec, "X-Request-ID", %{"type" => "string"})
+
+      assert [^query, ^reference, header] = result["paths"]["/posts"]["get"]["parameters"]
+
+      assert header == %{
+               "in" => "header",
+               "name" => "X-Request-ID",
+               "required" => false,
+               "schema" => %{"type" => "string"}
+             }
+    end
+
     test "adds header to all operations" do
       spec = %{
         "paths" => %{
@@ -518,6 +548,40 @@ defmodule AshOaskit.SpecModifierTest do
   end
 
   describe "add_operation_example/4" do
+    test "preserves response content and numbers unnamed examples" do
+      existing = %{"value" => %{"id" => "1"}}
+      schema = %{"type" => "object"}
+      text_media = %{"schema" => %{"type" => "string"}}
+
+      response = %{
+        "description" => "Success",
+        "content" => %{
+          "application/json" => %{"schema" => schema, "examples" => %{"first" => existing}},
+          "text/plain" => text_media
+        }
+      }
+
+      spec = %{
+        "paths" => %{
+          "/posts" => %{
+            "get" => %{"operationId" => "listPosts", "responses" => %{"200" => response}}
+          }
+        }
+      }
+
+      example = %{"value" => %{"id" => "2"}}
+      result = SpecModifier.add_operation_example(spec, "listPosts", "application/json", example)
+      updated = result["paths"]["/posts"]["get"]["responses"]["200"]
+
+      assert updated["description"] == "Success"
+      assert updated["content"]["text/plain"] == text_media
+
+      assert updated["content"]["application/json"] == %{
+               "schema" => schema,
+               "examples" => %{"first" => existing, "example_2" => example}
+             }
+    end
+
     test "adds example to operation response" do
       spec = %{
         "paths" => %{

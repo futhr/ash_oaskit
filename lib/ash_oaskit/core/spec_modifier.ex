@@ -115,9 +115,7 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_extension(map(), list(String.t()), String.t(), any()) :: map()
   def add_extension(spec, path, extension_name, value) do
-    spec = normalize_spec(spec)
-    full_path = path ++ [extension_name]
-    put_in(spec, Enum.map(full_path, &Access.key(&1, %{})), value)
+    put_spec_value(spec, path ++ [extension_name], value)
   end
 
   @doc """
@@ -142,26 +140,20 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_header_to_operations(map(), String.t(), map(), keyword()) :: map()
   def add_header_to_operations(spec, header_name, schema, opts \\ []) do
-    required = Keyword.get(opts, :required, false)
     operation_ids = Keyword.get(opts, :operations)
+    normalized_name = String.downcase(header_name)
 
     header_param = %{
       "name" => header_name,
       "in" => "header",
-      "required" => required,
+      "required" => Keyword.get(opts, :required, false),
       "schema" => schema
     }
 
     update_operations(spec, operation_ids, fn operation ->
-      params =
-        operation
-        |> Map.get("parameters", [])
-        |> Enum.reject(fn param ->
-          param["in"] == "header" and
-            String.downcase(param["name"] || "") == String.downcase(header_name)
-        end)
-
-      Map.put(operation, "parameters", params ++ [header_param])
+      Map.update(operation, "parameters", [header_param], fn params ->
+        Enum.reject(params, &matching_header?(&1, normalized_name)) ++ [header_param]
+      end)
     end)
   end
 
@@ -169,14 +161,7 @@ defmodule AshOaskit.SpecModifier do
   @spec add_header_to_responses(map(), String.t(), map(), keyword()) :: map()
   def add_header_to_responses(spec, name, schema, opts \\ []) do
     update_operations(spec, Keyword.get(opts, :operations), fn operation ->
-      responses =
-        Map.new(Map.get(operation, "responses", %{}), fn {code, response} ->
-          response = add_response_header(response, name, schema)
-
-          {code, response}
-        end)
-
-      Map.put(operation, "responses", responses)
+      update_responses(operation, &add_response_header(&1, name, schema))
     end)
   end
 
@@ -212,17 +197,14 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_server(map(), String.t(), keyword()) :: map()
   def add_server(spec, url, opts \\ []) do
-    spec = normalize_spec(spec)
-    description = Keyword.get(opts, :description)
-    variables = Keyword.get(opts, :variables)
-
     server =
       %{"url" => url}
-      |> maybe_put("description", description)
-      |> maybe_put("variables", variables)
+      |> maybe_put("description", Keyword.get(opts, :description))
+      |> maybe_put("variables", Keyword.get(opts, :variables))
 
-    servers = Map.get(spec, "servers", [])
-    Map.put(spec, "servers", servers ++ [server])
+    spec
+    |> normalize_spec()
+    |> Map.update("servers", [server], &(&1 ++ [server]))
   end
 
   @doc """
@@ -239,8 +221,9 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec set_servers(map(), list(map())) :: map()
   def set_servers(spec, servers) when is_list(servers) do
-    spec = normalize_spec(spec)
-    Map.put(spec, "servers", servers)
+    spec
+    |> normalize_spec()
+    |> Map.put("servers", servers)
   end
 
   @doc """
@@ -261,17 +244,14 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_tag(map(), String.t(), keyword()) :: map()
   def add_tag(spec, name, opts \\ []) do
-    spec = normalize_spec(spec)
-    description = Keyword.get(opts, :description)
-    external_docs = Keyword.get(opts, :external_docs)
-
     tag =
       %{"name" => name}
-      |> maybe_put("description", description)
-      |> maybe_put("externalDocs", external_docs)
+      |> maybe_put("description", Keyword.get(opts, :description))
+      |> maybe_put("externalDocs", Keyword.get(opts, :external_docs))
 
-    tags = Map.get(spec, "tags", [])
-    Map.put(spec, "tags", tags ++ [tag])
+    spec
+    |> normalize_spec()
+    |> Map.update("tags", [tag], &(&1 ++ [tag]))
   end
 
   @doc """
@@ -294,12 +274,11 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_external_docs(map(), String.t(), keyword()) :: map()
   def add_external_docs(spec, url, opts \\ []) do
-    spec = normalize_spec(spec)
-    description = Keyword.get(opts, :description)
+    external_docs = maybe_put(%{"url" => url}, "description", Keyword.get(opts, :description))
 
-    external_docs = maybe_put(%{"url" => url}, "description", description)
-
-    Map.put(spec, "externalDocs", external_docs)
+    spec
+    |> normalize_spec()
+    |> Map.put("externalDocs", external_docs)
   end
 
   @doc """
@@ -314,12 +293,7 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_schema(map(), String.t(), map()) :: map()
   def add_schema(spec, name, schema) do
-    spec = normalize_spec(spec)
-    components = Map.get(spec, "components", %{})
-    schemas = Map.get(components, "schemas", %{})
-    updated_schemas = Map.put(schemas, name, schema)
-    updated_components = Map.put(components, "schemas", updated_schemas)
-    Map.put(spec, "components", updated_components)
+    put_spec_value(spec, ["components", "schemas", name], schema)
   end
 
   @doc """
@@ -333,12 +307,7 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_response(map(), String.t(), map()) :: map()
   def add_response(spec, name, response) do
-    spec = normalize_spec(spec)
-    components = Map.get(spec, "components", %{})
-    responses = Map.get(components, "responses", %{})
-    updated_responses = Map.put(responses, name, response)
-    updated_components = Map.put(components, "responses", updated_responses)
-    Map.put(spec, "components", updated_components)
+    put_spec_value(spec, ["components", "responses", name], response)
   end
 
   @doc """
@@ -352,12 +321,7 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_parameter(map(), String.t(), map()) :: map()
   def add_parameter(spec, name, parameter) do
-    spec = normalize_spec(spec)
-    components = Map.get(spec, "components", %{})
-    parameters = Map.get(components, "parameters", %{})
-    updated_parameters = Map.put(parameters, name, parameter)
-    updated_components = Map.put(components, "parameters", updated_parameters)
-    Map.put(spec, "components", updated_components)
+    put_spec_value(spec, ["components", "parameters", name], parameter)
   end
 
   @doc """
@@ -380,10 +344,7 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec add_webhook(map(), String.t(), map()) :: map()
   def add_webhook(spec, name, webhook) do
-    spec = normalize_spec(spec)
-    webhooks = Map.get(spec, "webhooks", %{})
-    updated_webhooks = Map.put(webhooks, name, webhook)
-    Map.put(spec, "webhooks", updated_webhooks)
+    put_spec_value(spec, ["webhooks", name], webhook)
   end
 
   @doc """
@@ -400,10 +361,9 @@ defmodule AshOaskit.SpecModifier do
   """
   @spec update_info(map(), map()) :: map()
   def update_info(spec, info_updates) do
-    spec = normalize_spec(spec)
-    info = Map.get(spec, "info", %{})
-    updated_info = Map.merge(info, info_updates)
-    Map.put(spec, "info", updated_info)
+    spec
+    |> normalize_spec()
+    |> Map.update("info", info_updates, &Map.merge(&1, info_updates))
   end
 
   @doc """
@@ -418,20 +378,14 @@ defmodule AshOaskit.SpecModifier do
   @spec add_schema_examples(map(), String.t(), list(map())) :: map()
   def add_schema_examples(spec, schema_name, examples) do
     spec = normalize_spec(spec)
-    access_path = Enum.map(["components", "schemas", schema_name], &Access.key/1)
+    path = ["components", "schemas", schema_name]
 
-    case get_in(spec, access_path) do
+    case get_in(spec, path) do
       nil ->
         spec
 
       schema ->
-        updated_schema = Map.put(schema, "examples", examples)
-
-        put_in(
-          spec,
-          Enum.map(["components", "schemas", schema_name], &Access.key(&1, %{})),
-          updated_schema
-        )
+        put_in(spec, path, Map.put(schema, "examples", examples))
     end
   end
 
@@ -453,24 +407,7 @@ defmodule AshOaskit.SpecModifier do
   @spec add_operation_example(map(), String.t(), String.t(), map()) :: map()
   def add_operation_example(spec, operation_id, media_type, example) do
     update_operations(spec, [operation_id], fn operation ->
-      responses = Map.get(operation, "responses", %{})
-
-      updated_responses =
-        Enum.reduce(responses, %{}, fn {code, response}, acc ->
-          content = Map.get(response, "content", %{})
-          media = Map.get(content, media_type, %{})
-          examples = Map.get(media, "examples", %{})
-
-          example_key = example["summary"] || "example_#{map_size(examples) + 1}"
-          updated_examples = Map.put(examples, example_key, example)
-          updated_media = Map.put(media, "examples", updated_examples)
-          updated_content = Map.put(content, media_type, updated_media)
-          updated_response = Map.put(response, "content", updated_content)
-
-          Map.put(acc, code, updated_response)
-        end)
-
-      Map.put(operation, "responses", updated_responses)
+      update_responses(operation, &add_response_example(&1, media_type, example))
     end)
   end
 
@@ -539,13 +476,38 @@ defmodule AshOaskit.SpecModifier do
     end
   end
 
-  # Private helper functions
+  defp matching_header?(%{"in" => "header"} = param, name) do
+    String.downcase(param["name"] || "") == name
+  end
+
+  defp matching_header?(_, _), do: false
+
+  defp put_spec_value(spec, path, value) do
+    spec
+    |> normalize_spec()
+    |> put_in(Enum.map(path, &Access.key(&1, %{})), value)
+  end
+
+  defp update_responses(operation, update_fn) do
+    Map.update(operation, "responses", %{}, fn responses ->
+      Map.new(responses, fn {code, response} -> {code, update_fn.(response)} end)
+    end)
+  end
+
+  defp add_response_example(response, media_type, example) do
+    path = Enum.map(["content", media_type, "examples"], &Access.key(&1, %{}))
+
+    update_in(response, path, fn examples ->
+      name = example["summary"] || "example_#{map_size(examples) + 1}"
+      Map.put(examples, name, example)
+    end)
+  end
 
   defp deprecate_operation(operation, message, sunset) do
     operation
     |> Map.put("deprecated", true)
     |> put_deprecation_description(message)
-    |> maybe_put_sunset(sunset)
+    |> maybe_put("x-sunset", sunset)
   end
 
   defp put_deprecation_description(operation, message) do
@@ -555,35 +517,34 @@ defmodule AshOaskit.SpecModifier do
     Map.put(operation, "description", updated_description)
   end
 
-  defp maybe_put_sunset(operation, nil), do: operation
-  defp maybe_put_sunset(operation, sunset), do: Map.put(operation, "x-sunset", sunset)
-
   @spec update_operations(map(), list(String.t()) | nil, (map() -> map())) :: map()
   defp update_operations(spec, operation_ids, update_fn) do
-    spec = normalize_spec(spec)
-    paths = Map.get(spec, "paths", %{})
-
-    updated_paths =
+    spec
+    |> normalize_spec()
+    |> Map.update("paths", %{}, fn paths ->
       Map.new(paths, fn {path, methods} ->
         {path, update_methods(methods, operation_ids, update_fn)}
       end)
-
-    Map.put(spec, "paths", updated_paths)
+    end)
   end
 
   defp update_methods(methods, operation_ids, update_fn) do
-    Map.new(methods, fn {method, operation} ->
-      if method in ~w(get put post delete options head patch trace) do
+    Map.new(methods, fn
+      {method, operation} when method in ~w(get put post delete options head patch trace) ->
         {method, maybe_update_operation(operation, operation_ids, update_fn)}
-      else
-        {method, operation}
-      end
+
+      entry ->
+        entry
     end)
+  end
+
+  defp maybe_update_operation(operation, nil, update_fn) when is_map(operation) do
+    update_fn.(operation)
   end
 
   defp maybe_update_operation(operation, operation_ids, update_fn)
        when is_map(operation) do
-    if is_nil(operation_ids) or Map.get(operation, "operationId") in operation_ids do
+    if Map.get(operation, "operationId") in operation_ids do
       update_fn.(operation)
     else
       operation
