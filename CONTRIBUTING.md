@@ -60,6 +60,21 @@ All contributions must:
 - Include `@spec` for all public functions
 - Document public functions where the name and types do not tell the whole story
 
+### Elixir Style
+
+Use `mix format` and the project's Credo configuration as the enforceable baseline,
+with the [community Elixir Style Guide](https://github.com/christopheradams/elixir_style_guide)
+as supplementary guidance.
+
+- Limit nesting to two levels inside functions. Credo counts `if`, `unless`,
+  `case`, `cond`, anonymous functions, `for`, and `with` toward this limit.
+- Prefer pattern-matched function clauses and guards for dispatch on data shapes.
+- Use pipelines for successive transformations of the same value.
+- Use `Map.update`, `put_in`, and `update_in` instead of manually rebuilding each
+  layer of a nested map. Preserve the intended behavior for missing keys.
+- Extract helpers around meaningful operations, not merely to hide nesting.
+- Keep explicit conditionals when they express the decision more clearly.
+
 ## Commit Messages
 
 We use [Conventional Commits](https://www.conventionalcommits.org/):

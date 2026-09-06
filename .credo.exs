@@ -86,7 +86,8 @@
           {Credo.Check.Refactor.NegatedConditionsInUnless, []},
           {Credo.Check.Refactor.NegatedConditionsWithElse, []},
           {Credo.Check.Refactor.NegatedIsNil, []},
-          {Credo.Check.Refactor.Nesting, [max_nesting: 2]},
+          # At most two levels, including conditionals, anonymous functions, for and with.
+          {Credo.Check.Refactor.Nesting, [priority: :high, max_nesting: 2]},
           {Credo.Check.Refactor.PassAsyncInTestCases, []},
           {Credo.Check.Refactor.PipeChainStart, [priority: :normal]},
           {Credo.Check.Refactor.RedundantWithClauseResult, []},
