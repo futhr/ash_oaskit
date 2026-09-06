@@ -7,6 +7,48 @@ defmodule AshOaskit.SpecModifierTest do
 
   alias AshOaskit.SpecModifier
 
+  test "every mutating helper independently normalizes atom-key specs in both versions" do
+    modifiers = [
+      {"extension", &SpecModifier.add_extension(&1, ["info"], "x-tested", true)},
+      {"request header", &SpecModifier.add_header_to_operations(&1, "X-Trace", %{})},
+      {"response header", &SpecModifier.add_header_to_responses(&1, "X-Limit", %{})},
+      {"server", &SpecModifier.add_server(&1, "https://example.com")},
+      {"servers", &SpecModifier.set_servers(&1, [])},
+      {"tag", &SpecModifier.add_tag(&1, "Posts")},
+      {"external docs", &SpecModifier.add_external_docs(&1, "https://example.com/docs")},
+      {"schema", &SpecModifier.add_schema(&1, "New", %{"type" => "string"})},
+      {"response", &SpecModifier.add_response(&1, "Error", %{"description" => "Error"})},
+      {"parameter",
+       &SpecModifier.add_parameter(&1, "Page", %{"in" => "query", "name" => "page"})},
+      {"webhook", &SpecModifier.add_webhook(&1, "New", %{})},
+      {"info", &SpecModifier.update_info(&1, %{"title" => "Updated"})},
+      {"schema examples", &SpecModifier.add_schema_examples(&1, "Post", [%{}])},
+      {"operation examples",
+       &SpecModifier.add_operation_example(&1, "listPosts", "application/json", %{"value" => %{}})},
+      {"rate limit", SpecModifier.rate_limiting_modifier()},
+      {"deprecation", SpecModifier.deprecation_modifier(operations: ["listPosts"])}
+    ]
+
+    for version <- ["3.0.3", "3.1.0"] do
+      spec = %{
+        openapi: version,
+        info: %{title: "API", version: "1.0"},
+        paths: %{
+          "/posts" => %{
+            get: %{operationId: "listPosts", responses: %{"200" => %{description: "Success"}}}
+          }
+        },
+        components: %{schemas: %{"Post" => %{type: "object"}}}
+      }
+
+      normalized = Oaskit.normalize_spec!(spec)
+
+      for {name, modify} <- modifiers do
+        assert modify.(spec) == modify.(normalized), "#{name} must normalize OpenAPI #{version}"
+      end
+    end
+  end
+
   test "helpers modify generated specs without atom/string key collisions" do
     for version <- ["3.0", "3.1"] do
       spec =
@@ -144,6 +186,64 @@ defmodule AshOaskit.SpecModifierTest do
   end
 
   describe "add_header_to_operations/4" do
+    test "an empty operation selection leaves the entire spec unchanged" do
+      spec = %{"paths" => %{"/posts" => %{"get" => %{"operationId" => "listPosts"}}}}
+
+      assert SpecModifier.add_header_to_operations(spec, "X-Trace", %{}, operations: []) == spec
+    end
+
+    test "selected IDs do not match operations without an ID" do
+      spec = %{
+        "paths" => %{
+          "/posts" => %{
+            "get" => %{},
+            "post" => %{"operationId" => "createPost"},
+            "delete" => %{"operationId" => "deletePost"}
+          }
+        }
+      }
+
+      result =
+        SpecModifier.add_header_to_operations(spec, "X-Trace", %{}, operations: ["createPost"])
+
+      assert result["paths"]["/posts"]["get"] == %{}
+      assert result["paths"]["/posts"]["delete"] == spec["paths"]["/posts"]["delete"]
+      assert [%{"name" => "X-Trace"}] = result["paths"]["/posts"]["post"]["parameters"]
+    end
+
+    test "updates all HTTP methods but preserves path metadata and non-map operations" do
+      methods = ~w(get put post delete options head patch trace)
+
+      metadata = %{
+        "$ref" => "#/components/pathItems/Posts",
+        "summary" => "Posts",
+        "description" => "Post operations",
+        "parameters" => [%{"name" => "id", "in" => "path"}],
+        "servers" => [%{"url" => "https://example.com"}],
+        "x-metadata" => %{"operationId" => "notAnOperation"}
+      }
+
+      path_item = Map.merge(metadata, Map.new(methods, &{&1, %{}}))
+      invalid_operations = %{"get" => nil, "post" => "invalid"}
+      spec = %{"paths" => %{"/posts" => path_item, "/invalid" => invalid_operations}}
+
+      result = SpecModifier.add_header_to_operations(spec, "X-Trace", %{})
+
+      assert Map.drop(result["paths"]["/posts"], methods) == metadata
+      assert result["paths"]["/invalid"] == invalid_operations
+
+      for method <- methods do
+        assert [%{"name" => "X-Trace"}] = result["paths"]["/posts"][method]["parameters"]
+      end
+    end
+
+    test "creates an empty paths map when none exists" do
+      assert SpecModifier.add_header_to_operations(%{"info" => %{}}, "X-Trace", %{}) == %{
+               "info" => %{},
+               "paths" => %{}
+             }
+    end
+
     test "replaces headers case-insensitively while preserving other parameters" do
       query = %{"in" => "query", "name" => "X-Request-ID"}
       reference = %{"$ref" => "#/components/parameters/Page"}
@@ -272,7 +372,10 @@ defmodule AshOaskit.SpecModifierTest do
 
       result = SpecModifier.add_server(spec, "https://staging.example.com")
 
-      assert length(result["servers"]) == 2
+      assert result["servers"] == [
+               %{"url" => "https://api.example.com"},
+               %{"url" => "https://staging.example.com"}
+             ]
     end
 
     test "includes description when provided" do
@@ -331,7 +434,7 @@ defmodule AshOaskit.SpecModifierTest do
 
       result = SpecModifier.add_tag(spec, "Comments")
 
-      assert length(result["tags"]) == 2
+      assert result["tags"] == [%{"name" => "Posts"}, %{"name" => "Comments"}]
     end
 
     test "includes description when provided" do
@@ -548,6 +651,70 @@ defmodule AshOaskit.SpecModifierTest do
   end
 
   describe "add_operation_example/4" do
+    test "creates missing content and media entries for every selected response" do
+      responses = %{
+        "200" => %{"description" => "Success"},
+        "400" => %{"description" => "Bad request", "content" => %{}}
+      }
+
+      operation = %{"operationId" => "listPosts", "responses" => responses}
+
+      spec = %{
+        "paths" => %{
+          "/posts" => %{
+            "get" => operation,
+            "post" => %{"operationId" => "createPost", "responses" => responses}
+          }
+        }
+      }
+
+      example = %{"value" => %{}}
+      result = SpecModifier.add_operation_example(spec, "listPosts", "application/json", example)
+
+      assert result["paths"]["/posts"]["post"] == spec["paths"]["/posts"]["post"]
+
+      for {code, response} <- responses do
+        assert result["paths"]["/posts"]["get"]["responses"][code] ==
+                 Map.put(response, "content", %{
+                   "application/json" => %{"examples" => %{"example_1" => example}}
+                 })
+      end
+    end
+
+    test "replaces a named example without duplicating it or losing other examples" do
+      spec = %{
+        "paths" => %{
+          "/posts" => %{
+            "get" => %{
+              "operationId" => "listPosts",
+              "responses" => %{"200" => %{"description" => "Success"}}
+            }
+          }
+        }
+      }
+
+      first = %{"summary" => "First", "value" => 1}
+      second = %{"summary" => "Second", "value" => 2}
+      replacement = %{"summary" => "First", "value" => 3}
+
+      result =
+        spec
+        |> SpecModifier.add_operation_example("listPosts", "application/json", first)
+        |> SpecModifier.add_operation_example("listPosts", "application/json", second)
+        |> SpecModifier.add_operation_example("listPosts", "application/json", replacement)
+
+      assert get_in(result, [
+               "paths",
+               "/posts",
+               "get",
+               "responses",
+               "200",
+               "content",
+               "application/json",
+               "examples"
+             ]) == %{"First" => replacement, "Second" => second}
+    end
+
     test "preserves response content and numbers unnamed examples" do
       existing = %{"value" => %{"id" => "1"}}
       schema = %{"type" => "object"}
@@ -668,6 +835,28 @@ defmodule AshOaskit.SpecModifierTest do
   end
 
   describe "deprecation_modifier/1" do
+    test "preserves an existing sunset when none is supplied and appends the description" do
+      operation = %{
+        "operationId" => "oldEndpoint",
+        "description" => "Existing description",
+        "x-sunset" => "2030-01-01"
+      }
+
+      spec = %{"paths" => %{"/old" => %{"get" => operation}}}
+
+      modifier =
+        SpecModifier.deprecation_modifier(operations: ["oldEndpoint"], message: "Use new")
+
+      result = SpecModifier.apply_modifier(spec, modifier)
+
+      assert result["paths"]["/old"]["get"] == %{
+               "operationId" => "oldEndpoint",
+               "description" => "Existing description\n\n**Deprecated:** Use new",
+               "deprecated" => true,
+               "x-sunset" => "2030-01-01"
+             }
+    end
+
     test "marks specified operations as deprecated" do
       modifier =
         SpecModifier.deprecation_modifier(
@@ -705,6 +894,126 @@ defmodule AshOaskit.SpecModifierTest do
       result = SpecModifier.apply_modifier(spec, modifier)
 
       assert result["paths"]["/old"]["get"]["x-sunset"] == "2024-12-31"
+    end
+  end
+
+  describe "component map updates" do
+    test "each component helper creates missing parent maps" do
+      helpers = [
+        {"schemas", &SpecModifier.add_schema/3},
+        {"responses", &SpecModifier.add_response/3},
+        {"parameters", &SpecModifier.add_parameter/3}
+      ]
+
+      for {section, add} <- helpers, spec <- [%{}, %{"components" => %{}}] do
+        assert add.(spec, "New", %{}) == %{"components" => %{section => %{"New" => %{}}}}
+      end
+    end
+
+    test "each component helper replaces only the named entry and preserves siblings" do
+      helpers = [
+        {"schemas", &SpecModifier.add_schema/3},
+        {"responses", &SpecModifier.add_response/3},
+        {"parameters", &SpecModifier.add_parameter/3}
+      ]
+
+      for {section, add} <- helpers do
+        spec = %{
+          "info" => %{"title" => "Keep"},
+          "components" => %{
+            "securitySchemes" => %{"Bearer" => %{"type" => "http", "scheme" => "bearer"}},
+            section => %{"Target" => %{"description" => "Old"}, "Sibling" => %{}}
+          }
+        }
+
+        replacement = %{"description" => "New"}
+
+        assert add.(spec, "Target", replacement) ==
+                 put_in(spec, ["components", section, "Target"], replacement)
+      end
+    end
+  end
+
+  describe "add_header_to_responses/4" do
+    test "updates every inline response but preserves references, other headers and request parameters" do
+      reference = %{"$ref" => "#/components/responses/Error"}
+      request_parameters = [%{"in" => "header", "name" => "X-Request"}]
+      other_header = %{"schema" => %{"type" => "string"}}
+
+      responses = %{
+        "200" => %{
+          "description" => "Success",
+          "headers" => %{"X-Other" => other_header, "X-Limit" => other_header}
+        },
+        "201" => %{"description" => "Created"},
+        "400" => reference,
+        "default" => nil
+      }
+
+      spec = %{
+        "paths" => %{
+          "/posts" => %{
+            "get" => %{"responses" => responses, "parameters" => request_parameters}
+          }
+        }
+      }
+
+      schema = %{"type" => "integer"}
+      result = SpecModifier.add_header_to_responses(spec, "X-Limit", schema)
+      operation = result["paths"]["/posts"]["get"]
+
+      assert operation["parameters"] == request_parameters
+
+      assert operation["responses"] == %{
+               "200" => %{
+                 "description" => "Success",
+                 "headers" => %{"X-Other" => other_header, "X-Limit" => %{"schema" => schema}}
+               },
+               "201" => %{
+                 "description" => "Created",
+                 "headers" => %{"X-Limit" => %{"schema" => schema}}
+               },
+               "400" => reference,
+               "default" => nil
+             }
+    end
+
+    test "honors operation selection" do
+      responses = %{"200" => %{"description" => "Success"}}
+
+      spec = %{
+        "paths" => %{
+          "/posts" => %{
+            "get" => %{"operationId" => "listPosts", "responses" => responses},
+            "post" => %{"operationId" => "createPost", "responses" => responses}
+          }
+        }
+      }
+
+      result =
+        SpecModifier.add_header_to_responses(spec, "X-Limit", %{}, operations: ["listPosts"])
+
+      assert result["paths"]["/posts"]["post"] == spec["paths"]["/posts"]["post"]
+
+      assert result["paths"]["/posts"]["get"]["responses"]["200"]["headers"] == %{
+               "X-Limit" => %{"schema" => %{}}
+             }
+
+      assert SpecModifier.add_header_to_responses(spec, "X-Limit", %{}, operations: []) == spec
+    end
+
+    test "response modifiers handle absent and empty responses without inventing status codes" do
+      modifiers = [
+        &SpecModifier.add_header_to_responses(&1, "X-Limit", %{}),
+        &SpecModifier.add_operation_example(&1, "listPosts", "application/json", %{"value" => %{}})
+      ]
+
+      for modify <- modifiers, responses <- [%{}, %{"responses" => %{}}] do
+        operation = Map.put(responses, "operationId", "listPosts")
+        spec = %{"paths" => %{"/posts" => %{"get" => operation}}}
+
+        assert modify.(spec) == put_in(spec, ["paths", "/posts", "get", "responses"], %{})
+      end
     end
   end
 
