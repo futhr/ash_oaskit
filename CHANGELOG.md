@@ -49,6 +49,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- changelog -->
 
+## [v0.4.1](https://github.com/futhr/ash_oaskit/compare/v0.4.0...v0.4.1) (2026-09-07)
+
+
+
+
+### Bug Fixes:
+
+* generation: connect JSON API response and multipart features by Tobias Bohwalli
+
+* routes: prevent path overwrites and duplicate operation identifiers by Tobias Bohwalli
+
+* parameters: derive typed parameters from route and action capabilities by Tobias Bohwalli
+
+* includes: restrict discovery to configured public paths by Tobias Bohwalli
+
+* types: preserve compound constraints and warn on unknown mappings by Tobias Bohwalli
+
+* filters: document supported typed Ash predicates by Tobias Bohwalli
+
+* types: share constrained calculation and aggregate mapping by Tobias Bohwalli
+
+* inputs: honor defaults and require nested request members by Tobias Bohwalli
+
+* schemas: derive request components from each route contract by Tobias Bohwalli
+
+* schemas: discover embedded input and return type dependencies by Tobias Bohwalli
+
+* schemas: reject conflicting embedded component owners by Tobias Bohwalli
+
+* installer: generate compileable domain-aware scaffolds by Tobias Bohwalli
+
+* types: preserve exact decimal wire representations by Tobias Bohwalli
+
+* schemas: allow sparse and policy-filtered response fields by Tobias Bohwalli
+
+* schemas: resolve local references as JSON Pointers by Tobias Bohwalli
+
+* security: describe public operations and response headers correctly by Tobias Bohwalli
+
+* modifiers: normalize generated maps before helper updates by Tobias Bohwalli
+
+* cli: reject invalid arguments and check the YAML encoder by Tobias Bohwalli
+
+* config: forward spec options through router builders by Tobias Bohwalli
+
+* routes: retain digit and domain-prefix path parameters by Tobias Bohwalli
+
+* deps: enforce secure supported dependency minimums by Tobias Bohwalli
+
+* types: omit runtime and unencodable defaults safely by Tobias Bohwalli
+
+* schemas: preserve constraints when adding nullability by Tobias Bohwalli
+
+* schemas: distinguish resource and collection responses by Tobias Bohwalli
+
+* deps: update vulnerable Ash and Mint dependencies by Tobias Bohwalli
+
+### Performance Improvements:
+
+* generation: reuse route discovery and completed resource schemas by Tobias Bohwalli
+
 ## [v0.4.0](https://github.com/futhr/ash_oaskit/compare/v0.3.0...v0.4.0) (2026-08-24)
 
 
