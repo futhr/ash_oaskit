@@ -211,10 +211,11 @@ All type conversions go through `TypeMapper`. When adding new types:
 All code must pass:
 
 ```bash
-mix check # Runs all 10 tools:
+mix check --no-retry # Runs all 11 tools:
 ```
 
 - `mix compile --warnings-as-errors`
+- `MIX_ENV=no_optional mix compile --no-optional-deps --warnings-as-errors`
 - `mix credo --strict`
 - `mix dialyzer`
 - `mix doctor`
@@ -242,9 +243,9 @@ Do not add `Co-Authored-By` or any AI/Claude attribution to commit messages.
 
 ### Release Flow
 
-1. `mix git_ops.release` — updates changelog, bumps version in mix.exs and README.md, commits, and tags
-2. `git push --follow-tags` — pushes commit and tag
-3. CI (`publish.yml`) triggers on `v*` tag → runs checks → `mix hex.publish`
+1. Preview version/changelog changes with `mix git_ops.release --dry-run --output /path/to/preview`.
+2. Merge release changes through a reviewed PR to protected `main` and wait for required CI.
+3. Maintainers create and push an annotated `vVERSION` tag; publishing requires the protected environment approval. See CONTRIBUTING.md for the complete release controls.
 
 ## Guidelines
 

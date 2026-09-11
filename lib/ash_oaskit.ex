@@ -36,8 +36,8 @@ defmodule AshOaskit do
       # alongside the Ash routes
       plug Oaskit.Plugs.SpecProvider, spec: MyAppWeb.ApiSpec
 
-  The generated spec is cached in `:persistent_term` — the Ash domain
-  walk runs once, not on every request. See `AshOaskit.Spec` for all
+  The generated spec is cached in `:persistent_term` for reuse across requests.
+  Concurrent misses may run generation more than once. See `AshOaskit.Spec` for all
   options, the `modify_spec/1` customization callback, and cache
   controls.
 
@@ -220,8 +220,7 @@ defmodule AshOaskit do
       config :ash_oaskit,
         version: "3.1",
         title: "My API",
-        api_version: "1.0.0",
-        domains: [MyApp.Blog, MyApp.Accounts]
+        api_version: "1.0.0"
 
   ## Mix Task
 
@@ -234,6 +233,7 @@ defmodule AshOaskit do
       mix ash_oaskit.generate \\
         --domains MyApp.Blog,MyApp.Accounts \\
         --output openapi.yaml \\
+        --format yaml \\
         --title "My API" \\
         --version 3.0
 

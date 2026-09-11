@@ -33,6 +33,7 @@ defmodule AshOaskit.OpenApi do
   | JSON Schema | Extended Wright Draft 00 subset | Draft 2020-12 aligned |
   """
 
+  alias AshOaskit.Core.JsonKeys
   alias AshOaskit.Generators.{V30, V31}
 
   @doc """
@@ -101,7 +102,7 @@ defmodule AshOaskit.OpenApi do
   @doc false
   @spec normalize_spec!(map()) :: map()
   def normalize_spec!(spec) do
-    spec = spec |> AshOaskit.Core.JsonKeys.validate!() |> Oaskit.normalize_spec!()
+    spec = spec |> JsonKeys.validate!() |> Oaskit.normalize_spec!()
     AshOaskit.SchemaBuilder.validate_refs!(spec, spec["components"]["schemas"])
     spec
   end
@@ -171,12 +172,12 @@ defmodule AshOaskit.OpenApi do
   @doc """
   Convert a spec to a JSON-encodable map.
 
-  Handles Oaskit structs by normalizing through Oaskit and encoding via
-  `Oaskit.SpecDumper` to produce a plain map.
+  Handles Oaskit structs by normalizing through Oaskit to produce a plain map.
+  Plain maps are returned unchanged; this function does not encode or decode JSON.
   """
   @spec to_map(map()) :: map()
   def to_map(spec) when is_struct(spec) do
-    spec |> AshOaskit.Core.JsonKeys.validate!() |> Oaskit.normalize_spec!()
+    spec |> JsonKeys.validate!() |> Oaskit.normalize_spec!()
   end
 
   def to_map(spec) when is_map(spec), do: spec

@@ -42,7 +42,7 @@ mix test
 ```bash
 mix test            # Run tests
 mix coveralls.html  # Run tests with coverage
-mix check           # Run full quality suite
+mix check --no-retry # Run full quality suite
 MIX_ENV=no_optional mix compile --no-optional-deps --warnings-as-errors
 mix docs            # Generate documentation
 mix dialyzer        # Run dialyzer

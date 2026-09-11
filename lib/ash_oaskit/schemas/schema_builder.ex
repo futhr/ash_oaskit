@@ -94,7 +94,7 @@ defmodule AshOaskit.SchemaBuilder do
 
   The builder gracefully handles edge cases:
 
-  - Missing resources: Returns empty schemas
+  - Invalid resource modules: Raise through Ash introspection
   - Private attributes: Excluded from schemas
   - Function defaults: Omitted (can't serialize to JSON)
   - Unknown types: Falls back to empty schema `{}`
@@ -417,7 +417,7 @@ defmodule AshOaskit.SchemaBuilder do
 
   - `:input_actions` - List of `{action_name, route}` tuples to derive
     input schemas from (route may be `nil`). Defaults to the resource's
-    primary create and update actions.
+    create and update actions.
 
   ## Parameters
 

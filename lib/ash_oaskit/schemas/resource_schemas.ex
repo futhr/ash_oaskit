@@ -315,7 +315,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   `{Resource}CreateInput`/`{Resource}UpdateInput`.
 
   Each entry is an `{action_name, route}` tuple (route may be `nil`).
-  When `:input_actions` is omitted, the resource's primary create and
+  When `:input_actions` is omitted, the resource's create and
   update actions are used.
 
   ## Parameters

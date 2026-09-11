@@ -83,7 +83,7 @@ flowchart TD
     J --> P[Embedded schemas]
     J --> Q[Property builders]
     Q --> R[TypeMapper]
-    G --> S[Oaskit normalization and validation]
+    G --> S[Oaskit normalization and local reference checks]
 ```
 
 The version split happens early, but most work is shared. Version-specific behavior should be small and explicit.

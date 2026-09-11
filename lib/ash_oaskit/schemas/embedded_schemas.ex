@@ -25,7 +25,7 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemas do
 
   When an embedded resource is detected, the module:
 
-  1. Extracts public attributes (excluding id, timestamps)
+  1. Extracts public attributes, including public IDs and timestamps
   2. Recursively handles nested embedded types
   3. Builds a JSON Schema with properties and required fields
   4. Adds the schema to the builder's schema collection
@@ -55,23 +55,25 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemas do
     name = type |> Module.split() |> List.last()
     owners = Map.get(builder, :embedded_names, %{})
 
-    case Map.get(owners, name) do
-      ^type ->
-        builder
+    builder =
+      case Map.get(owners, name) do
+        ^type ->
+          builder
 
-      nil ->
-        if Map.has_key?(builder.schemas, name) do
+        nil ->
+          if Map.has_key?(builder.schemas, name) do
+            raise ArgumentError,
+                  "embedded component #{inspect(name)} for #{inspect(type)} conflicts with an existing schema"
+          end
+
+          Map.put(builder, :embedded_names, Map.put(owners, name, type))
+
+        owner ->
           raise ArgumentError,
-                "embedded component #{inspect(name)} for #{inspect(type)} conflicts with an existing schema"
-        end
+                "embedded component #{inspect(name)} is shared by #{inspect(owner)} and #{inspect(type)}; use distinct embedded module names"
+      end
 
-        Map.put(builder, :embedded_names, Map.put(owners, name, type))
-
-      owner ->
-        raise ArgumentError,
-              "embedded component #{inspect(name)} is shared by #{inspect(owner)} and #{inspect(type)}; use distinct embedded module names"
-    end
-    |> AshOaskit.SchemaBuilder.reserve_schema_name(name, {type, :embedded})
+    AshOaskit.SchemaBuilder.reserve_schema_name(builder, name, {type, :embedded})
   end
 
   @doc """
@@ -235,8 +237,8 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemas do
   @doc """
   Gets attributes from an embedded resource.
 
-  Filters out internal attributes (id, timestamps) and private attributes,
-  returning only the public attributes that should appear in the schema.
+  Returns all public attributes, including public IDs and timestamps.
+  Private attributes are excluded.
 
   ## Parameters
 

@@ -381,7 +381,7 @@ end
 
 ```bash
 mix test            # Run tests
-mix check           # Run quality checks
+mix check --no-retry # Run quality checks
 mix docs            # Generate documentation
 mix coveralls.html  # Check test coverage
 ```

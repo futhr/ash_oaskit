@@ -362,7 +362,7 @@ The same pipeline covers the broader Ash type surface:
 - Ash abstractions: `Ash.Type.Enum`, `Ash.Type.NewType`, unions, typed structs, embedded resources
 - calculations and aggregates when marked `public? true`
 
-When adding support for a new Ash type, the project keeps the mapping centralized in `AshOaskit.TypeMapper`; calculation and aggregate output uses the parallel builder in `AshOaskit.SchemaBuilder.PropertyBuilders`.
+When adding support for a new Ash type, the project keeps the mapping centralized in `AshOaskit.TypeMapper`; calculation and aggregate output delegates to that mapper through `AshOaskit.SchemaBuilder.PropertyBuilders`.
 
 ## Speaker note
 

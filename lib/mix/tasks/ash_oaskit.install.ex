@@ -119,7 +119,7 @@ else
 
     Add igniter to your dependencies:
 
-        {:igniter, "~> 0.5"}
+        {:igniter, ">= 0.6.29 and < 1.0.0"}
 
     Then run:
 
@@ -140,7 +140,7 @@ else
 
       Add to your mix.exs deps:
 
-          {:igniter, "~> 0.5"}
+          {:igniter, ">= 0.6.29 and < 1.0.0"}
 
       Then run:
 
