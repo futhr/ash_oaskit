@@ -40,23 +40,44 @@ scope "/api", MyAppWeb do
 end
 ```
 
-2. Declare the operation in the controller and validate:
+2. Provide AshOaskit's explicit operation metadata and use its operation ID for
+   Oaskit validation. Ensure your endpoint runs `Plug.Parsers` for JSON before
+   dispatching to this controller:
 
 ```elixir
 defmodule MyAppWeb.ReportController do
+  @behaviour AshOaskit.OpenApiController
   use MyAppWeb, :controller
   use Oaskit.Controller
 
   plug Oaskit.Plugs.ValidateRequest
 
-  operation :create,
-    operation_id: "create_report",
-    request_body: {%{
-      "type" => "object",
-      "required" => ["name"],
-      "properties" => %{"name" => %{"type" => "string"}}
-    }, []},
-    responses: [ok: true]
+  use_operation :create, "create_report"
+
+  @report_schema %{
+    "type" => "object",
+    "required" => ["name"],
+    "properties" => %{"name" => %{"type" => "string"}}
+  }
+
+  @impl AshOaskit.OpenApiController
+  def openapi_operations do
+    %{
+      create: %{
+        operationId: "create_report",
+        requestBody: %{
+          required: true,
+          content: %{"application/json" => %{schema: @report_schema}}
+        },
+        responses: %{
+          "200" => %{
+            description: "Created report",
+            content: %{"application/json" => %{schema: @report_schema}}
+          }
+        }
+      }
+    }
+  end
 
   def create(conn, _params) do
     %{"name" => name} = body_params(conn)
@@ -70,11 +91,10 @@ errors from oaskit's default error handler.
 
 > #### Merging hand-written operations into the spec {: .info}
 >
-> Operations declared with the `operation` macro live on the controller.
-> To document them in your AshOaskit spec output, pass your Phoenix
-> router via the `:router` option of `use AshOaskit` — controllers
-> implementing `AshOaskit.OpenApiController` are introspected and merged
-> into `paths`.
+> Pass `router: MyAppWeb.Router` to `use AshOaskit` in `MyAppWeb.ApiSpec`.
+> AshOaskit reads `openapi_operations/0`. The `Oaskit.Controller.operation/2`
+> macro alone does not implement that callback. `use_operation/2` above connects
+> validation to the explicit `create_report` operation in the generated spec.
 
 ## Validating responses in tests
 
@@ -110,9 +130,11 @@ Two layers are available and cheap to run in CI:
 # Structural validation against the OpenAPI metaschema
 {:ok, %Oaskit.Spec.OpenAPI{}} = AshOaskit.validate(MyAppWeb.ApiSpec.spec())
 
-# Full build: normalization + JSV validator construction for every operation
-Oaskit.build_spec!(MyAppWeb.ApiSpec)
+# Build request and response validators for documented operations
+Oaskit.build_spec!(MyAppWeb.ApiSpec, responses: true)
 ```
 
-`Oaskit.build_spec!` is the stronger check — it proves every schema in
-the spec compiles to a working JSV validator.
+The default build checks request validators; `responses: true` also builds response
+validators. A successful build does not prove that every unused component was compiled,
+that runtime payloads match the spec, or that application authorization is enforced.
+Exercise real valid and invalid requests and responses as well.
