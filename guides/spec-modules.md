@@ -32,7 +32,7 @@ All options:
 | `:terms_of_service` | `String.t()` | `nil` | `info.termsOfService` |
 | `:contact` | `map()` | `nil` | `info.contact` |
 | `:license` | `map()` | `nil` | `info.license` |
-| `:servers` | list | `[]` | `servers` array |
+| `:servers` | list | `[%{"url" => "/"}]` | `servers` array |
 | `:security` | `[map()]` | `nil` | Top-level security requirements |
 | `:external_docs` | `map()` | `nil` | External documentation object |
 | `:router` | `module()` | `nil` | Phoenix router for controller introspection |
@@ -40,6 +40,7 @@ All options:
 | `:spec_builder` | `module()` | `nil` | `AshOaskit.SpecBuilder` implementation |
 | `:cache` | `boolean()` | `true` | Cache the generated spec |
 | `:resource_scope` | `:all` or `:routed` | `:all` | Use `:routed` to seed schemas/tags only from routed resources |
+| `:group_by` | `:resource`, `:domain`, or `:custom` | domain configuration | Operation tag grouping |
 
 ## Serving the spec
 

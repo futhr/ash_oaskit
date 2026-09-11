@@ -12,6 +12,7 @@ defmodule AshOaskit.SpecTest do
   end
 
   defmodule InvalidBuilder do
+    @spec spec(term(), term()) :: :invalid
     def spec(_, _), do: :invalid
   end
 
@@ -148,6 +149,23 @@ defmodule AshOaskit.SpecTest do
   end
 
   describe "option validation" do
+    test "declared grouping options are accepted and forwarded to generation" do
+      for grouping <- [:resource, :domain, :custom] do
+        opts = [domains: [AshOaskit.Test.Blog], group_by: grouping, cache: false]
+        assert AshOaskit.Spec.validate_opts!(opts, BlogSpec) == opts
+
+        assert AshOaskit.Spec.build(BlogSpec, opts) ==
+                 AshOaskit.spec(domains: [AshOaskit.Test.Blog], group_by: grouping)
+      end
+
+      assert_raise ArgumentError, ~r/unsupported :group_by/, fn ->
+        AshOaskit.Spec.validate_opts!(
+          [domains: [AshOaskit.Test.Blog], group_by: :invalid],
+          BlogSpec
+        )
+      end
+    end
+
     test "raises on unknown options" do
       assert_raise ArgumentError, ~r/unknown option/, fn ->
         defmodule BadOption do

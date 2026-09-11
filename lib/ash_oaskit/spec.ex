@@ -16,7 +16,7 @@ defmodule AshOaskit.Spec do
   gains, with no extra code:
 
   - **Caching** — the generated spec is stored in `:persistent_term`
-    and the Ash domain walk runs once, not per request
+    for reuse; concurrent misses can generate more than once
   - **Serving** — `Oaskit.SpecController` can serve it as JSON or
     render a Redoc UI
   - **Request validation** — `Oaskit.Plugs.SpecProvider` +
@@ -36,7 +36,7 @@ defmodule AshOaskit.Spec do
   | `:terms_of_service` | `String.t()` | `nil` | `info.termsOfService` |
   | `:contact` | `map()` | `nil` | `info.contact` |
   | `:license` | `map()` | `nil` | `info.license` |
-  | `:servers` | `[String.t() \\| map()]` | `[]` | `servers` array |
+  | `:servers` | `[String.t() \\| map()]` | `[%{"url" => "/"}]` | `servers` array |
   | `:security` | `[map()]` | `nil` | Top-level security requirements |
   | `:external_docs` | `map()` | `nil` | External documentation object |
   | `:router` | `module()` | `nil` | Phoenix router for controller introspection |
@@ -44,6 +44,7 @@ defmodule AshOaskit.Spec do
   | `:spec_builder` | `module()` | `nil` | `AshOaskit.SpecBuilder` implementation |
   | `:cache` | `boolean()` | `true` | Cache the generated spec |
   | `:resource_scope` | `:all` or `:routed` | `:all` | Which resources seed schemas and tags — `:routed` limits them to resources contributing at least one route (plus their transitive relationship/embedded closure) |
+  | `:group_by` | `:resource`, `:domain`, or `:custom` | domain configuration | Operation tag grouping |
 
   ## Customizing the spec
 
@@ -67,7 +68,7 @@ defmodule AshOaskit.Spec do
 
   ## Caching
 
-  The spec is generated once and cached in `:persistent_term` under
+  The spec is cached in `:persistent_term` under
   `{:ash_oaskit_cache, module, cache_variant}`. Two switches disable it:
 
   - per module: `use AshOaskit, cache: false, ...`
@@ -111,7 +112,7 @@ defmodule AshOaskit.Spec do
 
   @known_options ~w(domains version title api_version description terms_of_service
                     contact license servers security external_docs router
-                    modify_open_api spec_builder cache resource_scope)a
+                    modify_open_api spec_builder cache resource_scope group_by)a
 
   @valid_versions ~w(3.0 3.1)
 
@@ -149,6 +150,7 @@ defmodule AshOaskit.Spec do
     validate_domains!(Keyword.get(opts, :domains), module)
     validate_version!(Keyword.get(opts, :version, "3.1"), module)
     validate_resource_scope!(Keyword.get(opts, :resource_scope, :all), module)
+    validate_grouping!(Keyword.get(opts, :group_by, :resource), module)
 
     opts
   end
@@ -247,6 +249,13 @@ defmodule AshOaskit.Spec do
       :resource_scope #{inspect(scope)}. Supported scopes: \
       #{inspect(@valid_resource_scopes)}\
       """
+    end
+  end
+
+  defp validate_grouping!(grouping, module) do
+    unless grouping in [:resource, :domain, :custom] do
+      raise ArgumentError,
+            "use AshOaskit in #{inspect(module)} got an unsupported :group_by #{inspect(grouping)}"
     end
   end
 end
