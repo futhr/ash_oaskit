@@ -34,6 +34,7 @@ try do
     ])
 
   File.mkdir_p!(Path.join(consumer, "config"))
+  File.write!(Path.join(consumer, ".formatter.exs"), "[inputs: [\"{mix,.formatter}.exs\"]]\n")
 
   pins =
     case mode do
@@ -56,7 +57,7 @@ try do
 
         Enum.map(
           [:ash_json_api, :phoenix, :igniter],
-          &{&1, elem(Map.fetch!(lock, to_string(&1)), 2)}
+          &{&1, elem(Map.fetch!(lock, &1), 2)}
         )
 
       _ ->
@@ -107,6 +108,45 @@ try do
     true = is_binary(Jason.encode!(spec))
     #{if integrations?, do: ~s|true = Map.has_key?(spec["paths"], "/items")|, else: ~s|%{} = spec["paths"]|}
   end
+
+  defmodule Consumer.ApiSpec do
+    use AshOaskit, domains: [Consumer.Domain], cache: false
+  end
+  defmodule Consumer.SpecRouter do
+    use Plug.Router
+    plug :match
+    plug :dispatch
+    use AshOaskit.Router, spec: Consumer.ApiSpec, open_api: "/openapi"
+  end
+  conn = Consumer.SpecRouter.call(Plug.Test.conn(:get, "/openapi.json"), [])
+  200 = conn.status
+  true = Jason.decode!(conn.resp_body) === Consumer.ApiSpec.spec()
+
+  #{if integrations? do
+    ~S"""
+    defmodule Consumer.Controller do
+      @behaviour AshOaskit.OpenApiController
+      use Phoenix.Controller, formats: [:json], layouts: []
+      @impl AshOaskit.OpenApiController
+      def openapi_operations do
+        %{index: %{"operationId" => "health", "responses" => %{"200" => %{"description" => "Healthy"}}}}
+      end
+      def index(conn, _), do: json(conn, %{"ok" => true})
+    end
+    defmodule Consumer.Router do
+      use Phoenix.Router
+      get "/health", Consumer.Controller, :index
+    end
+    for version <- ["3.0", "3.1"] do
+      spec = AshOaskit.spec(domains: [Consumer.Domain], router: Consumer.Router, version: version)
+      "health" = spec["paths"]["/health"]["get"]["operationId"]
+      {:ok, _} = AshOaskit.validate(spec)
+    end
+    result = Mix.Tasks.AshOaskit.Install.igniter(Igniter.new())
+    [] = result.issues
+    true = Enum.any?(Map.keys(result.rewrite.sources), &String.ends_with?(&1, "api_spec.ex"))
+    """
+  end}
   #{unless integrations?, do: "false = Enum.any?([AshJsonApi, Phoenix, Igniter], &Code.ensure_loaded?/1)"}
   IO.puts("Packaged consumer verified: #{mode}")
   """)
