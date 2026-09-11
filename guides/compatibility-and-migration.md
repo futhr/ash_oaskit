@@ -42,7 +42,13 @@ mix docs --warnings-as-errors
 mix run scripts/verify_consumer.exs minimal
 mix run scripts/verify_consumer.exs minimum
 mix run scripts/verify_consumer.exs integrations
+mix run scripts/verify_consumer.exs locked
 ```
+
+Consumer fixtures resolve without dependency overrides. The selected compatible
+minimum set uses Jason 1.4.5: Jason 1.4.0–1.4.4 exclude Decimal 3 and cannot be
+combined with this library's Decimal 3.1 security floor. The `locked` fixture copies
+the checkout lockfile into an isolated consumer; the other fixtures resolve afresh.
 
 Publishing additionally requires a package-scoped `HEX_API_KEY` in the protected
 `hex-publish` environment. An existing repository secret cannot be read back for migration;

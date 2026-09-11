@@ -1,7 +1,10 @@
-# Run with `mix run scripts/verify_consumer.exs [minimal|minimum|integrations]`.
-# The fixture uses the built Hex archive, not the source checkout or its lockfile.
+# Run with `mix run scripts/verify_consumer.exs [minimal|minimum|integrations|locked]`.
+# Every fixture uses a built Hex archive. Only locked mode copies the checkout lock.
 mode = List.first(System.argv()) || "minimal"
-unless mode in ["minimal", "minimum", "integrations"], do: Mix.raise("Unknown consumer mode")
+
+unless mode in ["minimal", "minimum", "integrations", "locked"],
+  do: Mix.raise("Unknown consumer mode")
+
 {temp, 0} = System.cmd("mktemp", ["-d"])
 temp = String.trim(temp)
 archive = Path.join(temp, "ash_oaskit.tar")
@@ -41,11 +44,20 @@ try do
           decimal: "3.1.0",
           oaskit: "0.14.2",
           plug: "1.20.3",
-          jason: "1.4.0"
+          # Earlier Jason releases exclude Decimal 3; this is the compatible floor.
+          jason: "1.4.5"
         ]
 
       "integrations" ->
         [ash_json_api: "1.7.1", phoenix: "1.8.13", igniter: "0.6.29"]
+
+      "locked" ->
+        {lock, _} = Code.eval_file("mix.lock")
+
+        Enum.map(
+          [:ash_json_api, :phoenix, :igniter],
+          &{&1, elem(Map.fetch!(lock, to_string(&1)), 2)}
+        )
 
       _ ->
         []
@@ -53,7 +65,7 @@ try do
 
   deps = [
     {:ash_oaskit, [path: package]}
-    | Enum.map(pins, fn {name, version} -> {name, "== #{version}", [override: true]} end)
+    | Enum.map(pins, fn {name, version} -> {name, "== #{version}"} end)
   ]
 
   File.write!(Path.join(consumer, "mix.exs"), """
@@ -69,7 +81,7 @@ try do
     "import Config\nconfig :ash, default_string_length_count: :codepoints\n"
   )
 
-  integrations? = mode == "integrations"
+  integrations? = mode in ["integrations", "locked"]
 
   File.write!(Path.join(consumer, "verify.exs"), """
   defmodule Consumer.Resource do
@@ -99,7 +111,16 @@ try do
   IO.puts("Packaged consumer verified: #{mode}")
   """)
 
+  if mode == "locked", do: File.cp!("mix.lock", Path.join(consumer, "mix.lock"))
   run.(["deps.get"], consumer)
+
+  if mode == "locked" do
+    {original, _} = Code.eval_file("mix.lock")
+    {resolved, _} = Code.eval_file(Path.join(consumer, "mix.lock"))
+    unless original === resolved, do: Mix.raise("Locked consumer changed dependency resolution")
+  end
+
+  run.(["compile", "--warnings-as-errors"], consumer)
   run.(["run", "verify.exs"], consumer)
 after
   File.rm_rf!(temp)
