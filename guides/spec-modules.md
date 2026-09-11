@@ -72,7 +72,7 @@ get "/redoc", Oaskit.SpecController, redoc: "/openapi.json"
 
 Override `modify_spec/1` — it runs after generation and its result is
 what gets cached. Results must be maps. They are normalized and checked for ambiguous
-JSON keys and missing local component references before insertion. Failed generation
+JSON keys, invalid UTF-8 strings, and missing local component references before insertion. Failed generation
 does not populate the cache, and callback exceptions propagate. Full OpenAPI validation
 remains explicit through `AshOaskit.validate/1`:
 

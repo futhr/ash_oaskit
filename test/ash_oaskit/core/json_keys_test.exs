@@ -48,6 +48,21 @@ defmodule AshOaskit.Core.JsonKeysTest do
     end
   end
 
+  test "rejects malformed UTF-8 object names and string values before export" do
+    for value <- [%{<<255>> => "data"}, %{data: [<<255>>]}], version <- ["3.0", "3.1"] do
+      assert_raise ArgumentError, ~r/invalid UTF-8 JSON string at.*x-data/, fn ->
+        AshOaskit.spec(
+          domains: [AshOaskit.Test.SimpleDomain],
+          version: version,
+          modify_open_api: &Map.put(&1, "x-data", value)
+        )
+      end
+    end
+
+    value = %{"Unicode 🦊" => "héllo \u0000 🦊"}
+    assert JsonKeys.validate!(value) === value
+  end
+
   test "generation rejects ambiguous options and preserves native extension values" do
     for version <- ["3.0", "3.1"] do
       opts = [domains: [AshOaskit.Test.SimpleDomain], version: version]

@@ -24,7 +24,8 @@ defmodule AshOaskit.SpecTest do
               "$ref" => "#/components/schemas/Missing"
             })
           end,
-          fn s -> Map.put(s, "x-data", %{:name => 1, "name" => 1.0}) end
+          fn s -> Map.put(s, "x-data", %{:name => 1, "name" => 1.0}) end,
+          fn s -> Map.put(s, "x-data", <<255>>) end
         ] do
       variant = make_ref()
       Process.put(:boundary_variant, variant)
