@@ -197,6 +197,7 @@ defmodule AshOaskit.Notebooks.Serving.CustomApiSpec do
   def modify_spec(spec) do
     webhook = %{
       "post" => %{
+        "operationId" => "taskChanged",
         "summary" => "Task changed",
         "requestBody" => %{
           "required" => true,
@@ -310,27 +311,47 @@ end
 
 ```elixir
 defmodule MyAppWeb.ReportController do
+  @behaviour AshOaskit.OpenApiController
   use MyAppWeb, :controller
   use Oaskit.Controller
 
   plug Oaskit.Plugs.ValidateRequest
 
-  operation :create,
-    operation_id: "create_report",
-    request_body: {%{
-      "type" => "object",
-      "required" => ["name"],
-      "properties" => %{"name" => %{"type" => "string"}}
-    }, []},
-    responses: [ok: true]
+  use_operation :create, "create_report"
+
+  @report_schema %{
+    "type" => "object",
+    "required" => ["name"],
+    "properties" => %{"name" => %{"type" => "string"}}
+  }
+
+  @impl AshOaskit.OpenApiController
+  def openapi_operations do
+    %{
+      create: %{
+        operationId: "create_report",
+        requestBody: %{
+          required: true,
+          content: %{"application/json" => %{schema: @report_schema}}
+        },
+        responses: %{
+          "200" => %{
+            description: "Created report",
+            content: %{"application/json" => %{schema: @report_schema}}
+          }
+        }
+      }
+    }
+  end
 
   def create(conn, _params) do
-    json(conn, %{"ok" => true})
+    %{"name" => name} = body_params(conn)
+    json(conn, %{"name" => name})
   end
 end
 ```
 
-To include those hand-written operations in the generated spec, pass the Phoenix router to the spec module and implement `AshOaskit.OpenApiController` on the controller.
+Pass the Phoenix router to the spec module and ensure the endpoint runs JSON `Plug.Parsers` before dispatching. AshOaskit reads `openapi_operations/0`; Oaskit’s `operation/2` macro alone does not supply that callback. The matching `use_operation/2` binds request validation to the generated operation.
 
 ## Validate the spec itself
 
@@ -347,8 +368,10 @@ In CI, the stronger validation stack is:
 
 ```elixir
 {:ok, _} = AshOaskit.validate(MyAppWeb.ApiSpec.spec())
-Oaskit.build_spec!(MyAppWeb.ApiSpec)
+Oaskit.build_spec!(MyAppWeb.ApiSpec, responses: true)
 ```
+
+The default build compiles request validators. `responses: true` adds response validators; neither proves that unused components were compiled or runtime payloads match the spec. Exercise valid and invalid requests and responses, as shown in the [request validation guide](../guides/request-validation.md).
 
 ## Resource scope
 

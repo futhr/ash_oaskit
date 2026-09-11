@@ -12,7 +12,7 @@ the scope: **what is validated, by whom, and where oaskit's plugs apply.**
 | Hand-written Phoenix controllers | `Oaskit.Plugs.ValidateRequest` against your spec module |
 
 `Oaskit.Plugs.ValidateRequest` resolves operations through the
-`operation` macro from `use Oaskit.Controller`, which requires a Phoenix
+`operation` or `use_operation` macro from `use Oaskit.Controller`, which requires a Phoenix
 controller per route. AshJsonApi serves its routes through a forwarded
 plug router without per-route Phoenix controllers, so **ValidateRequest
 cannot intercept Ash-served routes** — and it does not need to: Ash

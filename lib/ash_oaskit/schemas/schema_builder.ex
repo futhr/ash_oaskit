@@ -17,10 +17,11 @@ defmodule AshOaskit.SchemaBuilder do
 
   ## Architecture
 
-  The builder maintains state through a struct containing:
+  The builder maintains state through an accumulator map containing:
 
   - `schemas` - Map of schema name to schema definition
   - `resource_names` - Map of component base name to its owning resource
+  - `schema_owners` - Generated component names reserved for their resource, action, or built-in definition
   - `seen_types` - MapSet of types already processed (output schemas)
   - `seen_input_types` - MapSet of input types already processed
   - `version` - OpenAPI version ("3.0" or "3.1") for nullable handling
@@ -51,12 +52,15 @@ defmodule AshOaskit.SchemaBuilder do
   |-------------|---------------|---------|
   | Output attributes | `{Resource}Attributes` | `PostAttributes` |
   | Output response | `{Resource}Response` | `PostResponse` |
+  | Collection response | `{Resource}CollectionResponse` | `PostCollectionResponse` |
   | Create input | `{Resource}CreateInput` | `PostCreateInput` |
   | Update input | `{Resource}UpdateInput` | `PostUpdateInput` |
   | Relationships | `{Resource}Relationships` | `PostRelationships` |
-  | Relationship linkage | `{Resource}{Rel}Linkage` | `PostCommentsLinkage` |
-  | Embedded output | `{Embedded}` | `Address` |
-  | Embedded input | `{Embedded}Input` | `AddressInput` |
+  | Embedded fields | `{Embedded}` | `Address` |
+
+  Relationship linkage is generated inline. Embedded fields share their component
+  between input and output schemas. Conflicting generated names raise instead of
+  associating a reference with a different resource or action.
 
   ## Cycle Detection
 
@@ -109,6 +113,7 @@ defmodule AshOaskit.SchemaBuilder do
 
   - `:schemas` - Map of schema name (string) to schema definition (map)
   - `:resource_names` - Map of schema base name to the resource that owns it
+  - `:schema_owners` - Map of generated schema name to its owning definition
   - `:seen_types` - MapSet of modules already processed for output schemas
   - `:seen_input_types` - MapSet of modules already processed for input schemas
   - `:version` - OpenAPI version string ("3.0" or "3.1")

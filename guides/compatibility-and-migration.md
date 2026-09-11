@@ -39,6 +39,7 @@ and a built-package consumer without optional integrations. Local checks are:
 mix check --no-retry
 mix coveralls
 mix docs --warnings-as-errors
+mix run scripts/verify_notebooks.exs
 mix run scripts/verify_consumer.exs minimal
 mix run scripts/verify_consumer.exs minimum
 mix run scripts/verify_consumer.exs integrations
@@ -49,6 +50,9 @@ Consumer fixtures resolve without dependency overrides. The selected compatible
 minimum set uses Jason 1.4.5: Jason 1.4.0–1.4.4 exclude Decimal 3 and cannot be
 combined with this library's Decimal 3.1 security floor. The `locked` fixture copies
 the checkout lockfile into an isolated consumer; the other fixtures resolve afresh.
+They exercise spec generation and Plug serving; integration fixtures also exercise
+Phoenix introspection and Igniter scaffolding. Notebook checks evaluate executable
+cells and validate their generated specs, excluding setup and marked snippets.
 
 For the optional installer, avoid Igniter 0.8.1–0.8.3. Those releases are affected by
 terminal escape injection in package confirmation prompts; Igniter 0.8.4 fixes
