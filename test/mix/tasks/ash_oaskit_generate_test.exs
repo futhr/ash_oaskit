@@ -241,6 +241,29 @@ defmodule Mix.Tasks.AshOaskit.GenerateTest do
   end
 
   describe "YAML format" do
+    for version <- ["3.0", "3.1"] do
+      test "preserves normalized native values in version #{version}", %{tmp_dir: tmp_dir} do
+        version = unquote(version)
+        output_file = Path.join(tmp_dir, "native-#{version}.yaml")
+
+        capture_io(fn ->
+          Generate.run([
+            "--domains",
+            "AshOaskit.Test.Blog",
+            "--version",
+            version,
+            "--format",
+            "yaml",
+            "--output",
+            output_file
+          ])
+        end)
+
+        assert YamlElixir.read_from_file!(output_file) ===
+                 AshOaskit.spec(domains: [AshOaskit.Test.Blog], version: version)
+      end
+    end
+
     test "generates YAML when --format yaml", %{tmp_dir: tmp_dir} do
       output_file = Path.join(tmp_dir, "openapi.yaml")
 

@@ -4,6 +4,9 @@ defmodule Mix.Tasks.AshOaskit.Generate do
   @moduledoc """
   Generate OpenAPI specification files from Ash domains.
 
+  JSON and YAML exports preserve the native values in the normalized spec.
+  YAML export requires `:ymlr` and accepts that map directly.
+
   > #### Tip {: .tip}
   >
   > If you already define a spec module with `use AshOaskit`, prefer
@@ -145,11 +148,7 @@ defmodule Mix.Tasks.AshOaskit.Generate do
 
   defp encode_yaml(spec) do
     if Code.ensure_loaded?(Ymlr) and function_exported?(Ymlr, :document!, 1) do
-      # Round-trip through JSON to normalize atoms/structs before YAML
-      spec
-      |> JSV.Codec.encode!()
-      |> JSV.Codec.decode!()
-      |> Ymlr.document!()
+      Ymlr.document!(spec)
     else
       Mix.raise(
         "YAML format requires the :ymlr dependency. Add {:ymlr, \"~> 5.0\"} to your mix.exs"
