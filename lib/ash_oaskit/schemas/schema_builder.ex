@@ -333,28 +333,13 @@ defmodule AshOaskit.SchemaBuilder do
   """
   @spec to_components(t()) :: map()
   def to_components(%{schemas: schemas}) do
-    validate_refs!(schemas, schemas)
+    validate_refs!(%{components: %{schemas: schemas}}, schemas)
     %{schemas: schemas}
   end
 
   @doc false
   @spec validate_refs!(term(), map()) :: :ok
-  def validate_refs!(document, schemas) when is_map(schemas) do
-    missing_refs =
-      document
-      |> collect_local_schema_refs([])
-      |> Enum.uniq()
-      |> Enum.reject(&resolves_pointer?(schemas, &1))
-      |> Enum.sort()
-
-    if missing_refs != [] do
-      raise ArgumentError,
-            "OpenAPI schemas contain missing local component references: " <>
-              Enum.join(missing_refs, ", ")
-    end
-
-    :ok
-  end
+  defdelegate validate_refs!(document, schemas), to: AshOaskit.Schemas.References, as: :validate!
 
   @doc """
   Gets the OpenAPI version from the builder.
@@ -526,53 +511,6 @@ defmodule AshOaskit.SchemaBuilder do
       reserve_schema_name(acc, name <> suffix, {resource, suffix})
     end)
   end
-
-  defp collect_local_schema_refs(%{} = value, refs) do
-    refs =
-      case Map.get(value, "$ref") do
-        "#/components/schemas/" <> name -> [name | refs]
-        _ -> refs
-      end
-
-    Enum.reduce(Map.values(value), refs, &collect_local_schema_refs/2)
-  end
-
-  defp collect_local_schema_refs(value, refs) when is_list(value) do
-    Enum.reduce(value, refs, &collect_local_schema_refs/2)
-  end
-
-  defp collect_local_schema_refs(_, refs), do: refs
-
-  defp resolves_pointer?(schemas, pointer) do
-    segments =
-      pointer
-      |> URI.decode()
-      |> String.split("/")
-      |> Enum.map(&(&1 |> String.replace("~1", "/") |> String.replace("~0", "~")))
-
-    resolve_pointer(schemas, segments) != :error
-  end
-
-  defp resolve_pointer(value, []), do: {:ok, value}
-
-  defp resolve_pointer(value, [segment | rest]) when is_map(value) do
-    case Enum.find(value, fn {key, _} -> to_string(key) == segment end) do
-      {_, child} -> resolve_pointer(child, rest)
-      nil -> :error
-    end
-  end
-
-  defp resolve_pointer(value, [segment | rest]) when is_list(value) do
-    with true <- Regex.match?(~r/^(0|[1-9][0-9]*)$/, segment),
-         {index, ""} <- Integer.parse(segment),
-         {:ok, child} <- Enum.fetch(value, index) do
-      resolve_pointer(child, rest)
-    else
-      _ -> :error
-    end
-  end
-
-  defp resolve_pointer(_, _), do: :error
 
   @doc """
   Generates the schema name for a resource.

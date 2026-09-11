@@ -95,7 +95,15 @@ defmodule AshOaskit.OpenApi do
           """
       end
 
-    raw_spec |> AshOaskit.Core.JsonKeys.validate!() |> Oaskit.normalize_spec!()
+    normalize_spec!(raw_spec)
+  end
+
+  @doc false
+  @spec normalize_spec!(map()) :: map()
+  def normalize_spec!(spec) do
+    spec = spec |> AshOaskit.Core.JsonKeys.validate!() |> Oaskit.normalize_spec!()
+    AshOaskit.SchemaBuilder.validate_refs!(spec, spec["components"]["schemas"])
+    spec
   end
 
   @doc """

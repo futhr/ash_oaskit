@@ -188,6 +188,9 @@ defaults and custom schemas. Keep native JSON values in callbacks.
 Give resources distinct JSON:API `type` values whenever their modules share a
 final segment. Component-name collisions are rejected, and generated local
 `$ref` targets are validated before the spec is returned.
+Local pointer checks inspect schema structure, including atom-keyed callback schemas;
+`$ref` text inside defaults, examples, enum/constant values, and vendor extensions is
+literal data. External references and anchors require the caller's full validator.
 
 ## Constraint Mapping
 
