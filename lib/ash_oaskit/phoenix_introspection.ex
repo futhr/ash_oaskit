@@ -165,17 +165,21 @@ defmodule AshOaskit.PhoenixIntrospection do
     operations = controller.openapi_operations()
 
     operation =
-      Map.get(operations, action) ||
-        default_operation(route)
+      (Map.get(operations, action) || default_operation(route))
+      |> AshOaskit.Core.JsonKeys.validate!()
 
     # Ensure operation has operationId
     operation =
-      Map.put_new(
-        operation,
-        :operationId,
-        build_operation_id(controller, action) <>
-          "_" <> PathRegistry.suffix(route.verb, route.path)
-      )
+      if Map.has_key?(operation, "operationId") do
+        operation
+      else
+        Map.put_new(
+          operation,
+          :operationId,
+          build_operation_id(controller, action) <>
+            "_" <> PathRegistry.suffix(route.verb, route.path)
+        )
+      end
 
     # Add path parameters if not present
     operation = ensure_path_params(operation, route.path)
@@ -229,8 +233,9 @@ defmodule AshOaskit.PhoenixIntrospection do
     if path_params == [] do
       operation
     else
-      existing_params = Map.get(operation, :parameters, [])
-      existing_param_names = Enum.map(existing_params, & &1[:name])
+      params_key = if Map.has_key?(operation, "parameters"), do: "parameters", else: :parameters
+      existing_params = Map.get(operation, params_key, [])
+      existing_param_names = existing_path_names(existing_params)
 
       new_params =
         path_params
@@ -247,9 +252,15 @@ defmodule AshOaskit.PhoenixIntrospection do
       if new_params == [] do
         operation
       else
-        Map.put(operation, :parameters, existing_params ++ new_params)
+        Map.put(operation, params_key, existing_params ++ new_params)
       end
     end
+  end
+
+  defp existing_path_names(parameters) do
+    parameters
+    |> Enum.filter(&((&1[:in] || &1["in"]) in [:path, "path"]))
+    |> Enum.map(&to_string(&1[:name] || &1["name"]))
   end
 
   # Gets the tag for a controller

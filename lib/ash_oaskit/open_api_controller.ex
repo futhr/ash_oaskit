@@ -6,6 +6,11 @@ defmodule AshOaskit.OpenApiController do
   in the generated OpenAPI specification when using Phoenix router
   introspection.
 
+  Operation and parameter maps may use atom or string keys. Explicit operation
+  IDs are preserved. Parameters are identified by both `name` and `in`, so a query
+  parameter does not replace a path parameter of the same name. Ambiguous key
+  aliases in a single object raise instead of silently replacing metadata.
+
   ## Usage
 
   Implement this behaviour in your Phoenix controllers to include

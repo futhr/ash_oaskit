@@ -5,6 +5,74 @@ defmodule AshOaskit.PhoenixIntrospectionTest do
 
   alias AshOaskit.PhoenixIntrospection
 
+  defmodule KeyedController do
+    def openapi_operations do
+      %{
+        show: %{
+          "operationId" => "explicit_show",
+          "parameters" => [
+            %{"name" => "id", "in" => "query", "schema" => %{"type" => "integer"}},
+            %{
+              "name" => "slug",
+              "in" => "path",
+              "required" => true,
+              "schema" => %{"type" => "string", "minLength" => 3}
+            }
+          ],
+          "responses" => %{"200" => %{"description" => "OK"}}
+        },
+        query: %{
+          parameters: [%{name: "id", in: :query, schema: %{type: :integer}}],
+          responses: %{"200" => %{description: "OK"}}
+        }
+      }
+    end
+  end
+
+  defmodule KeyedRouter do
+    def __routes__ do
+      [
+        %{path: "/keyed/:id/:slug", verb: :get, plug: KeyedController, plug_opts: :show},
+        %{path: "/query/:id", verb: :get, plug: KeyedController, plug_opts: :query}
+      ]
+    end
+  end
+
+  test "preserves explicit string IDs and typed parameters while adding missing path parameters" do
+    for version <- ["3.0", "3.1"] do
+      spec =
+        AshOaskit.spec(
+          domains: [AshOaskit.Test.SimpleDomain],
+          router: KeyedRouter,
+          version: version
+        )
+
+      show = spec["paths"]["/keyed/{id}/{slug}"]["get"]
+      assert show["operationId"] == "explicit_show"
+
+      assert Enum.map(show["parameters"], &{&1["name"], &1["in"]}) ==
+               [{"id", "query"}, {"slug", "path"}, {"id", "path"}]
+
+      assert Enum.at(show["parameters"], 1)["schema"]["minLength"] == 3
+      assert List.last(show["parameters"])["required"] == true
+      query = spec["paths"]["/query/{id}"]["get"]
+
+      assert Enum.map(query["parameters"], &{&1["name"], &1["in"]}) ==
+               [{"id", "query"}, {"id", "path"}]
+
+      assert {:ok, _} = AshOaskit.validate(spec)
+    end
+  end
+
+  test "explicit string IDs participate in global uniqueness checks" do
+    [route | _] = PhoenixIntrospection.extract_routes(KeyedRouter)
+    paths = PhoenixIntrospection.routes_to_paths([route, %{route | path: "/other/{id}/{slug}"}])
+
+    assert_raise ArgumentError, ~r/Duplicate operationId "explicit_show"/, fn ->
+      AshOaskit.Core.PathRegistry.validate_ids!(paths)
+    end
+  end
+
   # Test controller implementing the OpenApiController behaviour
   defmodule TestHealthController do
     @behaviour AshOaskit.OpenApiController
