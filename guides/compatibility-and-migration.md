@@ -1,6 +1,6 @@
 # Compatibility and migration
 
-The audit corrections change generated contracts. Regenerate snapshots and clients;
+Changes to generated contracts require regenerating snapshots and clients;
 do not patch exported JSON by hand. Use `SpecModifier` for application-specific changes.
 
 - Dependencies now require Ash 3.33+, Spark 2.6+, Plug 1.20.3+, and Oaskit 0.14.2+.
@@ -49,6 +49,11 @@ Consumer fixtures resolve without dependency overrides. The selected compatible
 minimum set uses Jason 1.4.5: Jason 1.4.0–1.4.4 exclude Decimal 3 and cannot be
 combined with this library's Decimal 3.1 security floor. The `locked` fixture copies
 the checkout lockfile into an isolated consumer; the other fixtures resolve afresh.
+
+For the optional installer, avoid Igniter 0.8.1–0.8.3. Those releases are affected by
+terminal escape injection in package confirmation prompts; Igniter 0.8.4 fixes
+[GHSA-cj7w-j579-gc42](https://github.com/ash-project/igniter/security/advisories/GHSA-cj7w-j579-gc42).
+The checkout locks the patched release. Applications manage their own lockfiles.
 
 Publishing additionally requires a package-scoped `HEX_API_KEY` in the protected
 `hex-publish` environment. An existing repository secret cannot be read back for migration;
