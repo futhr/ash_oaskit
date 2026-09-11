@@ -263,6 +263,11 @@ custom types with a `json_schema/1` callback. A declared callback must return
 a schema map; exceptions and malformed return values stop generation with the
 custom type and attribute in the error instead of emitting a guessed schema.
 
+Native maps may use atom, string, or integer keys, but two keys that produce the
+same JSON name (such as `:name` and `"name"`) are rejected before normalization.
+This also applies to nested defaults, custom schemas, and specification extensions.
+JSON scalar types, including the distinction between integers and floats, are preserved.
+
 Component names come from each resource's JSON:API `type`, falling back to the
 resource module's final segment. If two resources resolve to the same name,
 generation fails with both modules and the conflicting component name. Give

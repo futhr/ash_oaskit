@@ -95,7 +95,7 @@ defmodule AshOaskit.OpenApi do
           """
       end
 
-    Oaskit.normalize_spec!(raw_spec)
+    raw_spec |> AshOaskit.Core.JsonKeys.validate!() |> Oaskit.normalize_spec!()
   end
 
   @doc """
@@ -168,7 +168,7 @@ defmodule AshOaskit.OpenApi do
   """
   @spec to_map(map()) :: map()
   def to_map(spec) when is_struct(spec) do
-    Oaskit.normalize_spec!(spec)
+    spec |> AshOaskit.Core.JsonKeys.validate!() |> Oaskit.normalize_spec!()
   end
 
   def to_map(spec) when is_map(spec), do: spec

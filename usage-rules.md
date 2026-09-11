@@ -181,6 +181,10 @@ Custom `json_schema/1` callbacks must return a map and must not raise. Invalid
 callbacks fail generation with type and attribute context; there is no silent
 string fallback.
 
+Do not mix keys that normalize to the same JSON name (`:name` and `"name"`, or
+`200` and `"200"`). Ambiguous keys raise before normalization, including inside
+defaults and custom schemas. Keep native JSON values in callbacks.
+
 Give resources distinct JSON:API `type` values whenever their modules share a
 final segment. Component-name collisions are rejected, and generated local
 `$ref` targets are validated before the spec is returned.
