@@ -7,6 +7,18 @@ defmodule AshOaskit.SpecModifierTest do
 
   alias AshOaskit.SpecModifier
 
+  test "modifier callbacks must return maps and programming errors remain visible" do
+    for modifier <- [fn _ -> nil end, {Map, :get, [:absent]}, [fn _ -> :invalid end]] do
+      assert_raise ArgumentError, ~r/spec modifier must return a spec map/, fn ->
+        SpecModifier.apply_modifier(%{}, modifier)
+      end
+    end
+
+    assert_raise ArithmeticError, fn ->
+      SpecModifier.apply_modifier(%{}, fn _ -> raise ArithmeticError end)
+    end
+  end
+
   test "every mutating helper independently normalizes atom-key specs in both versions" do
     modifiers = [
       {"extension", &SpecModifier.add_extension(&1, ["info"], "x-tested", true)},

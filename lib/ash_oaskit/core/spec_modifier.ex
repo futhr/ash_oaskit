@@ -85,12 +85,12 @@ defmodule AshOaskit.SpecModifier do
   def apply_modifier(spec, nil), do: spec
 
   def apply_modifier(spec, fun) when is_function(fun, 1) do
-    fun.(spec)
+    validate_result!(fun.(spec))
   end
 
   def apply_modifier(spec, {mod, fun, args})
       when is_atom(mod) and is_atom(fun) and is_list(args) do
-    apply(mod, fun, [spec | args])
+    validate_result!(apply(mod, fun, [spec | args]))
   end
 
   def apply_modifier(spec, modifiers) when is_list(modifiers) do
@@ -101,6 +101,11 @@ defmodule AshOaskit.SpecModifier do
     Logger.warning(fn -> "AshOaskit: ignoring invalid spec modifier: #{inspect(invalid)}" end)
     spec
   end
+
+  defp validate_result!(result) when is_map(result), do: result
+
+  defp validate_result!(result),
+    do: raise(ArgumentError, "spec modifier must return a spec map, got: #{inspect(result)}")
 
   @doc """
   Adds a custom extension field to the spec at the specified path.

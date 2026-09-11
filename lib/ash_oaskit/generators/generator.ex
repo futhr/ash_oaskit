@@ -245,10 +245,10 @@ defmodule AshOaskit.Generators.Generator do
         spec
 
       {mod, fun, args} when is_atom(mod) and is_atom(fun) and is_list(args) ->
-        apply(mod, fun, [spec | args])
+        SpecModifier.apply_modifier(spec, {mod, fun, args})
 
       fun when is_function(fun, 1) ->
-        fun.(spec)
+        SpecModifier.apply_modifier(spec, fun)
 
       modifiers when is_list(modifiers) ->
         SpecModifier.apply_modifier(spec, modifiers)

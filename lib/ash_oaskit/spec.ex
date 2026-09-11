@@ -181,10 +181,18 @@ defmodule AshOaskit.Spec do
   end
 
   defp generate(module, opts) do
-    opts
-    |> generate_spec()
+    spec = validate_result!(generate_spec(opts), "spec builder for #{inspect(module)}")
+
+    spec
     |> module.modify_spec()
+    |> validate_result!("#{inspect(module)}.modify_spec/1")
+    |> AshOaskit.OpenApi.normalize_spec!()
   end
+
+  defp validate_result!(result, _) when is_map(result), do: result
+
+  defp validate_result!(result, callback),
+    do: raise(ArgumentError, "#{callback} must return a spec map, got: #{inspect(result)}")
 
   # With a custom spec builder, go through the legacy SpecBuilder
   # contract (where :version means the API version); otherwise call the

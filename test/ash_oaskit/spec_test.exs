@@ -5,6 +5,62 @@ defmodule AshOaskit.SpecTest do
 
   doctest AshOaskit.Spec
 
+  defmodule BoundarySpec do
+    use AshOaskit, domains: [AshOaskit.Test.SimpleDomain]
+    def modify_spec(spec), do: Process.get(:boundary_modifier, &Function.identity/1).(spec)
+    def cache_variant, do: Process.get(:boundary_variant)
+  end
+
+  defmodule InvalidBuilder do
+    def spec(_, _), do: :invalid
+  end
+
+  test "invalid callback results and missing references never populate the cache" do
+    for modifier <- [
+          fn _ -> :invalid end,
+          fn s ->
+            put_in(s, ["components", "schemas", "Bad"], %{
+              "$ref" => "#/components/schemas/Missing"
+            })
+          end,
+          fn s -> Map.put(s, "x-data", %{:name => 1, "name" => 1.0}) end
+        ] do
+      variant = make_ref()
+      Process.put(:boundary_variant, variant)
+      Process.put(:boundary_modifier, modifier)
+      key = {:ash_oaskit_cache, BoundarySpec, variant}
+      assert_raise ArgumentError, fn -> BoundarySpec.spec() end
+      assert BoundarySpec.cache({:get, key}) == :error
+
+      Process.delete(:boundary_modifier)
+      valid = BoundarySpec.spec()
+      assert {:ok, ^valid} = BoundarySpec.cache({:get, key})
+      :persistent_term.erase(key)
+    end
+  end
+
+  test "callback programming errors propagate and custom builder return errors have context" do
+    Process.put(:boundary_modifier, fn _ -> raise ArithmeticError end)
+    Process.put(:boundary_variant, make_ref())
+    assert_raise ArithmeticError, fn -> BoundarySpec.spec() end
+
+    assert_raise ArgumentError, ~r/spec builder.*BoundarySpec.*must return a spec map/, fn ->
+      AshOaskit.Spec.build(BoundarySpec,
+        domains: [AshOaskit.Test.SimpleDomain],
+        spec_builder: InvalidBuilder,
+        cache: false
+      )
+    end
+  end
+
+  test "customization is normalized before caching and retains native JSON values" do
+    variant = make_ref()
+    Process.put(:boundary_variant, variant)
+    Process.put(:boundary_modifier, &Map.put(&1, :"x-data", [nil, true, false, 1, 1.0]))
+    on_exit(fn -> :persistent_term.erase({:ash_oaskit_cache, BoundarySpec, variant}) end)
+    assert BoundarySpec.spec()["x-data"] === [nil, true, false, 1, 1.0]
+  end
+
   defmodule BlogSpec do
     @moduledoc false
     use AshOaskit,

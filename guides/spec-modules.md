@@ -16,8 +16,9 @@ end
 ```
 
 `use AshOaskit` implements the `Oaskit` behaviour: `MyAppWeb.ApiSpec.spec/0`
-returns the generated spec map, cached in `:persistent_term` so the Ash
-domain walk runs once — not on every request.
+returns the generated spec map, cached in `:persistent_term` so requests can reuse
+it. Concurrent cache misses can run generation more than once; callbacks must not
+depend on being called exactly once.
 
 All options:
 
@@ -69,7 +70,10 @@ get "/redoc", Oaskit.SpecController, redoc: "/openapi.json"
 ## Customizing the generated spec
 
 Override `modify_spec/1` — it runs after generation and its result is
-what gets cached:
+what gets cached. Results must be maps. They are normalized and checked for ambiguous
+JSON keys and missing local component references before insertion. Failed generation
+does not populate the cache, and callback exceptions propagate. Full OpenAPI validation
+remains explicit through `AshOaskit.validate/1`:
 
 ```elixir
 defmodule MyAppWeb.ApiSpec do
@@ -104,6 +108,10 @@ config :ash_oaskit, cache_specs: false
 
 The switch is read at runtime on every call, so no recompilation is
 needed. A single module can also opt out with `use AshOaskit, cache: false`.
+
+Use a bounded, application-controlled set of cache variants. Persistent terms do not
+expire automatically. Custom cache backends retain Oaskit's `cache/1` contract; the
+library cannot roll back a custom backend that writes and then reports an error.
 
 ## Dual-version output
 
