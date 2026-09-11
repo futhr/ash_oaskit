@@ -49,6 +49,12 @@ mix dialyzer        # Run dialyzer
 mix credo --strict  # Run credo
 ```
 
+Run `mix bench` separately from tests and other heavy work. It uses development-only
+Benchee dependencies and writes Markdown reports to `bench/output/`. Review and
+commit the results when changing measured hot paths, then run
+`mix docs --warnings-as-errors` to verify their ExDoc pages. See the
+[benchmark methodology](bench/benchmarks.md) for input definitions and measurement limits.
+
 ## Code Quality Requirements
 
 All contributions must:

@@ -49,6 +49,7 @@ defmodule AshOaskit.MixProject do
   def cli do
     [
       preferred_envs: [
+        bench: :dev,
         check: :dev,
         coveralls: :test,
         "coveralls.html": :test,
@@ -90,6 +91,8 @@ defmodule AshOaskit.MixProject do
       {:jason, "~> 1.4"},
 
       # Dev/Test dependencies
+      {:benchee, "~> 1.5", only: :dev, runtime: false},
+      {:benchee_markdown, "~> 0.3.4", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
@@ -111,6 +114,7 @@ defmodule AshOaskit.MixProject do
 
       # Testing
       "test.watch": ["test.watch --stale"],
+      bench: ["run bench/generation.exs"],
 
       # Release
       release: ["git_ops.release"]
@@ -126,6 +130,7 @@ defmodule AshOaskit.MixProject do
         lib
         guides
         notebooks
+        bench
         .formatter.exs
         mix.exs
         README.md
@@ -160,6 +165,10 @@ defmodule AshOaskit.MixProject do
         "guides/spec-modules.md": [title: "Spec Modules (use AshOaskit)"],
         "guides/request-validation.md": [title: "Request Validation with Oaskit"],
         "guides/cheatsheet.cheatmd": [title: "Cheatsheet"],
+        "bench/benchmarks.md": [title: "Benchmark Methodology"],
+        "bench/output/paths.md": [title: "Path Registration"],
+        "bench/output/references.md": [title: "Schema Reference Checks"],
+        "bench/output/yaml.md": [title: "YAML Export"],
         "CHANGELOG.md": [title: "Changelog"],
         "CONTRIBUTING.md": [title: "Contributing"],
         "LICENSE.md": [title: "License"],
@@ -167,7 +176,8 @@ defmodule AshOaskit.MixProject do
       ],
       groups_for_extras: [
         Livebooks: ~r{notebooks/.*},
-        Guides: ~r{guides/.*}
+        Guides: ~r{guides/.*},
+        Benchmarks: ~r{bench/.*}
       ],
       groups_for_modules: [
         "Core API": [

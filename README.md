@@ -384,7 +384,11 @@ mix test            # Run tests
 mix check --no-retry # Run quality checks
 mix docs            # Generate documentation
 mix coveralls.html  # Check test coverage
+mix bench           # Regenerate Benchee Markdown reports under bench/output/
 ```
+
+See the [benchmark methodology and recorded results](bench/benchmarks.md).
+The reports are included in ExDoc under **Benchmarks**.
 
 ## References
 

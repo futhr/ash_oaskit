@@ -5,6 +5,7 @@
       strict: true,
       files: %{
         included: [
+          "bench/",
           "lib/",
           "test/"
         ],

@@ -148,6 +148,7 @@ try do
     """
   end}
   #{unless integrations?, do: "false = Enum.any?([AshJsonApi, Phoenix, Igniter], &Code.ensure_loaded?/1)"}
+  false = Enum.any?([Benchee, Benchee.Formatters.Markdown], &Code.ensure_loaded?/1)
   IO.puts("Packaged consumer verified: #{mode}")
   """)
 

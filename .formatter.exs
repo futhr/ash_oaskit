@@ -2,7 +2,7 @@
 [
   inputs: [
     "{mix,.formatter}.exs",
-    "{config,lib,scripts,test}/**/*.{ex,exs}",
+    "{bench,config,lib,scripts,test}/**/*.{ex,exs}",
     "notebooks/**/*.livemd"
   ],
   plugins: [Spark.Formatter, DoctestFormatter],
