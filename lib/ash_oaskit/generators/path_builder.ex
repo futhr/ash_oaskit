@@ -204,14 +204,10 @@ defmodule AshOaskit.Generators.PathBuilder do
     opts
     |> Keyword.get_lazy(:route_pairs, fn -> Enum.flat_map(domains, &get_domain_routes/1) end)
     |> Enum.uniq()
-    |> Enum.reduce(%{}, fn {path, route}, paths ->
-      PathRegistry.put(
-        paths,
-        convert_path_params(path),
-        route_to_method(route),
-        build_operation(route, opts)
-      )
+    |> Stream.map(fn {path, route} ->
+      {convert_path_params(path), route_to_method(route), build_operation(route, opts)}
     end)
+    |> PathRegistry.from_operations()
     |> PathRegistry.disambiguate()
   end
 

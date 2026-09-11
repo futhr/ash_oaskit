@@ -14,6 +14,41 @@ defmodule AshOaskit.Core.PathRegistry do
     if equivalent,
       do: raise(ArgumentError, "Conflicting OpenAPI path templates: #{equivalent} and #{path}")
 
+    put_method(paths, path, method, operation)
+  end
+
+  @doc "Builds a path map with one template-shape lookup per operation."
+  @spec from_operations(Enumerable.t()) :: map()
+  def from_operations(operations) do
+    build_operations(operations, %{}, %{})
+  end
+
+  defp build_operations(operations, paths, index) do
+    {paths, _index} =
+      Enum.reduce(operations, {paths, index}, fn {path, method, operation}, {paths, index} ->
+        index = index_path!(index, path)
+        {put_method(paths, path, method, operation), index}
+      end)
+
+    paths
+  end
+
+  defp index_path!(index, path) do
+    shape = PathUtils.template_shape(path)
+
+    case Map.fetch(index, shape) do
+      :error ->
+        Map.put(index, shape, path)
+
+      {:ok, ^path} ->
+        index
+
+      {:ok, equivalent} ->
+        raise ArgumentError, "Conflicting OpenAPI path templates: #{equivalent} and #{path}"
+    end
+  end
+
+  defp put_method(paths, path, method, operation) do
     Map.update(paths, path, %{method => operation}, fn methods ->
       case Map.fetch(methods, method) do
         :error ->
@@ -32,11 +67,13 @@ defmodule AshOaskit.Core.PathRegistry do
   @doc "Merges path maps without silently replacing operations."
   @spec merge(map(), map()) :: map()
   def merge(left, right) do
-    Enum.reduce(right, left, fn {path, methods}, paths ->
-      Enum.reduce(methods, paths, fn {method, operation}, acc ->
-        put(acc, path, method, operation)
-      end)
+    index = Enum.reduce(Map.keys(left), %{}, &index_path!(&2, &1))
+
+    right
+    |> Stream.flat_map(fn {path, methods} ->
+      Enum.map(methods, fn {method, operation} -> {path, method, operation} end)
     end)
+    |> build_operations(left, index)
   end
 
   @doc "Disambiguates generated identifiers with a deterministic method/path suffix."

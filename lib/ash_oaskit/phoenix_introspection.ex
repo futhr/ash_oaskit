@@ -111,14 +111,11 @@ defmodule AshOaskit.PhoenixIntrospection do
   """
   @spec routes_to_paths([map()]) :: map()
   def routes_to_paths(routes) do
-    Enum.reduce(routes, %{}, fn route, paths ->
-      PathRegistry.put(
-        paths,
-        route.path,
-        verb_to_string(route.verb),
-        route.operation
-      )
+    routes
+    |> Stream.map(fn route ->
+      {route.path, verb_to_string(route.verb), route.operation}
     end)
+    |> PathRegistry.from_operations()
   end
 
   @doc """
