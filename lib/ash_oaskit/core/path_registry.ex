@@ -24,7 +24,7 @@ defmodule AshOaskit.Core.PathRegistry do
   end
 
   defp build_operations(operations, paths, index) do
-    {paths, _index} =
+    {paths, _} =
       Enum.reduce(operations, {paths, index}, fn {path, method, operation}, {paths, index} ->
         index = index_path!(index, path)
         {put_method(paths, path, method, operation), index}

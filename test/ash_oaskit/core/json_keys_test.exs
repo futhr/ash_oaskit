@@ -3,6 +3,7 @@ defmodule AshOaskit.Core.JsonKeysTest do
   alias AshOaskit.Core.JsonKeys
 
   defmodule AmbiguousType do
+    @spec json_schema(term()) :: map()
     def json_schema(_), do: %{:type => "string", "type" => "integer"}
   end
 

@@ -162,8 +162,7 @@ defmodule AshOaskit.PhoenixIntrospection do
     operations = controller.openapi_operations()
 
     operation =
-      (Map.get(operations, action) || default_operation(route))
-      |> AshOaskit.Core.JsonKeys.validate!()
+      AshOaskit.Core.JsonKeys.validate!(Map.get(operations, action) || default_operation(route))
 
     # Ensure operation has operationId
     operation =

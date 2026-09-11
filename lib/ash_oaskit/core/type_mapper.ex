@@ -88,6 +88,7 @@ defmodule AshOaskit.TypeMapper do
   import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
 
   alias Ash.Type.NewType
+  alias AshOaskit.Core.JsonKeys
   alias AshOaskit.Schemas.Nullable
 
   require Logger
@@ -563,7 +564,7 @@ defmodule AshOaskit.TypeMapper do
       end
 
     if is_map(schema) do
-      AshOaskit.Core.JsonKeys.validate!(schema)
+      JsonKeys.validate!(schema)
     else
       raise ArgumentError,
             "custom type callback #{inspect(type)}.json_schema/1 must return a map, " <>
@@ -748,7 +749,7 @@ defmodule AshOaskit.TypeMapper do
 
   defp maybe_add_default(schema, %{default: default})
        when default != nil and not is_function(default) do
-    default = default |> sanitize_default() |> AshOaskit.Core.JsonKeys.validate!()
+    default = default |> sanitize_default() |> JsonKeys.validate!()
 
     case Jason.encode(default) do
       {:ok, _} ->

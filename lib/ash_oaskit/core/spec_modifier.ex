@@ -52,6 +52,7 @@ defmodule AshOaskit.SpecModifier do
   - Adding examples to schemas
   """
 
+  alias AshOaskit.Core.JsonKeys
   require Logger
 
   @doc """
@@ -559,9 +560,9 @@ defmodule AshOaskit.SpecModifier do
   defp maybe_update_operation(operation, _, _), do: operation
 
   defp normalize_spec(%{openapi: _} = spec),
-    do: spec |> AshOaskit.Core.JsonKeys.validate!() |> Oaskit.normalize_spec!()
+    do: spec |> JsonKeys.validate!() |> Oaskit.normalize_spec!()
 
-  defp normalize_spec(spec), do: AshOaskit.Core.JsonKeys.validate!(spec)
+  defp normalize_spec(spec), do: JsonKeys.validate!(spec)
 
   defp maybe_put(map, _, nil), do: map
   defp maybe_put(map, key, value), do: Map.put(map, key, value)
