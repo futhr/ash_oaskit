@@ -355,10 +355,23 @@ defmodule AshOaskit.ErrorSchemas do
 
     updated_schemas =
       schemas
-      |> Map.put("JsonApiError", error_response_schema())
-      |> Map.put("JsonApiErrorObject", error_object_schema())
+      |> put_error_schema!("JsonApiError", error_response_schema())
+      |> put_error_schema!("JsonApiErrorObject", error_object_schema())
 
     Map.put(components, :schemas, updated_schemas)
+  end
+
+  defp put_error_schema!(schemas, name, schema) do
+    case Map.fetch(schemas, name) do
+      :error ->
+        Map.put(schemas, name, schema)
+
+      {:ok, ^schema} ->
+        schemas
+
+      {:ok, _} ->
+        raise ArgumentError, "OpenAPI component #{inspect(name)} conflicts with an error schema"
+    end
   end
 
   @doc """

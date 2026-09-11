@@ -7,6 +7,49 @@ defmodule AshOaskit.SchemaBuilderTest do
   alias AshOaskit.SchemaBuilder
   @moduletag capture_log: true
 
+  test "generated component suffix collisions fail in either traversal order" do
+    alias AshOaskit.Test.ComponentNames.{Post, PostCollection}
+
+    for resources <- [[Post, PostCollection], [PostCollection, Post]],
+        version <- ["3.0", "3.1"] do
+      assert_raise ArgumentError, ~r/PostCollectionResponse.*Post.*Post/, fn ->
+        Enum.reduce(
+          resources,
+          SchemaBuilder.new(version: version),
+          &SchemaBuilder.add_resource_schemas(&2, &1)
+        )
+      end
+    end
+  end
+
+  test "action identities cannot collapse after camelization even with identical schemas" do
+    assert_raise ArgumentError, ~r/ActionNamesFooBarInput.*foo_bar/, fn ->
+      SchemaBuilder.add_resource_schemas(
+        SchemaBuilder.new(),
+        AshOaskit.Test.ComponentNames.ActionNames
+      )
+    end
+  end
+
+  test "embedded resources cannot claim built-in error component names" do
+    assert_raise ArgumentError, ~r/JsonApiError.*conflicts/, fn ->
+      AshOaskit.SchemaBuilder.EmbeddedSchemas.add_embedded_resource_schema(
+        SchemaBuilder.new(),
+        AshOaskit.Test.ComponentNames.JsonApiError,
+        &SchemaBuilder.mark_seen/2,
+        &SchemaBuilder.add_schema/3
+      )
+    end
+  end
+
+  test "reserved generated identities distinguish numerically equivalent terms" do
+    builder = SchemaBuilder.reserve_schema_name(SchemaBuilder.new(), "Example", {:owner, 1})
+
+    assert_raise ArgumentError, ~r/Example.*conflicts/, fn ->
+      SchemaBuilder.reserve_schema_name(builder, "Example", {:owner, 1.0})
+    end
+  end
+
   test "resolves nested, escaped, and array-index JSON Pointers without creating atoms" do
     schemas = %{
       "A/B~C" => %{properties: %{"name" => %{type: :string}}, anyOf: [%{type: :null}]},

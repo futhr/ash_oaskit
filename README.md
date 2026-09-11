@@ -272,6 +272,10 @@ Component names come from each resource's JSON:API `type`, falling back to the
 resource module's final segment. If two resources resolve to the same name,
 generation fails with both modules and the conflicting component name. Give
 such resources distinct JSON:API types so `$ref` identity remains unambiguous.
+Generated suffixes, action input names, embedded names, and the reserved
+`JsonApiError`/`JsonApiErrorObject` components share the same namespace. Collisions
+in that namespace also raise; for example, `Post` and `PostCollection` would both
+claim `PostCollectionResponse`.
 
 ### Constraint Mapping
 

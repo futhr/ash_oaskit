@@ -378,7 +378,18 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   """
   @spec add_action_input_schema(map(), module(), atom(), String.t(), keyword()) :: map()
   def add_action_input_schema(builder, resource, action_name, schema_name, opts) do
-    name = action_input_schema_name(schema_name, action_name, Keyword.get(opts, :route))
+    if ResourceInfo.action(resource, action_name) do
+      add_known_action_input_schema(builder, resource, action_name, schema_name, opts)
+    else
+      builder
+    end
+  end
+
+  defp add_known_action_input_schema(builder, resource, action_name, schema_name, opts) do
+    route = Keyword.get(opts, :route)
+    name = action_input_schema_name(schema_name, action_name, route)
+    owner = {resource, :input, action_name, excluded_body_arguments(route, action_name)}
+    builder = SchemaBuilder.reserve_schema_name(builder, name, owner)
     has_schema? = Keyword.get(opts, :has_schema_fn, &SchemaBuilder.has_schema?/2)
 
     if has_schema?.(builder, name) do

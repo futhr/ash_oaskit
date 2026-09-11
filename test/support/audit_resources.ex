@@ -7,6 +7,52 @@ defmodule AshOaskit.Test.Another.Address do
   end
 end
 
+defmodule AshOaskit.Test.ComponentNames.Post do
+  @moduledoc false
+  use Ash.Resource, domain: nil
+
+  attributes do
+    uuid_primary_key :id
+  end
+end
+
+defmodule AshOaskit.Test.ComponentNames.PostCollection do
+  @moduledoc false
+  use Ash.Resource, domain: nil
+
+  attributes do
+    uuid_primary_key :id
+  end
+end
+
+defmodule AshOaskit.Test.ComponentNames.JsonApiError do
+  @moduledoc false
+  use Ash.Resource, data_layer: :embedded
+
+  attributes do
+    attribute :payload, :string, public?: true
+  end
+end
+
+defmodule AshOaskit.Test.ComponentNames.ActionNames do
+  @moduledoc false
+  use Ash.Resource, domain: nil
+
+  attributes do
+    uuid_primary_key :id
+  end
+
+  actions do
+    create :foo_bar do
+      accept []
+    end
+
+    create :foo__bar do
+      accept []
+    end
+  end
+end
+
 defmodule AshOaskit.Test.ShippingInfo do
   @moduledoc false
   use Ash.Resource, data_layer: :embedded

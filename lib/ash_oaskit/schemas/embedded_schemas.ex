@@ -71,6 +71,7 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemas do
         raise ArgumentError,
               "embedded component #{inspect(name)} is shared by #{inspect(owner)} and #{inspect(type)}; use distinct embedded module names"
     end
+    |> AshOaskit.SchemaBuilder.reserve_schema_name(name, {type, :embedded})
   end
 
   @doc """

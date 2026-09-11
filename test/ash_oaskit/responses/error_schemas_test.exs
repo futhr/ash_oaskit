@@ -5,6 +5,17 @@ defmodule AshOaskit.ErrorSchemasTest do
 
   alias AshOaskit.ErrorSchemas
 
+  test "error component insertion is idempotent and rejects conflicting definitions" do
+    components = ErrorSchemas.add_error_components(%{})
+    assert ErrorSchemas.add_error_components(components) === components
+
+    for name <- ["JsonApiError", "JsonApiErrorObject"] do
+      assert_raise ArgumentError, ~r/conflicts with an error schema/, fn ->
+        ErrorSchemas.add_error_components(%{schemas: %{name => %{type: :string}}})
+      end
+    end
+  end
+
   describe "error_object_schema/0" do
     test "returns object type schema" do
       schema = ErrorSchemas.error_object_schema()

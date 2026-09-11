@@ -137,6 +137,10 @@ defmodule AshOaskit.SchemaBuilder do
     %{
       schemas: %{},
       resource_names: %{},
+      schema_owners: %{
+        "JsonApiError" => {AshOaskit.ErrorSchemas, :response},
+        "JsonApiErrorObject" => {AshOaskit.ErrorSchemas, :object}
+      },
       seen_types: MapSet.new(),
       seen_input_types: MapSet.new(),
       version: Keyword.get(opts, :version, "3.1")
@@ -172,7 +176,7 @@ defmodule AshOaskit.SchemaBuilder do
   def add_schema(%{schemas: schemas} = builder, name, schema)
       when is_binary(name) and is_map(schema) do
     if Map.has_key?(Map.get(builder, :embedded_names, %{}), name) and
-         Map.has_key?(schemas, name) and Map.fetch!(schemas, name) != schema do
+         Map.has_key?(schemas, name) and Map.fetch!(schemas, name) !== schema do
       raise ArgumentError, "component #{inspect(name)} conflicts with an embedded resource schema"
     end
 
@@ -473,7 +477,8 @@ defmodule AshOaskit.SchemaBuilder do
 
     case Map.get(resource_names, name) do
       nil ->
-        %{builder | resource_names: Map.put(resource_names, name, resource)}
+        builder = %{builder | resource_names: Map.put(resource_names, name, resource)}
+        reserve_resource_components(builder, resource, name)
 
       ^resource ->
         builder
@@ -484,6 +489,42 @@ defmodule AshOaskit.SchemaBuilder do
                 "#{inspect(existing_resource)} and #{inspect(resource)} resolve to the same " <>
                 "resource name; configure distinct AshJsonApi resource types"
     end
+  end
+
+  @doc false
+  @spec reserve_schema_name(t(), String.t(), term()) :: t()
+  def reserve_schema_name(builder, name, owner) do
+    owners = Map.get(builder, :schema_owners, %{})
+
+    case Map.fetch(owners, name) do
+      {:ok, ^owner} ->
+        builder
+
+      {:ok, existing} ->
+        raise ArgumentError,
+              "OpenAPI component #{inspect(name)} conflicts between #{inspect(existing)} and #{inspect(owner)}"
+
+      :error ->
+        if Map.has_key?(builder.schemas, name) do
+          raise ArgumentError,
+                "OpenAPI component #{inspect(name)} for #{inspect(owner)} conflicts with an existing schema"
+        end
+
+        Map.put(builder, :schema_owners, Map.put(owners, name, owner))
+    end
+  end
+
+  defp reserve_resource_components(builder, resource, name) do
+    suffixes = ~w(Attributes Resource Response CollectionResponse Filter)
+
+    suffixes =
+      if AshOaskit.SchemaBuilder.RelationshipSchemas.has_relationships?(resource),
+        do: ["Relationships" | suffixes],
+        else: suffixes
+
+    Enum.reduce(suffixes, builder, fn suffix, acc ->
+      reserve_schema_name(acc, name <> suffix, {resource, suffix})
+    end)
   end
 
   defp collect_local_schema_refs(%{} = value, refs) do
