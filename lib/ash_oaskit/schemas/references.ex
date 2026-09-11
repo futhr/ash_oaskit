@@ -4,10 +4,13 @@ defmodule AshOaskit.Schemas.References do
   @schema_maps ~w(properties patternProperties $defs definitions dependentSchemas)
   @schema_lists ~w(allOf anyOf oneOf prefixItems)
   @schema_values ~w(items additionalItems additionalProperties unevaluatedItems unevaluatedProperties contains propertyNames not if then else)
+  @object_maps ~w(webhooks parameters headers requestBodies securitySchemes callbacks pathItems content examples encoding)
 
   @doc """
   Checks local `#/components/schemas/` references in an OpenAPI document or schema.
   Examples, defaults, constants, enums, and extension payloads are literal data.
+  Named OpenAPI objects (including default responses) are traversed independently
+  of their names. Link parameter and request-body values remain literal data.
   External references and anchors are left to the caller's full schema validator.
   """
   @spec validate!(term(), map()) :: :ok
@@ -41,11 +44,25 @@ defmodule AshOaskit.Schemas.References do
   defp collect(value, :schema_map, refs) when is_map(value),
     do: Enum.reduce(value, refs, fn {_, child}, acc -> collect(child, :schema, acc) end)
 
+  defp collect(value, {:object_map, mode}, refs) when is_map(value),
+    do: Enum.reduce(value, refs, fn {_, child}, acc -> collect(child, mode, acc) end)
+
+  defp collect(value, :patterned_map, refs) when is_map(value) do
+    Enum.reduce(value, refs, fn {key, child}, acc ->
+      if String.starts_with?(to_string(key), "x-"),
+        do: acc,
+        else: collect(child, :object, acc)
+    end)
+  end
+
   defp collect(value, mode, refs) when is_map(value) do
     Enum.reduce(value, refs, fn {key, child}, acc ->
       collect_field(to_string(key), child, mode, acc)
     end)
   end
+
+  defp collect(value, {:object_map, mode}, refs) when is_list(value),
+    do: collect(value, mode, refs)
 
   defp collect(value, mode, refs) when is_list(value),
     do: Enum.reduce(value, refs, &collect(&1, mode, &2))
@@ -55,9 +72,19 @@ defmodule AshOaskit.Schemas.References do
   defp collect_field("$ref", "#/components/schemas/" <> pointer, _, refs),
     do: MapSet.put(refs, pointer)
 
+  defp collect_field(_, _, :link, refs), do: refs
   defp collect_field(key, _, _, refs) when key in ~w(example default enum const value), do: refs
   defp collect_field("examples", _, :schema, refs), do: refs
   defp collect_field("x-" <> _, _, _, refs), do: refs
+
+  defp collect_field(key, value, :object, refs) when key in ~w(paths responses),
+    do: collect(value, :patterned_map, refs)
+
+  defp collect_field("links", value, :object, refs),
+    do: collect(value, {:object_map, :link}, refs)
+
+  defp collect_field(key, value, :object, refs) when key in @object_maps,
+    do: collect(value, {:object_map, :object}, refs)
 
   defp collect_field(key, value, _, refs) when key in @schema_maps or key == "schemas",
     do: collect(value, :schema_map, refs)

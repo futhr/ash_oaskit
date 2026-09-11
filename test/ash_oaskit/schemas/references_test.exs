@@ -111,4 +111,70 @@ defmodule AshOaskit.Schemas.ReferencesTest do
     assert References.validate!(document, %{"Result" => false}) == :ok
     assert_raise ArgumentError, ~r/Result/, fn -> References.validate!(document, %{}) end
   end
+
+  test "default responses retain structural reference checks in both versions" do
+    for version <- ["3.0", "3.1"] do
+      assert_raise ArgumentError, ~r/Missing/, fn ->
+        AshOaskit.spec(
+          domains: [AshOaskit.Test.SimpleDomain],
+          version: version,
+          modify_open_api: fn spec ->
+            Map.put(spec, :paths, %{
+              "/items" => %{
+                get: %{
+                  responses: %{
+                    "default" => %{
+                      description: "error",
+                      content: %{
+                        "application/json" => %{
+                          schema: %{"$ref" => "#/components/schemas/Missing"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            })
+          end
+        )
+      end
+    end
+  end
+
+  test "named OpenAPI objects do not inherit keyword or extension semantics" do
+    schema = %{"$ref" => "#/components/schemas/Missing"}
+
+    for name <- ["default", "value", "schema", "x-header"] do
+      document = %{openapi: "3.1.0", components: %{headers: %{name => %{schema: schema}}}}
+      assert_raise ArgumentError, ~r/Missing/, fn -> References.validate!(document, %{}) end
+    end
+  end
+
+  test "OpenAPI links and patterned-map extensions preserve literal payloads" do
+    literal = %{"$ref" => "#/components/schemas/Literal"}
+
+    document = %{
+      openapi: "3.1.0",
+      paths: %{
+        "x-paths" => literal,
+        "/items" => %{
+          get: %{
+            parameters: [%{name: "id", in: "query", schema: %{type: "string"}}],
+            responses: %{
+              "x-responses" => literal,
+              "default" => %{
+                description: "error",
+                links: %{next: %{parameters: %{id: literal}, requestBody: literal}},
+                content: %{
+                  "application/json" => %{examples: %{default: %{value: literal}}}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    assert References.validate!(document, %{}) == :ok
+  end
 end
