@@ -49,6 +49,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- changelog -->
 
+## [v0.4.2](https://github.com/futhr/ash_oaskit/compare/v0.4.1...v0.4.2) (2026-09-16)
+
+
+
+
+### Bug Fixes:
+
+* reject malformed JSON strings before generation succeeds by Tobias Bohwalli
+
+* deps: update Igniter to the patched release by Tobias Bohwalli
+
+* traverse named OpenAPI objects when checking references by Tobias Bohwalli
+
+* honor declared spec grouping options by Tobias Bohwalli
+
+* check customized specs before cache publication by Tobias Bohwalli
+
+* validate structural schema references with indexed lookup by Tobias Bohwalli
+
+* reject conflicting generated component ownership by Tobias Bohwalli
+
+* preserve controller operation and parameter identities by Tobias Bohwalli
+
+* reject ambiguous JSON keys before normalization by Tobias Bohwalli
+
+### Performance Improvements:
+
+* export normalized specs directly to YAML by Tobias Bohwalli
+
+* index path templates during bulk generation by Tobias Bohwalli
+
 ## [v0.4.1](https://github.com/futhr/ash_oaskit/compare/v0.4.0...v0.4.1) (2026-09-07)
 
 
