@@ -43,7 +43,7 @@ try do
           ash: "3.33.0",
           spark: "2.6.0",
           decimal: "3.1.0",
-          oaskit: "0.14.2",
+          oaskit: "0.15.0",
           plug: "1.20.3",
           # Earlier Jason releases exclude Decimal 3; this is the compatible floor.
           jason: "1.4.5"
