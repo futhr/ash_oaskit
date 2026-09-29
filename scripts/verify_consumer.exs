@@ -40,7 +40,7 @@ try do
     case mode do
       "minimum" ->
         [
-          ash: "3.33.0",
+          ash: "3.33.11",
           spark: "2.6.0",
           decimal: "3.1.0",
           oaskit: "0.15.0",

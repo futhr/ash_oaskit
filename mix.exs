@@ -65,7 +65,7 @@ defmodule AshOaskit.MixProject do
   defp deps do
     [
       # Core Ash dependencies
-      {:ash, "~> 3.33"},
+      {:ash, ">= 3.33.11 and < 4.0.0"},
       {:spark, "~> 2.6"},
 
       # Security floor: decimal < 3.1.0 has a DoS via unbounded exponent
