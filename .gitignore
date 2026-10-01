@@ -15,5 +15,5 @@ erl_crash.dump
 *.swo
 *~
 .DS_Store
-.agants/
 .codex/
+/.claude/
