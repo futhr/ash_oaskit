@@ -201,6 +201,31 @@ defmodule AshOaskit.SpecTest do
   end
 
   describe "caching" do
+    test "concurrent first requests share one customized build for each OpenAPI version" do
+      for {version, openapi} <- [{"3.0", "3.0.3"}, {"3.1", "3.1.0"}] do
+        variant = make_ref()
+        key = {:ash_oaskit_cache, BoundarySpec, variant}
+        on_exit(fn -> :persistent_term.erase(key) end)
+
+        first = start_cached_build(self(), variant, version)
+        assert_receive {:requesting, first_pid}, 1000
+        assert first_pid == first.pid
+        assert_receive {:building, builder}, 1000
+        assert builder == first.pid
+
+        second = start_cached_build(self(), variant, version)
+        assert_receive {:requesting, second_pid}, 1000
+        assert second_pid == second.pid
+        refute_receive {:building, _}, 100
+
+        send(builder, :finish_build)
+        spec = Task.await(first)
+        assert Task.await(second) == spec
+        assert spec["openapi"] == openapi
+        assert {:ok, ^spec} = BoundarySpec.cache({:get, key})
+      end
+    end
+
     test "caches the generated spec in persistent_term" do
       key = {:ash_oaskit_cache, BlogSpec, nil}
       assert :persistent_term.get(key, :missing) == :missing
@@ -270,6 +295,29 @@ defmodule AshOaskit.SpecTest do
 
       assert json =~ ~s("openapi")
       assert json =~ ~s(Blog API)
+    end
+  end
+
+  defp start_cached_build(parent, variant, version) do
+    Task.async(fn ->
+      Process.put(:boundary_variant, variant)
+      Process.put(:boundary_modifier, &wait_for_build_release(&1, parent))
+      send(parent, {:requesting, self()})
+
+      AshOaskit.Spec.build(BoundarySpec,
+        domains: [AshOaskit.Test.SimpleDomain],
+        version: version
+      )
+    end)
+  end
+
+  defp wait_for_build_release(spec, parent) do
+    send(parent, {:building, self()})
+
+    receive do
+      :finish_build -> spec
+    after
+      5000 -> raise "cached build was not released"
     end
   end
 end

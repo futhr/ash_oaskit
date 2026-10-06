@@ -3,7 +3,7 @@
 Changes to generated contracts require regenerating snapshots and clients;
 do not patch exported JSON by hand. Use `SpecModifier` for application-specific changes.
 
-- Dependencies now require Ash 3.33.11+, Spark 2.6+, Plug 1.20.3+, and Oaskit 0.15.0+.
+- Dependencies now require Ash 3.34.3+, Spark 2.7.6+, Plug 1.20.3+, and Oaskit 0.17.0+.
   Optional integrations require AshJsonApi 1.7.1+, Phoenix 1.8.13+, and Igniter 0.6.29+.
   Configure `config :ash, default_string_length_count: :codepoints` in the consuming app.
 - Decimal output and defaults are exact strings. Decimal inputs may also be numbers.
@@ -31,6 +31,12 @@ do not patch exported JSON by hand. Use `SpecModifier` for application-specific 
 
 Generation normalizes the document and checks local schema references. Full OpenAPI
 validation is explicit with `AshOaskit.validate/1` or `validate!/1`.
+
+Oaskit 0.17 serializes concurrent builds of a cached spec. Applications using
+`Oaskit.Plugs.ValidateRequest` should review its changed parameter casting:
+an integer/string union now casts `"007"` to `7`. Its JSON error responses also
+omit intermediary schema errors since 0.16. These changes apply to Oaskit's
+request validation and error handlers; AshOaskit's generation options are unchanged.
 
 CI exercises current dependencies, minimum runtime dependencies, optional integrations,
 and a built-package consumer without optional integrations. Local checks are:

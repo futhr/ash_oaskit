@@ -65,8 +65,9 @@ defmodule AshOaskit.MixProject do
   defp deps do
     [
       # Core Ash dependencies
-      {:ash, ">= 3.33.11 and < 4.0.0"},
-      {:spark, "~> 2.6"},
+      # Ash 3.34.3 prevents atom exhaustion when filtering atom fields.
+      {:ash, ">= 3.34.3 and < 4.0.0"},
+      {:spark, "~> 2.7.6"},
 
       # Security floor: decimal < 3.1.0 has a DoS via unbounded exponent
       # parsing (GHSA-rhv4-8758-jx7v / elixirforum 75261). Pulled
@@ -75,7 +76,7 @@ defmodule AshOaskit.MixProject do
       {:decimal, "~> 3.1"},
 
       # OpenAPI spec normalization, validation, and rendering
-      {:oaskit, "~> 0.15.0"},
+      {:oaskit, "~> 0.17.0"},
 
       # AshJsonApi integration (optional)
       {:ash_json_api, ">= 1.7.1 and < 2.0.0", optional: true},

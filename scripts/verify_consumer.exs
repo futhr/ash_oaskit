@@ -40,10 +40,10 @@ try do
     case mode do
       "minimum" ->
         [
-          ash: "3.33.11",
-          spark: "2.6.0",
+          ash: "3.34.3",
+          spark: "2.7.6",
           decimal: "3.1.0",
-          oaskit: "0.15.0",
+          oaskit: "0.17.0",
           plug: "1.20.3",
           # Earlier Jason releases exclude Decimal 3; this is the compatible floor.
           jason: "1.4.5"
