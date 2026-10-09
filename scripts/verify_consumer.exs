@@ -14,7 +14,13 @@ consumer = Path.join(temp, "consumer")
 run = fn args, cwd ->
   case System.cmd("mix", args,
          cd: cwd,
-         env: [{"MIX_ENV", "prod"}, {"MIX_BUILD_PATH", nil}, {"MIX_DEPS_PATH", nil}],
+         env: [
+           {"MIX_ENV", "prod"},
+           {"MIX_BUILD_PATH", nil},
+           {"MIX_BUILD_ROOT", nil},
+           {"MIX_DEPS_PATH", nil},
+           {"MIX_LOCKFILE", nil}
+         ],
          into: IO.stream()
        ) do
     {_, 0} -> :ok
@@ -40,7 +46,7 @@ try do
     case mode do
       "minimum" ->
         [
-          ash: "3.34.3",
+          ash: "3.34.6",
           spark: "2.7.6",
           decimal: "3.1.0",
           oaskit: "0.17.0",

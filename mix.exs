@@ -65,8 +65,8 @@ defmodule AshOaskit.MixProject do
   defp deps do
     [
       # Core Ash dependencies
-      # Ash 3.34.3 prevents atom exhaustion when filtering atom fields.
-      {:ash, ">= 3.34.3 and < 4.0.0"},
+      # Keep the published requirement at the current patched Ash floor.
+      {:ash, ">= 3.34.6 and < 4.0.0"},
       {:spark, "~> 2.7.6"},
 
       # Security floor: decimal < 3.1.0 has a DoS via unbounded exponent
