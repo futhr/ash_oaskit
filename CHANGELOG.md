@@ -49,6 +49,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- changelog -->
 
+## [v0.4.3](https://github.com/futhr/ash_oaskit/compare/v0.4.2...v0.4.3) (2026-10-10)
+
+
+
+
+### Bug Fixes:
+
+* require patched Ash and isolate package consumers by futhr
+
 ## [v0.4.2](https://github.com/futhr/ash_oaskit/compare/v0.4.1...v0.4.2) (2026-09-16)
 
 
