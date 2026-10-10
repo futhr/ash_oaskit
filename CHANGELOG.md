@@ -56,6 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Bug Fixes:
 
+* release: allow explicitly owner-authorized repository keys by futhr
+
 * require patched Ash and isolate package consumers by futhr
 
 ## [v0.4.2](https://github.com/futhr/ash_oaskit/compare/v0.4.1...v0.4.2) (2026-09-16)
