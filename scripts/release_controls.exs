@@ -33,11 +33,21 @@ defmodule AshOaskit.ReleaseControls do
        end), "hex-publish must require a reviewer"},
       {Enum.map(state.policies["branch_policies"], &Map.take(&1, ["name", "type"])) ==
          [%{"name" => "v*", "type" => "tag"}], "hex-publish must allow only v* tags"},
-      {Enum.any?(state.secrets["secrets"], &(&1["name"] == "HEX_API_KEY")),
-       "add a package-scoped HEX_API_KEY to the hex-publish environment"}
+      {hex_key?(state.secrets) or owner_authorized_repository_key?(state),
+       "add a package-scoped HEX_API_KEY to hex-publish or explicitly authorize the existing repository key as owner"}
     ]
     |> Enum.reject(&elem(&1, 0))
     |> Enum.map(&elem(&1, 1))
+  end
+
+  defp owner_authorized_repository_key?(state) do
+    Map.get(state, :owner_authorized_repository_key, false) == true and
+      Map.get(state, :authenticated_actor) == "futhr" and
+      hex_key?(Map.get(state, :repository_secrets, %{"secrets" => []}))
+  end
+
+  defp hex_key?(secrets) do
+    Enum.any?(secrets["secrets"], &(&1["name"] == "HEX_API_KEY"))
   end
 
   defp tag_rule?(rule, type, immutable?) do

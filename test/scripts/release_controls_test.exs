@@ -49,10 +49,42 @@ defmodule AshOaskit.ReleaseControlsTest do
     assert message =~ "every current CI job"
   end
 
-  test "rejects a repository secret as a substitute for an environment secret" do
-    state = %{protected_state() | secrets: %{"secrets" => []}}
+  test "rejects a repository key without explicit owner authorization" do
+    state =
+      protected_state()
+      |> Map.put(:secrets, %{"secrets" => []})
+      |> Map.put(:repository_secrets, %{"secrets" => [%{"name" => "HEX_API_KEY"}]})
+      |> Map.put(:authenticated_actor, "futhr")
+
     assert [message] = ReleaseControls.violations(state, ["Test"])
     assert message =~ "HEX_API_KEY"
+  end
+
+  test "accepts an existing repository key explicitly authorized by the authenticated owner" do
+    state = owner_authorized_repository_state()
+    assert ReleaseControls.violations(state, ["Test"]) == []
+  end
+
+  test "rejects repository-key authorization by another authenticated user" do
+    state =
+      Map.put(owner_authorized_repository_state(), :authenticated_actor, "another-maintainer")
+
+    assert [message] = ReleaseControls.violations(state, ["Test"])
+    assert message =~ "HEX_API_KEY"
+  end
+
+  test "owner authorization still requires an existing repository key" do
+    state = Map.put(owner_authorized_repository_state(), :repository_secrets, %{"secrets" => []})
+    assert [message] = ReleaseControls.violations(state, ["Test"])
+    assert message =~ "HEX_API_KEY"
+  end
+
+  defp owner_authorized_repository_state do
+    protected_state()
+    |> Map.put(:secrets, %{"secrets" => []})
+    |> Map.put(:repository_secrets, %{"secrets" => [%{"name" => "HEX_API_KEY"}]})
+    |> Map.put(:authenticated_actor, "futhr")
+    |> Map.put(:owner_authorized_repository_key, true)
   end
 
   test "rejects bypassable immutable tags and branch deployments" do

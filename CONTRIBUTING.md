@@ -164,7 +164,8 @@ The canonical repository must keep these external controls enabled:
 - protect `v*` tags from creation except by maintainers and forbid updates and deletion;
 - configure `hex-publish` with administrator bypass disabled, a required reviewer, and a `v*`
   deployment-tag policy;
-- scope `HEX_API_KEY` to the environment and a Hex key that can publish only `ash_oaskit`.
+- scope `HEX_API_KEY` to the environment and a Hex key that can publish only `ash_oaskit`,
+  unless the library owner explicitly authorizes use of an existing repository key.
 
 Verify the controls before every release:
 
@@ -179,6 +180,17 @@ secret for migration: set a package-scoped key in `hex-publish` manually, then r
 the repository-scoped copy. Confirm the key's package permissions in Hex itself.
 The environment reviewer is the repository owner; self-review remains allowed so
 a sole maintainer can explicitly approve a release. Administrator bypass is disabled.
+
+For publication explicitly authorized by the library owner, `futhr` may verify the
+controls using the existing repository secret:
+
+```bash
+mix run --no-start scripts/verify_release_controls.exs --owner-authorized-repository-key
+```
+
+This option checks the authenticated GitHub user and the repository secret's
+presence. It preserves all branch, tag, reviewer and deployment-policy checks.
+It cannot inspect the secret's value or its Hex package permissions.
 
 Then update the version and changelog, merge the release commit to `main`, wait for required CI,
 and create an annotated tag with `git tag -a vVERSION -m vVERSION`. Never move or reuse a tag.
