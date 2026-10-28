@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scale-driven memory-exhaustion fix (CVE-2026-97853).
 - Custom Ash types now receive their declared constraints in `json_schema/1`,
   matching AshJsonApi's callback contract.
+- A route's `name` is now its operation ID, matching AshJsonApi. Generated IDs
+  that collide with a route name are suffixed; duplicate route names raise.
 
 ### Fixed
 

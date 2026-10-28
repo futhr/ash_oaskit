@@ -59,4 +59,31 @@ defmodule AshOaskit.Core.PathRegistryTest do
     assert unique == PathRegistry.validate_ids!(unique)
     refute unique["/one"]["get"].operationId == unique["/two"]["get"].operationId
   end
+
+  test "explicit identifiers keep their value and generated collisions are suffixed" do
+    paths = %{
+      "/named" => %{"post" => %{operationId: "sign_out"}},
+      "/generated" => %{"post" => %{operationId: "sign_out"}}
+    }
+
+    unique = PathRegistry.disambiguate(paths, [{"/named", "post"}])
+
+    assert unique["/named"]["post"].operationId == "sign_out"
+    assert unique["/generated"]["post"].operationId =~ ~r/^sign_out_[0-9a-f]{16}$/
+    assert unique == PathRegistry.validate_ids!(unique)
+  end
+
+  test "duplicate explicit identifiers are kept for validation to reject" do
+    paths = %{
+      "/one" => %{"get" => %{operationId: "me"}},
+      "/two" => %{"get" => %{operationId: "me"}}
+    }
+
+    explicit = [{"/one", "get"}, {"/two", "get"}]
+    assert PathRegistry.disambiguate(paths, explicit) == paths
+
+    assert_raise ArgumentError, ~r/Duplicate operationId "me"/, fn ->
+      paths |> PathRegistry.disambiguate(explicit) |> PathRegistry.validate_ids!()
+    end
+  end
 end

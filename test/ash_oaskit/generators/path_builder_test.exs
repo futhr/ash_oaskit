@@ -5,6 +5,7 @@ defmodule AshOaskit.Generators.PathBuilderTest do
 
   alias AshJsonApi.Domain.Info
   alias AshOaskit.Generators.PathBuilder
+  alias AshOaskit.RelationshipRoutes
   alias AshOaskit.Test.Blog
   alias AshOaskit.Test.EdgeCaseDomain
   alias AshOaskit.Test.Publishing
@@ -257,6 +258,36 @@ defmodule AshOaskit.Generators.PathBuilderTest do
       end
     end
 
+    test "a route name is the operation ID for every route kind" do
+      for {type, method, action} <- [
+            {:index, :get, :read},
+            {:get, :get, :read},
+            {:post, :post, :create},
+            {:patch, :patch, :update},
+            {:delete, :delete, :destroy},
+            {:route, :post, :activate}
+          ] do
+        route = %{
+          type: type,
+          method: method,
+          resource: AshOaskit.Test.Gadget,
+          action: action,
+          name: "gadget_#{type}",
+          route: "/gadgets",
+          query_params: [],
+          relationship: nil
+        }
+
+        operation = PathBuilder.build_operation(route, version: "3.1")
+        assert operation[:operationId] == "gadget_#{type}"
+      end
+
+      for route <- Info.routes(Publishing), RelationshipRoutes.relationship_route?(route) do
+        operation = PathBuilder.build_operation(%{route | name: "named"}, version: "3.1")
+        assert operation[:operationId] == "named"
+      end
+    end
+
     test "generic route query params use attribute schemas and string fallback" do
       route = %{
         type: :route,
@@ -407,6 +438,40 @@ defmodule AshOaskit.Generators.PathBuilderTest do
       assert Map.has_key?(paths, "/edge/no-type")
       refute Map.has_key?(paths, "/no-type")
     end
+  end
+
+  describe "route names as operation IDs" do
+    test "generated IDs that collide with a route name are suffixed" do
+      [{get_path, get}, {post_path, post}] = gadget_routes([:get, :post])
+
+      paths =
+        PathBuilder.build_paths([],
+          version: "3.1",
+          route_pairs: [{get_path, get}, {post_path, %{post | name: "get_gadget_read"}}]
+        )
+
+      assert paths["/gadgets"]["post"][:operationId] == "get_gadget_read"
+      assert paths["/gadgets/{id}"]["get"][:operationId] =~ ~r/^get_gadget_read_[0-9a-f]{16}$/
+    end
+
+    test "duplicate route names raise" do
+      [{get_path, get}, {post_path, post}] = gadget_routes([:get, :post])
+
+      assert_raise ArgumentError, ~r/Duplicate operationId "gadget"/, fn ->
+        PathBuilder.build_paths([],
+          version: "3.1",
+          route_pairs: [
+            {get_path, %{get | name: "gadget"}},
+            {post_path, %{post | name: "gadget"}}
+          ]
+        )
+      end
+    end
+  end
+
+  defp gadget_routes(types) do
+    routes = AshOaskit.RouteGathering.routes_with_paths(AshOaskit.Test.Workshop)
+    Enum.map(types, fn type -> Enum.find(routes, fn {_, route} -> route.type == type end) end)
   end
 
   describe "operation summaries and descriptions" do

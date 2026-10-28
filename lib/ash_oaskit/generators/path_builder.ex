@@ -156,10 +156,16 @@ defmodule AshOaskit.Generators.PathBuilder do
       end
 
     operation
+    |> put_route_name(route)
     |> Map.update!(:responses, &Map.merge(&1, AshOaskit.ErrorSchemas.all_error_responses()))
     |> Map.put(:tags, AshOaskit.TagBuilder.operation_tags(route, opts))
     |> AshOaskit.MultipartSupport.add_route_content(route, opts)
   end
+
+  defp put_route_name(operation, %{name: name}) when is_binary(name),
+    do: Map.put(operation, :operationId, name)
+
+  defp put_route_name(operation, _), do: operation
 
   # Builds an operation for a generic action route (`route :post, "...", :action`)
   defp build_generic_operation(route, version) do
@@ -201,14 +207,22 @@ defmodule AshOaskit.Generators.PathBuilder do
 
   # Builds paths from Ash domain routes
   defp build_ash_paths(domains, opts) do
-    opts
-    |> Keyword.get_lazy(:route_pairs, fn -> Enum.flat_map(domains, &get_domain_routes/1) end)
-    |> Enum.uniq()
-    |> Enum.map(fn {path, route} ->
-      {convert_path_params(path), route_to_method(route), build_operation(route, opts)}
-    end)
+    routes =
+      opts
+      |> Keyword.get_lazy(:route_pairs, fn -> Enum.flat_map(domains, &get_domain_routes/1) end)
+      |> Enum.uniq()
+      |> Enum.map(fn {path, route} ->
+        {convert_path_params(path), route_to_method(route), route}
+      end)
+
+    routes
+    |> Enum.map(fn {path, method, route} -> {path, method, build_operation(route, opts)} end)
     |> PathRegistry.from_operations()
-    |> PathRegistry.disambiguate()
+    |> PathRegistry.disambiguate(named_operations(routes))
+  end
+
+  defp named_operations(routes) do
+    for {path, method, %{name: name}} <- routes, is_binary(name), do: {path, method}
   end
 
   # Builds paths from Phoenix controller routes (if router is provided)

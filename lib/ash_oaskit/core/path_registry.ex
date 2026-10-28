@@ -77,8 +77,9 @@ defmodule AshOaskit.Core.PathRegistry do
   end
 
   @doc "Disambiguates generated identifiers with a deterministic method/path suffix."
-  @spec disambiguate(map()) :: map()
-  def disambiguate(paths) do
+  @spec disambiguate(map(), Enumerable.t({String.t(), String.t()})) :: map()
+  def disambiguate(paths, explicit \\ []) do
+    explicit = MapSet.new(explicit)
     counts = paths |> operations() |> Enum.frequencies_by(fn {_, _, op} -> op[:operationId] end)
 
     Map.new(paths, fn {path, methods} ->
@@ -87,7 +88,7 @@ defmodule AshOaskit.Core.PathRegistry do
          id = op[:operationId]
 
          op =
-           if id && counts[id] > 1,
+           if id && counts[id] > 1 && not MapSet.member?(explicit, {path, method}),
              do: Map.put(op, :operationId, id <> "_" <> suffix(method, path)),
              else: op
 

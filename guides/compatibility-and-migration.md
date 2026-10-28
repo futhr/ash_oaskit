@@ -26,8 +26,10 @@ do not patch exported JSON by hand. Use `SpecModifier` for application-specific 
   and produce unconstrained schemas instead of incorrect string schemas. Define a custom
   type's `json_schema/1` callback when its wire representation is known. `Ash.Type.Range`
   needs an application-defined JSON representation; upstream does not serialize it to JSON.
-- Duplicate generated operation IDs receive stable method/path suffixes. Explicit
-  duplicate IDs and conflicting path/method declarations raise instead of overwriting routes.
+- A route's `name` is its operation ID, as in AshJsonApi's own generator; unnamed routes
+  get generated IDs. Duplicate generated operation IDs, and generated IDs that collide with
+  a route name, receive stable method/path suffixes. Duplicate route names or explicit IDs
+  and conflicting path/method declarations raise instead of overwriting routes.
 - Automatic upload documentation uses AshJsonApi's `multipart/x.ash+form-data`: a JSON
   `data` part refers to arbitrarily named uploaded parts. Do not assume the legacy
   low-level `MultipartSupport.build_multipart_schema/2` helper describes this protocol;
