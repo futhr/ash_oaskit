@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Map array length and item constraints to `minItems`, `maxItems`, and the nested
   `items` schema, including nullable items.
 - Preserve non-string `one_of` values and emit the strict UUIDv7 pattern.
+- Respect resource-level `derive_filter? false`: the resource gets no filter
+  component, and other filters drop their relationships to it.
 
 ## [0.1.0] - 2026-03-31
 

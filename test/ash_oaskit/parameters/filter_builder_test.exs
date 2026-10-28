@@ -43,6 +43,27 @@ defmodule AshOaskit.FilterBuilderTest do
              JSV.validate(%{"and" => [%{"title" => %{"icontains" => "A"}}]}, validator)
   end
 
+  describe "resource-level derive_filter? false" do
+    for version <- ["3.0", "3.1"] do
+      test "omits its filter and relationships to it in #{version}" do
+        spec = AshOaskit.spec(domains: [AshOaskit.Test.Kennel], version: unquote(version))
+        schemas = spec["components"]["schemas"]
+        pet_filter_properties = schemas["PetFilter"]["properties"]
+
+        refute Map.has_key?(schemas, "OwnerFilter")
+        refute filter_parameter(spec, "/owners")
+
+        assert pet_filter_properties["name"]
+        refute Map.has_key?(pet_filter_properties, "owner")
+        refute Map.has_key?(filter_parameter(spec, "/pets")["schema"]["properties"], "owner")
+      end
+    end
+
+    defp filter_parameter(spec, path) do
+      Enum.find(spec["paths"][path]["get"]["parameters"], &(&1["name"] == "filter"))
+    end
+  end
+
   describe "build_filter_parameter/2" do
     test "returns parameter with correct name" do
       param = FilterBuilder.build_filter_parameter(AshOaskit.Test.Post)

@@ -127,7 +127,7 @@ defmodule AshOaskit.FilterBuilder do
   """
   @spec build_filter_parameter(module(), keyword()) :: map() | nil
   def build_filter_parameter(resource, opts \\ []) do
-    if derive_filter?(resource) do
+    if Config.derive_filter?(resource) do
       %{
         name: "filter",
         in: :query,
@@ -165,7 +165,7 @@ defmodule AshOaskit.FilterBuilder do
     relationships =
       resource
       |> ResourceInfo.public_relationships()
-      |> Enum.filter(&(Config.show_field?(resource, &1) and Map.get(&1, :filterable?, true)))
+      |> Enum.filter(&filterable_relationship?(resource, &1))
       |> Map.new(
         &{Config.json_field_name(resource, &1.name), filter_reference(&1.destination, opts)}
       )
@@ -340,6 +340,11 @@ defmodule AshOaskit.FilterBuilder do
     }
   end
 
+  defp filterable_relationship?(resource, relationship) do
+    Config.show_field?(resource, relationship) and Map.get(relationship, :filterable?, true) and
+      Config.derive_filter?(relationship.destination)
+  end
+
   defp filter_reference(resource, opts) do
     if Keyword.get(opts, :recursive?, false),
       # Keep the object type explicit so Oaskit's parameter precaster does not
@@ -350,9 +355,6 @@ defmodule AshOaskit.FilterBuilder do
       },
       else: %{type: :object}
   end
-
-  @spec derive_filter?(module()) :: boolean()
-  defp derive_filter?(resource), do: Config.derive_filter?(resource)
 
   @spec resource_name(module()) :: String.t()
   defp resource_name(resource) do

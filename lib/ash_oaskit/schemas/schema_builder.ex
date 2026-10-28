@@ -104,6 +104,7 @@ defmodule AshOaskit.SchemaBuilder do
   - Unknown types: Falls back to empty schema `{}`
   """
 
+  alias AshOaskit.Config
   alias AshOaskit.SchemaBuilder.ResourceSchemas
 
   @typedoc """
@@ -452,14 +453,18 @@ defmodule AshOaskit.SchemaBuilder do
   @doc "Adds the recursive filter component for a resource."
   @spec add_filter_schema(t(), module(), String.t(), function()) :: t()
   def add_filter_schema(builder, resource, name, add_schema_fn) do
-    add_schema_fn.(
-      builder,
-      "#{name}Filter",
-      AshOaskit.FilterBuilder.build_filter_schema(resource,
-        recursive?: true,
-        version: builder.version
+    if Config.derive_filter?(resource) do
+      add_schema_fn.(
+        builder,
+        "#{name}Filter",
+        AshOaskit.FilterBuilder.build_filter_schema(resource,
+          recursive?: true,
+          version: builder.version
+        )
       )
-    )
+    else
+      builder
+    end
   end
 
   defp reserve_resource_name(%{resource_names: resource_names} = builder, resource) do
