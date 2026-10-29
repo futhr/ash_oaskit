@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Require Ash 3.37.2 or newer for the cross-tenant primary-key upsert fix
-  (CVE-2026-96581) and limited through-relationship loading fix (CVE-2026-114214).
 - Updated Ash to 3.36 and Igniter to 0.8.4. The resolved dependency refresh also
   includes Mint's HTTP/1 header-size and HTTP/2 continuation-frame security fixes.
 - Updated Decimal to 3.2.0, Oaskit to 0.17.1, Phoenix.PubSub to 2.4.1, and
@@ -18,8 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scale-driven memory-exhaustion fix (CVE-2026-97853).
 - Custom Ash types now receive their declared constraints in `json_schema/1`,
   matching AshJsonApi's callback contract.
-- A route's `name` is now its operation ID, matching AshJsonApi. Generated IDs
-  that collide with a route name are suffixed; duplicate route names raise.
 
 ### Fixed
 
@@ -29,8 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Map array length and item constraints to `minItems`, `maxItems`, and the nested
   `items` schema, including nullable items.
 - Preserve non-string `one_of` values and emit the strict UUIDv7 pattern.
-- Respect resource-level `derive_filter? false`: the resource gets no filter
-  component, and other filters drop their relationships to it.
 
 ## [0.1.0] - 2026-03-31
 
@@ -53,10 +47,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JSON and YAML output formats
 - Configurable API metadata (title, version, description, servers, contact, license)
 
-[Unreleased]: https://github.com/futhr/ash_oaskit/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/futhr/ash_oaskit/compare/v0.4.5...HEAD
 [0.1.0]: https://github.com/futhr/ash_oaskit/releases/tag/v0.1.0
 
 <!-- changelog -->
+
+## [v0.4.5](https://github.com/futhr/ash_oaskit/compare/v0.4.4...v0.4.5) (2026-10-29)
+
+### Bug Fixes:
+
+* Honor route names in operation identifiers by Jaden. A route's `name` is now
+  its operation ID, matching AshJsonApi. Generated IDs that collide with a route
+  name are suffixed; duplicate route names raise. Regenerate clients for named routes.
+
+* Honor resource filter derivation by Jaden. Resources with `derive_filter? false`
+  get no filter component, and other filters drop their relationships to them.
+
+* Require patched Ash dependencies by Tobias Bohwalli. Ash 3.37.2 or newer includes
+  the cross-tenant primary-key upsert fix (CVE-2026-96581) and limited
+  through-relationship loading fix (CVE-2026-114214).
 
 ## [v0.4.4](https://github.com/futhr/ash_oaskit/compare/v0.4.3...v0.4.4) (2026-10-23)
 
