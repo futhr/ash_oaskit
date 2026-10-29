@@ -66,7 +66,7 @@ defmodule AshOaskit.MixProject do
     [
       # Core Ash dependencies
       # Keep the published requirement at the current patched Ash floor.
-      {:ash, ">= 3.34.6 and < 4.0.0"},
+      {:ash, ">= 3.37.2 and < 4.0.0"},
       {:spark, "~> 2.7.6"},
 
       # Decimal 3.1.2 fixes scale-driven memory exhaustion in round/3

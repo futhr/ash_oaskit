@@ -3,7 +3,7 @@
 Changes to generated contracts require regenerating snapshots and clients;
 do not patch exported JSON by hand. Use `SpecModifier` for application-specific changes.
 
-- Dependencies now require Ash 3.34.6+, Spark 2.7.6+, Plug 1.20.3+, Oaskit 0.17.0+,
+- Dependencies now require Ash 3.37.2+, Spark 2.7.6+, Plug 1.20.3+, Oaskit 0.17.0+,
   and Decimal 3.1.2+.
   Optional integrations require AshJsonApi 1.7.1+, Phoenix 1.8.13+, and Igniter 0.6.29+.
   Configure `config :ash, default_string_length_count: :codepoints` in the consuming app.

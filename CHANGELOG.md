@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Require Ash 3.37.2 or newer for the cross-tenant primary-key upsert fix
+  (CVE-2026-96581) and limited through-relationship loading fix (CVE-2026-114214).
 - Updated Ash to 3.36 and Igniter to 0.8.4. The resolved dependency refresh also
   includes Mint's HTTP/1 header-size and HTTP/2 continuation-frame security fixes.
 - Updated Decimal to 3.2.0, Oaskit to 0.17.1, Phoenix.PubSub to 2.4.1, and
