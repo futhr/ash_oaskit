@@ -209,6 +209,12 @@ defmodule AshOaskit.TypeMapper do
 
   @doc false
   @spec embedded_fields(map()) :: [map()]
+  def embedded_fields(%{type: {:array, inner}} = attr) do
+    %{type: inner, constraints: Keyword.get(constraints(attr), :items, [])}
+    |> embedded_fields()
+    |> Enum.map(&Map.put(&1, :array?, true))
+  end
+
   def embedded_fields(attr) do
     type = resolve_type(attr)
     constraints = constraints(attr)
@@ -324,7 +330,8 @@ defmodule AshOaskit.TypeMapper do
     |> apply_constraints(constraint_type(type), constraints, version)
   end
 
-  defp schema_for_normalized_type(type, context, constraints \\ [])
+  defp schema_for_normalized_type({:array, _} = type, context, constraints),
+    do: ash_type_to_base_schema(type, constraints, context)
 
   defp schema_for_normalized_type({:embedded, module}, {_, opts} = context, constraints) do
     if Keyword.get(opts, :direction) == :input do
@@ -340,13 +347,6 @@ defmodule AshOaskit.TypeMapper do
 
   defp simple_type_schema(type) when is_atom(type), do: Map.get(@simple_type_schemas, type)
   defp simple_type_schema(_), do: nil
-
-  defp complex_type_schema({:array, inner_type}, context) do
-    %{
-      "type" => "array",
-      "items" => schema_for_normalized_type(inner_type, array_context(context))
-    }
-  end
 
   defp complex_type_schema({:embedded, module}, _) do
     schema_name = module |> Module.split() |> List.last()
