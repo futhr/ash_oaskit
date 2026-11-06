@@ -3,7 +3,7 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedInputSchemasTest do
 
   alias AshOaskit.SchemaBuilder
   alias AshOaskit.SchemaBuilder.EmbeddedInputSchemas
-  alias AshOaskit.Test.RequestContract.{Address, InputNode, Item, KeyedAddress}
+  alias AshOaskit.Test.RequestContract.{Address, CityAddress, InputNode, Item, KeyedAddress}
   alias AshOaskit.TypeMapper
 
   test "nested embedded inputs terminate and retain separate output definitions" do
@@ -65,6 +65,41 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedInputSchemasTest do
     schemas = builder |> SchemaBuilder.to_components() |> AshOaskit.Core.JsonKeys.validate!()
     assert schemas.schemas["KeyedAddressUpdateInput"].properties["id"] == %{}
     refute "id" in Map.get(schemas.schemas["KeyedAddressUpdateInput"], :required, [])
+  end
+
+  test "legacy array type wrappers and shorthand unions retain embedded references" do
+    assert TypeMapper.embedded_types(%{type: {:union, [Address, :string]}}) == [Address]
+
+    field = %{
+      type: {{:array, Address}, []},
+      allow_nil?: false,
+      constraints: [items: [create_action: :from_city]]
+    }
+
+    builder = EmbeddedInputSchemas.add_field(SchemaBuilder.new(), field, action_type: :update)
+    assert Map.has_key?(builder.schemas, "AddressFromCityInput")
+    refute Map.has_key?(builder.schemas, "AddressCreateInput")
+
+    for mapper <- [&TypeMapper.to_json_schema_30/2, &TypeMapper.to_json_schema_31/2] do
+      assert mapper.(field, []) == %{
+               "type" => "array",
+               "items" => %{"$ref" => "#/components/schemas/Address"}
+             }
+
+      assert mapper.(field, direction: :input, action_type: :update) == %{
+               "type" => "array",
+               "items" => %{"$ref" => "#/components/schemas/AddressFromCityInput"}
+             }
+    end
+  end
+
+  test "arrays retain constraints declared by embedded NewType items" do
+    field = %{type: {:array, CityAddress}, allow_nil?: false, constraints: []}
+    builder = EmbeddedInputSchemas.add_field(SchemaBuilder.new(), field, [])
+    assert Map.has_key?(builder.schemas, "AddressFromCityInput")
+    refute Map.has_key?(builder.schemas, "AddressCreateInput")
+    schema = TypeMapper.to_json_schema_31(field, direction: :input)
+    assert schema["items"]["$ref"] == "#/components/schemas/AddressFromCityInput"
   end
 
   test "required update attributes are unique, non-null and independent of response nullability" do

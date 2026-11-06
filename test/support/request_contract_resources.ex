@@ -22,6 +22,13 @@ defmodule AshOaskit.Test.RequestContract.Address do
   end
 end
 
+defmodule AshOaskit.Test.RequestContract.CityAddress do
+  @moduledoc false
+  use Ash.Type.NewType,
+    subtype_of: AshOaskit.Test.RequestContract.Address,
+    constraints: [create_action: :from_city]
+end
+
 defmodule AshOaskit.Test.RequestContract.InputNode do
   @moduledoc false
   use Ash.Resource, data_layer: :embedded
