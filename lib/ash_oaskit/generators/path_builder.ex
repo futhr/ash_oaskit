@@ -31,12 +31,15 @@ defmodule AshOaskit.Generators.PathBuilder do
 
   ## Query Parameters
 
-  For GET operations, the following parameters are added:
+  Collection reads offer filter, sort, and pagination according to their action
+  and route configuration. Single-record reads do not offer these controls.
+  Reads and standard POST/PATCH routes offer sparse fieldsets and configured includes:
 
   - **filter** - Field-specific filtering (from FilterBuilder)
   - **sort** - Sorting specification (from SortBuilder)
   - **page** - Pagination (offset, limit, cursor-based)
   - **include** - Relationship inclusion paths
+  - **fields** - Sparse response fieldsets
 
   ## Phoenix Controller Routes
 
@@ -342,7 +345,7 @@ defmodule AshOaskit.Generators.PathBuilder do
     path_params = path_params ++ build_generic_query_parameters(route, version)
 
     params =
-      if route.type in [:index, :get] do
+      if route.type in [:index, :get, :post, :patch] do
         path_params ++ build_query_parameters(route, version)
       else
         path_params
@@ -381,9 +384,10 @@ defmodule AshOaskit.Generators.PathBuilder do
     relationships = ResourceSchemas.relationship_input_schema(route)
 
     required =
-      if(type == :patch, do: ["id"], else: []) ++
-        if(ResourceSchemas.input_required(route) == [], do: [], else: ["attributes"]) ++
+      if(ResourceSchemas.input_required(route) == [], do: [], else: ["attributes"]) ++
         if relationships && relationships[:required], do: ["relationships"], else: []
+
+    body_required? = type == :patch or required != []
 
     data =
       reject_nil_values(%{
@@ -399,13 +403,13 @@ defmodule AshOaskit.Generators.PathBuilder do
       })
 
     %{
-      required: required != [],
+      required: body_required?,
       content: %{
         "application/vnd.api+json" => %{
           schema:
             reject_nil_values(%{
               type: :object,
-              required: if(required != [], do: [:data]),
+              required: if(body_required?, do: [:data]),
               properties: %{data: data}
             })
         }

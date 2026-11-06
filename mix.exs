@@ -92,6 +92,8 @@ defmodule AshOaskit.MixProject do
       {:jason, "~> 1.4"},
 
       # Dev/Test dependencies
+      # AshJsonApi 1.8 invokes this optional integration to validate write requests.
+      {:open_api_spex, "~> 3.22", only: :test},
       {:benchee, "~> 1.5", only: :dev, runtime: false},
       {:benchee_markdown, "~> 0.3.4", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},

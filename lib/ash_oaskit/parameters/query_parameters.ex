@@ -71,7 +71,7 @@ defmodule AshOaskit.QueryParameters do
   @doc "Builds query parameters from the actual read action and route configuration."
   @spec for_route(module(), map() | nil, map(), keyword()) :: [map()]
   def for_route(resource, action, route, opts \\ []) do
-    read? = action && action.type == :read
+    read? = collection_action?(action, route)
     includes = IncludedResources.configured_includes(resource)
 
     parameters = [
@@ -81,13 +81,18 @@ defmodule AshOaskit.QueryParameters do
       if(read? && Map.get(route, :derive_sort?, true) && Config.derive_sort?(resource),
         do: SortBuilder.build_sort_parameter(resource, opts)
       ),
-      page_for_action(action),
+      if(read?, do: page_for_action(action)),
       if(includes != [], do: build_include_parameter(includes)),
       build_fields_parameter([Config.resource_type(resource)])
     ]
 
     Enum.reject(parameters, &is_nil/1)
   end
+
+  defp collection_action?(%{type: :read}, route),
+    do: Map.get(route, :type, :index) in [:index, :related]
+
+  defp collection_action?(_, _), do: false
 
   @doc "Builds pagination only for the strategies and limits supported by an action."
   @spec page_for_action(map() | nil) :: map() | nil

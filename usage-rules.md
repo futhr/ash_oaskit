@@ -187,6 +187,18 @@ Custom `json_schema/1` callbacks must return a map and must not raise. Invalid
 callbacks fail generation with type and attribute context; there is no silent
 string fallback.
 
+Action input objects reject unknown keys. `require_attributes` means a value
+must be present and non-null. Embedded inputs reference separate action schemas;
+updates permit partial existing embeds, but replacements and arrays without
+public IDs retain create requirements. The stored record still determines whether
+an embed can be updated. Respect embedded action constraints and explicitly
+configured `skip_unknown_inputs`.
+
+Standard POST/PATCH routes support sparse `fields` and configured `include`.
+Only collection reads offer derived `filter`, `sort`, and `page` parameters.
+On PATCH, path parameters select the record; same-named update arguments remain
+in the body. `data` is required, but `data.id` is optional.
+
 Do not mix keys that normalize to the same JSON name (`:name` and `"name"`, or
 `200` and `"200"`). Ambiguous keys raise before normalization, including inside
 defaults and custom schemas. Keep native JSON values in callbacks.

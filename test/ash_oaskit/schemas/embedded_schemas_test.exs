@@ -17,7 +17,7 @@ defmodule AshOaskit.SchemaBuilder.EmbeddedSchemasTest do
       assert schemas["Address"]["properties"]["city"]["type"] == "string"
 
       assert schemas["SchemaAuditCreateInput"]["properties"]["shipping"]["$ref"] ==
-               "#/components/schemas/ShippingInfo"
+               "#/components/schemas/ShippingInfoCreateInput"
     end
   end
 

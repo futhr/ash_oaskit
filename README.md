@@ -269,6 +269,18 @@ custom types with a `json_schema/1` callback. A declared callback must return
 a schema map; exceptions and malformed return values stop generation with the
 custom type and attribute in the error instead of emitting a guessed schema.
 
+Request schemas reject unknown action inputs and treat `require_attributes` as
+non-null. Embedded inputs have separate action components: create inputs enforce
+create requirements, while updates can accept partial values for existing embeds.
+Replacement embeds and arrays without public IDs still use create requirements.
+Whether an update can merge a partial value depends on the stored record, which
+an OpenAPI document cannot inspect. Embedded action constraints and
+`skip_unknown_inputs` are reflected in the input schemas.
+
+Standard POST/PATCH routes document `fields` and configured `include` parameters.
+Collection reads also document supported `filter`, `sort`, and `page` controls;
+single-record GET routes omit those collection controls.
+
 Native maps may use atom, string, or integer keys, but two keys that produce the
 same JSON name (such as `:name` and `"name"`) are rejected before normalization.
 This also applies to nested defaults, custom schemas, and specification extensions.

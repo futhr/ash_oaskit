@@ -158,14 +158,14 @@ defmodule AshOaskit.Generators.PathBuilderTest do
       refute String.ends_with?(operation[:operationId], "_list")
     end
 
-    test "post route has request body and no parameters" do
+    test "post route has request body and sparse fieldset parameters" do
       routes = Info.routes(Blog)
       post_route = Enum.find(routes, &(&1.type == :post))
       operation = PathBuilder.build_operation(post_route, version: "3.1")
 
       assert operation[:requestBody][:required] == true
       assert operation[:requestBody][:content]["application/vnd.api+json"]
-      refute Map.has_key?(operation, :parameters)
+      assert "fields" in Enum.map(operation.parameters, & &1.name)
     end
 
     test "patch route has request body" do
