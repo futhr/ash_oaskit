@@ -11,6 +11,10 @@ defmodule AshOaskit.TypeMapper do
   They have no timezone offset, so RFC 3339 `time` and `date-time` formats
   would reject their serialized values. UTC datetimes retain `date-time`.
 
+  Literal defaults on sensitive attributes and action arguments are omitted
+  from generated documents. Their types and constraints remain documented.
+  Runtime default callbacks are never invoked during introspection.
+
   This module handles the conversion of Ash resource attributes to their
   corresponding JSON Schema representations, respecting the differences
   between OpenAPI versions.
@@ -86,7 +90,7 @@ defmodule AshOaskit.TypeMapper do
   ## Additional Schema Properties
 
   - `description` - Copied from attribute description
-  - `default` - Copied from attribute default (non-function values only)
+  - `default` - Copied from non-sensitive literal defaults only
   """
 
   import AshOaskit.Core.SchemaRef, only: [schema_ref: 1]
@@ -751,6 +755,8 @@ defmodule AshOaskit.TypeMapper do
   end
 
   defp maybe_add_description(schema, _), do: schema
+
+  defp maybe_add_default(schema, %{sensitive?: true}), do: schema
 
   # Runtime defaults must never run during introspection.
   defp maybe_add_default(schema, %{default: {module, function, args}})

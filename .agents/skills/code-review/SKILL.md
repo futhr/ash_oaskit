@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Review a proposed diff or completed implementation for reachable correctness, security, test-integrity, public-contract, optional-integration, and Hex consumer regressions. Apply at the review stage, including final review before delivery; scale checks to the changed mechanism rather than inspecting unrelated subsystems.
+description: Review a diff, completed implementation or requested security audit for reachable correctness, field/input visibility, serving, cache, optional-integration and Hex consumer defects. Apply at review or audit stages; scope checks to the affected library boundary.
 user-invocable: false
 ---
 
@@ -49,3 +49,25 @@ trigger, consequence, evidence, and smallest useful fix. Separate confirmed
 defects from questions requiring unavailable evidence. If there are no
 findings, state the reviewed scope and verification limits; do not imply that
 unexecuted checks passed or add approval gates.
+
+## Requested security audits
+
+Record the revision, working-tree scope, selected dependency sources and actual
+public generation or serving boundary. Distinguish trusted resource/route DSL
+from request-controlled input. Trace response visibility, writable action inputs,
+route scope and serialized output against the runtime contract; sensitive
+write-only inputs and private response fields have different roles. For cached
+specs, follow version, customization and caller configuration into the cache key.
+
+Challenge each candidate against the strongest current control. A confirmed
+finding needs a reachable caller-to-output trace and evidence for its consequence;
+keep decisive unobserved facts as `needs_validation`, without a severity, and
+reject disproved claims. Use bounded synthetic resources and ordinary Plug tests
+for authorized regressions. Hostile native or availability execution needs
+verified isolation and task authority; missing execution proof does not prevent
+source review. Do not infer host authorization or deployment safety from a
+generated security scheme. State the single-reviewer limit when independent
+delegation is unavailable or unauthorized, and keep audit reports out of Git
+unless explicitly requested there.
+
+Method background: [Cloudflare's source-first audit workflow](https://github.com/cloudflare/security-audit-skill/tree/c1c8a8c1471069fb0e188eeaff69b8e8db6564a8/skills/security-audit).
