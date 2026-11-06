@@ -47,10 +47,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JSON and YAML output formats
 - Configurable API metadata (title, version, description, servers, contact, license)
 
-[Unreleased]: https://github.com/futhr/ash_oaskit/compare/v0.4.5...HEAD
+[Unreleased]: https://github.com/futhr/ash_oaskit/compare/v0.4.6...HEAD
 [0.1.0]: https://github.com/futhr/ash_oaskit/releases/tag/v0.1.0
 
 <!-- changelog -->
+
+## [v0.4.6](https://github.com/futhr/ash_oaskit/compare/v0.4.5...v0.4.6) (2026-11-06)
+
+### Fixed
+
+- Align OpenAPI 3.0 and 3.1 request contracts with AshJsonApi: document `fields`
+  and configured `include` on POST/PATCH, omit collection controls from member
+  GET routes, reject unknown action inputs, and make `require_attributes`
+  non-null. PATCH keeps update arguments that share a lookup path parameter and
+  no longer requires the optional `data.id` member.
+- Generate separate embedded action inputs, allowing partial existing-value
+  updates while preserving create requirements for replacement values and
+  arrays without public IDs. Honor custom embedded actions and skipped inputs.
+- Omit literal defaults on sensitive fields and arguments; refresh dependencies
+  to include the patched Decimal and JSV requirements.
+
+### Changed
+
+- Add an optional Additional context field to bug reports.
+- Add HTTP contract regressions against AshJsonApi and document the current
+  validation boundary and upstream shared-schema proposal.
 
 ## [v0.4.5](https://github.com/futhr/ash_oaskit/compare/v0.4.4...v0.4.5) (2026-10-29)
 
