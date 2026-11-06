@@ -237,6 +237,11 @@ validated = AshOaskit.validate!(spec)
 
 ### Type Mapping
 
+Literal defaults are included only for non-sensitive fields and action
+arguments. Values marked `sensitive? true` are omitted from defaults in both
+OpenAPI versions, while their types and constraints remain documented. Runtime
+default callbacks are never executed during generation.
+
 | Ash Type | JSON Schema | Format |
 |----------|-------------|--------|
 | `:string`, `:ci_string`, `:atom`, `:module` | `string` | - |
