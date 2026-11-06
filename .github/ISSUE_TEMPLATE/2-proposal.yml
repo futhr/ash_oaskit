@@ -1,0 +1,47 @@
+name: Proposal
+description: A change beyond a focused fix. Open this before writing any code.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Each repository keeps a narrow boundary on purpose. A proposal is read when it names a concrete case the current release cannot handle and the smallest change that would cover it. Wish lists, rewrites, and proposals produced by scanning the code with a tool are closed. A pull request for a proposal that was not accepted is closed unreviewed.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: The concrete case that fails or is missing today, with the code or command you tried and what it did.
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: Smallest change
+      description: What would change, where, and what stays out of scope.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: How it would be verified
+      description: The test, property, or measurement that would show the change works and nothing else moved.
+    validations:
+      required: true
+  - type: dropdown
+    id: authorship
+    attributes:
+      label: How this proposal was written
+      options:
+        - Written by me from my own use of the code
+        - Drafted with a tool, then every claim checked by me
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I read the repository readme and this is not already covered or marked out of scope.
+          required: true
+        - label: I will wait for the proposal to be accepted before opening a pull request.
+          required: true

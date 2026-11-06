@@ -1,0 +1,72 @@
+name: Bug report
+description: A reproducible problem in a version or commit you ran yourself.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A report is read when it comes with a reproduction that was run on a real checkout and its actual output. Descriptions of suspected problems, output from a tool that did not run the code, and reports from automated accounts are closed without review. Security problems follow SECURITY.md, never an issue.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: The released version, tag, or commit you ran.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: The exact commands or code, from a clean checkout, in the smallest form that still fails.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Actual output
+      description: What the reproduction printed, copied as is. Strip credentials, private URLs, and customer data.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+      description: What should have happened instead, with a pointer to the documentation or specification if one applies.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Related upstream issues, application context, migration goals, or analysis that does not fit the reproduction. Markdown and links are welcome.
+    validations:
+      required: false
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Runtime and dependency versions, and the operating system.
+    validations:
+      required: true
+  - type: dropdown
+    id: authorship
+    attributes:
+      label: How this report was written
+      options:
+        - Written by me from my own run of the reproduction
+        - Drafted with a tool, then every claim checked against my own run
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I ran the reproduction above on the stated version and pasted its real output.
+          required: true
+        - label: I searched existing issues and the readme for this problem.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true

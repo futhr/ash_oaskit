@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a vulnerability
+    url: https://github.com/futhr/.github/blob/main/SECURITY.md
+    about: Private reporting instructions. Never file a vulnerability as a public issue.
+  - name: Ask a question
+    url: https://futhr.io/
+    about: Contact details for questions that are not bugs or proposals.
