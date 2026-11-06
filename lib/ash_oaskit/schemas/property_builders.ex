@@ -144,15 +144,14 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
       # Check if this attribute is an embedded type
       bldr = Enum.reduce(TypeMapper.embedded_types(attr), bldr, &embedded_handler.(&2, &1))
 
+      mapper_opts = input_mapper_opts(attr, opts)
+      bldr = maybe_add_embedded_inputs(bldr, attr, mapper_opts)
+
       schema =
         if bldr.version == "3.1" do
-          TypeMapper.to_json_schema_31(attr,
-            direction: if(action_name, do: :input, else: :output)
-          )
+          TypeMapper.to_json_schema_31(attr, mapper_opts)
         else
-          TypeMapper.to_json_schema_30(attr,
-            direction: if(action_name, do: :input, else: :output)
-          )
+          TypeMapper.to_json_schema_30(attr, mapper_opts)
         end
 
       {Map.put(
@@ -162,6 +161,20 @@ defmodule AshOaskit.SchemaBuilder.PropertyBuilders do
        ), bldr}
     end)
   end
+
+  defp input_mapper_opts(attr, opts) do
+    action_type =
+      if attr.name in Keyword.get(opts, :argument_names, []),
+        do: :create,
+        else: Keyword.get(opts, :action_type, :create)
+
+    [direction: if(opts[:action_name], do: :input, else: :output), action_type: action_type]
+  end
+
+  defp maybe_add_embedded_inputs(builder, attr, [direction: :input, action_type: _] = opts),
+    do: AshOaskit.SchemaBuilder.EmbeddedInputSchemas.add_field(builder, attr, opts)
+
+  defp maybe_add_embedded_inputs(builder, _, _), do: builder
 
   @doc """
   Builds properties map from calculations.

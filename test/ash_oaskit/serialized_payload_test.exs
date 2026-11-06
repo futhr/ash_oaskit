@@ -1,5 +1,6 @@
 defmodule AshOaskit.SerializedPayloadTest do
   use ExUnit.Case, async: true
+  import AshOaskit.Test.SchemaValidation, only: [json_schema: 2]
   alias AshOaskit.Test.{Blog, Post}
 
   test "serialized responses validate and reject malformed data and formats" do
@@ -104,20 +105,4 @@ defmodule AshOaskit.SerializedPayloadTest do
       url
     end
   end
-
-  defp json_schema(schema, "3.0"), do: upgrade_nullable(schema)
-  defp json_schema(schema, _), do: schema
-
-  # JSV consumes JSON Schema, not OpenAPI 3.0's nullable extension.
-  defp upgrade_nullable(value) when is_map(value) do
-    nullable = value["nullable"]
-
-    value =
-      Map.new(Map.delete(value, "nullable"), fn {key, item} -> {key, upgrade_nullable(item)} end)
-
-    if nullable && value["type"], do: Map.update!(value, "type", &[&1, "null"]), else: value
-  end
-
-  defp upgrade_nullable(value) when is_list(value), do: Enum.map(value, &upgrade_nullable/1)
-  defp upgrade_nullable(value), do: value
 end

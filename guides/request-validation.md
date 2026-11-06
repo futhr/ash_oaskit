@@ -22,6 +22,26 @@ Where the integration shines is hybrid APIs: hand-written endpoints
 documented in the same spec as your Ash routes get full request
 validation against the schemas you declare.
 
+## AshJsonApi schema compatibility
+
+Generating an OpenAPI 3.1 document does not switch AshJsonApi's request validator
+to JSON Schema 2020-12. AshOaskit derives its schemas from Ash metadata; AshJsonApi
+still validates its own routes. The regression suite sends real AshJsonApi
+requests and validates the same bodies against generated 3.0 and 3.1 schemas to
+detect differences between the two implementations.
+
+With AshJsonApi **1.8.0**, write routes call a helper that is compiled only when
+`open_api_spex` is installed ([upstream #472](https://github.com/ash-project/ash_json_api/issues/472)).
+Applications on that version need OpenApiSpex for those routes even when using
+AshOaskit for documentation. AshOaskit itself does not require OpenApiSpex at
+runtime; its test-only dependency exercises that version's HTTP validation.
+
+[Upstream #473](https://github.com/ash-project/ash_json_api/issues/473) proposes a
+shared schema builder and renderer interface. That interface is not available in
+the supported AshJsonApi 1.8.0 release, so this fix does not adopt it or replace
+AshJsonApi's validator. A future adapter would need to preserve both OpenAPI
+versions and the optional AshJsonApi integration.
+
 ## Setting up validation for hand-written controllers
 
 1. Provide the spec module to the pipeline:

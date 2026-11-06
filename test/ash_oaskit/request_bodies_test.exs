@@ -82,7 +82,7 @@ defmodule AshOaskit.RequestBodiesTest do
   end
 
   describe "PATCH request bodies" do
-    test "require the id member in data", %{blog: spec} do
+    test "require data but allow the id to come from the path", %{blog: spec} do
       schema =
         spec["paths"]["/posts/{id}"]["patch"]["requestBody"]["content"][
           "application/vnd.api+json"
@@ -90,7 +90,8 @@ defmodule AshOaskit.RequestBodiesTest do
 
       data = schema["properties"]["data"]
 
-      assert data["required"] == ["id"]
+      assert schema["required"] == ["data"]
+      refute "id" in Map.get(data, "required", [])
       assert data["properties"]["id"]["type"] == "string"
     end
 

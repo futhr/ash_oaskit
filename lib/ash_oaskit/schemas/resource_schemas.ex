@@ -352,7 +352,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   request bodies:
 
   - properties: the attributes in the action's `accept` list that are
-    writable, plus the action's public arguments (minus path params,
+    writable, plus the action's public arguments (minus consumed path params,
     `query_params`, and `relationship_arguments` of the given route)
   - required (create-type actions): accepted attributes with
     `allow_nil?: false`, no default, not `generated?`, and not in
@@ -360,6 +360,9 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
   - required (update-type actions): `require_attributes` plus non-nil
     arguments — updates are otherwise partial
   - generic actions document their arguments only
+  - `require_attributes` rejects null as well as omission
+  - PATCH path parameters locate the record through the read action and do not
+    remove same-named update arguments from the body
 
   Unknown action names are skipped.
 
@@ -413,7 +416,11 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
         builder
 
       action ->
-        attributes = accepted_writable_attributes(resource, action)
+        attributes =
+          resource
+          |> accepted_writable_attributes(action)
+          |> Enum.map(&require_attribute_value(&1, action))
+
         arguments = body_arguments(action, route)
         argument_names = Enum.map(arguments, & &1.name)
 
@@ -430,6 +437,7 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
             attributes ++ arguments,
             handler,
             action_name: action.name,
+            action_type: action.type,
             argument_names: argument_names,
             field_name_fn: &Config.json_field_name(resource, &1),
             argument_name_fn: &Config.json_argument_name(resource, action.name, &1)
@@ -437,12 +445,18 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
 
         schema =
           maybe_add_required(
-            %{type: :object, properties: properties},
+            %{type: :object, properties: properties, additionalProperties: false},
             action_input_required(resource, action, attributes, arguments)
           )
 
         add_schema_fn.(builder, action_input_schema_name(schema_name, action_name, route), schema)
     end
+  end
+
+  defp require_attribute_value(attribute, action) do
+    if attribute.name in Map.get(action, :require_attributes, []),
+      do: Map.put(attribute, :allow_nil?, false),
+      else: attribute
   end
 
   @doc """
@@ -506,23 +520,27 @@ defmodule AshOaskit.SchemaBuilder.ResourceSchemas do
     |> Enum.filter(&(&1.name in accept and &1.writable? and Config.show_field?(resource, &1)))
   end
 
-  # Public arguments that belong in the request body: path params,
-  # query params, and relationship arguments are carried elsewhere
+  # Only path arguments consumed by this action are carried outside the body.
   defp body_arguments(action, route) do
     action.arguments
     |> Enum.filter(& &1.public?)
-    |> reject_path_arguments(route)
+    |> reject_path_arguments(action, route)
     |> reject_query_params(route)
     |> reject_relationship_arguments(route)
   end
 
-  defp reject_path_arguments(arguments, %{route: route_path}) when is_binary(route_path) do
+  defp reject_path_arguments(arguments, %{type: type}, %{route: route_path} = route)
+       when is_binary(route_path) do
     path_params = PathUtils.extract_path_params(route_path)
 
-    Enum.reject(arguments, &(to_string(&1.name) in path_params))
+    if type == :action or Map.get(route, :type) == :post do
+      Enum.reject(arguments, &(to_string(&1.name) in path_params))
+    else
+      arguments
+    end
   end
 
-  defp reject_path_arguments(arguments, _), do: arguments
+  defp reject_path_arguments(arguments, _, _), do: arguments
 
   defp reject_query_params(arguments, %{query_params: query_params}) do
     query_params = List.wrap(query_params)

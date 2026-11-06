@@ -56,10 +56,11 @@ defmodule AshOaskit.SchemaBuilder do
   | Create input | `{Resource}CreateInput` | `PostCreateInput` |
   | Update input | `{Resource}UpdateInput` | `PostUpdateInput` |
   | Relationships | `{Resource}Relationships` | `PostRelationships` |
-  | Embedded fields | `{Embedded}` | `Address` |
+  | Embedded output | `{Embedded}` | `Address` |
+  | Embedded input | `{Embedded}{Action}Input` | `AddressCreateInput` |
 
-  Relationship linkage is generated inline. Embedded fields share their component
-  between input and output schemas. Conflicting generated names raise instead of
+  Relationship linkage is generated inline. Embedded inputs use separate action
+  components, including partial updates. Conflicting generated names raise instead of
   associating a reference with a different resource or action.
 
   ## Cycle Detection

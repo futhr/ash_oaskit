@@ -5,7 +5,9 @@ defmodule AshOaskit.TypeMapper do
   Decimal output and defaults use exact strings, matching AshJsonApi. Bounds
   are retained as `x-ash-minimum`/`x-ash-maximum` strings and enforced by Ash,
   since JSON Schema numeric bounds do not apply to decimal strings. Pass
-  `direction: :input` to accept numeric decimal inputs as well as strings.
+  `direction: :input` to accept numeric decimal inputs as well as strings and
+  reference embedded action inputs. `action_type: :update` also permits partial
+  embedded updates where Ash can update an existing value.
 
   Times and naive datetimes use patterns for their local ISO 8601 strings.
   They have no timezone offset, so RFC 3339 `time` and `date-time` formats
@@ -128,7 +130,7 @@ defmodule AshOaskit.TypeMapper do
   """
   @spec to_json_schema_31(map(), keyword()) :: map()
   def to_json_schema_31(attr, opts \\ []) do
-    base_schema = ash_type_to_base_schema(resolve_type(attr), constraints(attr), "3.1")
+    base_schema = ash_type_to_base_schema(resolve_type(attr), constraints(attr), {"3.1", opts})
 
     schema =
       if allow_nil?(attr) do
@@ -165,7 +167,7 @@ defmodule AshOaskit.TypeMapper do
   """
   @spec to_json_schema_30(map(), keyword()) :: map()
   def to_json_schema_30(attr, opts \\ []) do
-    base_schema = ash_type_to_base_schema(resolve_type(attr), constraints(attr), "3.0")
+    base_schema = ash_type_to_base_schema(resolve_type(attr), constraints(attr), {"3.0", opts})
 
     schema =
       if allow_nil?(attr) do
@@ -203,7 +205,11 @@ defmodule AshOaskit.TypeMapper do
 
   @doc "Returns embedded resource modules reachable through a field's declared type and constraints."
   @spec embedded_types(map()) :: [module()]
-  def embedded_types(attr) do
+  def embedded_types(attr), do: attr |> embedded_fields() |> Enum.map(& &1.type) |> Enum.uniq()
+
+  @doc false
+  @spec embedded_fields(map()) :: [map()]
+  def embedded_fields(attr) do
     type = resolve_type(attr)
     constraints = constraints(attr)
 
@@ -213,10 +219,14 @@ defmodule AshOaskit.TypeMapper do
     |> Enum.uniq()
   end
 
-  defp embedded_types_for({:embedded, module}, _), do: [module]
+  defp embedded_types_for({:embedded, module}, constraints),
+    do: [%{type: module, constraints: constraints}]
 
-  defp embedded_types_for({:array, inner}, constraints),
-    do: embedded_types_for(inner, Keyword.get(constraints, :items, []))
+  defp embedded_types_for({:array, inner}, constraints) do
+    inner
+    |> embedded_types_for(Keyword.get(constraints, :items, []))
+    |> Enum.map(&Map.put(&1, :array?, true))
+  end
 
   defp embedded_types_for({:struct_fields, module}, _),
     do: embedded_field_types(module.subtype_constraints()[:fields] || [])
@@ -225,8 +235,8 @@ defmodule AshOaskit.TypeMapper do
 
   defp embedded_types_for({:union, types}, _) when is_list(types) do
     Enum.flat_map(types, fn
-      {_, config} when is_list(config) -> embedded_types(Map.new(config))
-      type when is_atom(type) -> embedded_types(%{type: type})
+      {_, config} when is_list(config) -> embedded_fields(Map.new(config))
+      type when is_atom(type) -> embedded_fields(%{type: type})
       _ -> []
     end)
   end
@@ -237,7 +247,7 @@ defmodule AshOaskit.TypeMapper do
   defp embedded_types_for(_, _), do: []
 
   defp embedded_field_types(fields) do
-    Enum.flat_map(fields, fn {_, config} -> embedded_types(Map.new(config)) end)
+    Enum.flat_map(fields, fn {_, config} -> embedded_fields(Map.new(config)) end)
   end
 
   defp union_newtype?(type) do
@@ -291,8 +301,11 @@ defmodule AshOaskit.TypeMapper do
     }
   }
 
+  defp array_context({version, opts}), do: {version, Keyword.put(opts, :array?, true)}
+
   defp ash_type_to_base_schema({:array, inner}, constraints, version) do
-    items = ash_type_to_base_schema(inner, Keyword.get(constraints, :items, []), version)
+    items =
+      ash_type_to_base_schema(inner, Keyword.get(constraints, :items, []), array_context(version))
 
     items =
       if Keyword.get(constraints, :nil_items?, false),
@@ -307,19 +320,32 @@ defmodule AshOaskit.TypeMapper do
     normalized = normalize_type(type, constraints)
 
     normalized
-    |> schema_for_normalized_type(version)
+    |> schema_for_normalized_type(version, constraints)
     |> apply_constraints(constraint_type(type), constraints, version)
   end
 
-  defp schema_for_normalized_type(type, version) do
-    simple_type_schema(type) || complex_type_schema(type, version)
+  defp schema_for_normalized_type(type, context, constraints \\ [])
+
+  defp schema_for_normalized_type({:embedded, module}, {_, opts} = context, constraints) do
+    if Keyword.get(opts, :direction) == :input do
+      AshOaskit.SchemaBuilder.EmbeddedInputSchemas.reference(module, constraints, opts)
+    else
+      complex_type_schema({:embedded, module}, context)
+    end
+  end
+
+  defp schema_for_normalized_type(type, context, _) do
+    simple_type_schema(type) || complex_type_schema(type, context)
   end
 
   defp simple_type_schema(type) when is_atom(type), do: Map.get(@simple_type_schemas, type)
   defp simple_type_schema(_), do: nil
 
-  defp complex_type_schema({:array, inner_type}, version) do
-    %{"type" => "array", "items" => schema_for_normalized_type(inner_type, version)}
+  defp complex_type_schema({:array, inner_type}, context) do
+    %{
+      "type" => "array",
+      "items" => schema_for_normalized_type(inner_type, array_context(context))
+    }
   end
 
   defp complex_type_schema({:embedded, module}, _) do
@@ -682,6 +708,8 @@ defmodule AshOaskit.TypeMapper do
       end
     end)
   end
+
+  defp make_nullable(schema, {version, _}), do: make_nullable(schema, version)
 
   defp make_nullable(schema, "3.1"), do: make_nullable_31(schema)
   defp make_nullable(schema, _), do: make_nullable_30(schema)
