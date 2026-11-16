@@ -74,7 +74,7 @@ defmodule AshOaskit.MixProject do
       {:decimal, ">= 3.1.2 and < 4.0.0"},
 
       # OpenAPI spec normalization, validation, and rendering
-      {:oaskit, "~> 0.17.0"},
+      {:oaskit, "~> 0.18.0"},
       # Keep regex-budget failures explicit in the existing validator dependency.
       {:jsv, ">= 0.27.0 and < 1.0.0"},
 
