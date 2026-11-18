@@ -17,13 +17,13 @@ defmodule AshOaskit.Router do
         use AshOaskit.Router,
           spec: MyAppWeb.ApiSpec,
           open_api: "/openapi",
-          redoc: "/redoc"
+          redoc3: "/redoc"
       end
 
   Generates:
 
       GET /openapi.json   -> the spec served by Oaskit.SpecController
-      GET /redoc          -> Redoc UI rendering /openapi.json
+      GET /redoc          -> Redoc 3 UI rendering /openapi.json
 
   To serve OpenAPI 3.0 and 3.1 side by side, pass `{suffix, module}`
   pairs (the first entry also serves as the default at `open_api.json`):
@@ -41,12 +41,23 @@ defmodule AshOaskit.Router do
     * `:spec` - A spec module (`use AshOaskit`) or list of
       `{suffix, module}` pairs (required for this mode)
     * `:open_api` - Base path for OpenAPI endpoints (required)
-    * `:redoc` - Path to serve the Redoc UI (optional)
+    * `:redoc3` - Path to serve the Redoc 3 UI (optional). Oaskit loads a
+      pinned Redoc 3 bundle from `https://cdn.redoc.ly` with Subresource
+      Integrity, starts it from an inline module script, and sets
+      `"disableTelemetry" => true` unless `:redoc_config` defines that key.
+      A Content Security Policy on this route must allow that origin and
+      `'unsafe-inline'` in `script-src`.
+    * `:redoc` - Path to serve the Redoc 2 UI (optional). May be combined
+      with `:redoc3` on a different path.
     * `:redoc_spec_url` - Absolute URL path Redoc fetches the spec from.
       Defaults to `"\#{open_api}.json"` — set this when the router macro
       runs inside a `scope` with a path prefix, because Redoc fetches
       by absolute URL (e.g. `redoc_spec_url: "/api/openapi.json"`)
-    * `:redoc_config` - Redoc configuration map (optional)
+    * `:redoc_config` - Redoc configuration map passed unchanged to the
+      served UI (optional). Redoc 2 and Redoc 3 accept different options;
+      follow the [Redoc 3 migration
+      guide](https://redocly.com/docs/redoc/v3.x/config-migration) when
+      moving a route from `:redoc` to `:redoc3`.
     * `:resp_headers` - Response headers map for the JSON endpoints
       (optional, e.g. CORS headers)
 
@@ -139,20 +150,19 @@ defmodule AshOaskit.Router do
             "{suffix, module} pairs, got: #{inspect(other)}"
   end
 
+  # `:redoc3` and `:redoc` are the `Oaskit.SpecController` options for the
+  # Redoc 3 and Redoc 2 pages.
   defp redoc_routes(opts, base_path) do
-    case Keyword.get(opts, :redoc) do
-      nil ->
-        []
+    spec_url = Keyword.get(opts, :redoc_spec_url, "#{base_path}.json")
 
-      redoc_path ->
-        redoc_opts =
-          [redoc: Keyword.get(opts, :redoc_spec_url, "#{base_path}.json")] ++
-            case Keyword.get(opts, :redoc_config) do
-              nil -> []
-              config -> [redoc_config: config]
-            end
+    config_opts =
+      case Keyword.get(opts, :redoc_config) do
+        nil -> []
+        config -> [redoc_config: config]
+      end
 
-        [{redoc_path, redoc_opts}]
+    for ui <- [:redoc3, :redoc], path = Keyword.get(opts, ui) do
+      {path, [{ui, spec_url} | config_opts]}
     end
   end
 

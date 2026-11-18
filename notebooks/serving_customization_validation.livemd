@@ -151,7 +151,7 @@ defmodule MyAppWeb.Router do
   use AshOaskit.Router,
     spec: MyAppWeb.ApiSpec,
     open_api: "/openapi",
-    redoc: "/redoc"
+    redoc3: "/redoc"
 end
 ```
 
@@ -178,7 +178,7 @@ end
 use AshOaskit.Router,
   spec: [{"3.1", MyAppWeb.ApiSpecV31}, {"3.0", MyAppWeb.ApiSpecV30}],
   open_api: "/openapi",
-  redoc: "/redoc"
+  redoc3: "/redoc"
 ```
 
 ## Customize through `modify_spec/1`

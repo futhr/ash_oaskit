@@ -56,7 +56,7 @@ if Code.ensure_loaded?(Igniter) do
            use AshOaskit.Router,
              spec: #{inspect(spec_module)},
              open_api: "/openapi",
-             redoc: "/redoc"
+             redoc3: "/redoc"
 
       3. (Optional, dev) Regenerate the spec on code reload by adding
          to config/dev.exs:

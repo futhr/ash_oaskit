@@ -120,7 +120,7 @@ Phoenix or Plug router:
 use AshOaskit.Router,
   spec: MyAppWeb.ApiSpec,
   open_api: "/openapi",
-  redoc: "/redoc"
+  redoc3: "/redoc"
 ```
 
 The spec module implements the [oaskit](https://hexdocs.pm/oaskit)
@@ -321,7 +321,7 @@ defmodule MyAppWeb.Router do
   use AshOaskit.Router,
     spec: MyAppWeb.ApiSpec,
     open_api: "/openapi",
-    redoc: "/redoc"
+    redoc3: "/redoc"
 
   # Your other routes, pipelines, scopes, etc.
 end
@@ -330,7 +330,8 @@ end
 Generates:
 
 - `GET /openapi.json` — the spec, served from cache (`?pretty=1` to format)
-- `GET /redoc` — Redoc UI
+- `GET /redoc` — Redoc 3 UI. Use `redoc: "/redoc"` instead to keep Redoc 2;
+  the two take different `redoc_config` options.
 
 Serve OpenAPI 3.0 and 3.1 side by side with two spec modules:
 

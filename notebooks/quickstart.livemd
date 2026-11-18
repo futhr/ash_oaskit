@@ -293,13 +293,13 @@ In a Phoenix or Plug router, that spec module is what you serve:
 use AshOaskit.Router,
   spec: MyAppWeb.ApiSpec,
   open_api: "/openapi",
-  redoc: "/redoc"
+  redoc3: "/redoc"
 ```
 
 That creates:
 
 - `GET /openapi.json` for the OpenAPI document
-- `GET /redoc` for a Redoc UI
+- `GET /redoc` for a Redoc 3 UI
 
 ## What to remember
 

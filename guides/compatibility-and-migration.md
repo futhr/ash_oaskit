@@ -46,6 +46,12 @@ an integer/string union now casts `"007"` to `7`. Its JSON error responses also
 omit intermediary schema errors since 0.16. These changes apply to Oaskit's
 request validation and error handlers; AshOaskit's generation options are unchanged.
 
+Oaskit 0.18 serves Redoc 3. `AshOaskit.Router` exposes it as `redoc3: "/path"`, and
+examples now use it. Existing `redoc: "/path"` routes keep serving Redoc 2. Redoc 3
+takes different `redoc_config` options; follow the
+[Redoc 3 migration guide](https://redocly.com/docs/redoc/v3.x/config-migration) when
+switching a route.
+
 CI exercises current dependencies, minimum runtime dependencies, optional integrations,
 and a built-package consumer without optional integrations. Local checks are:
 

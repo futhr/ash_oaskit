@@ -15,7 +15,7 @@ defmodule AshOaskit.Controller do
   >
   >     # In your router
   >     get "/openapi.json", Oaskit.SpecController, spec: MyAppWeb.ApiSpec
-  >     get "/redoc", Oaskit.SpecController, redoc: "/openapi.json"
+  >     get "/redoc", Oaskit.SpecController, redoc3: "/openapi.json"
   >
   > This module will be removed in 0.3.0.
 

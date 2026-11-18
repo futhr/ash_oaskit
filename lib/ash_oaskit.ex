@@ -21,13 +21,13 @@ defmodule AshOaskit do
 
       # Serve it (JSON + Redoc UI) straight from your Phoenix router
       get "/openapi.json", Oaskit.SpecController, spec: MyAppWeb.ApiSpec
-      get "/redoc", Oaskit.SpecController, redoc: "/openapi.json"
+      get "/redoc", Oaskit.SpecController, redoc3: "/openapi.json"
 
       # Or via the AshOaskit router macro
       use AshOaskit.Router,
         spec: MyAppWeb.ApiSpec,
         open_api: "/openapi",
-        redoc: "/redoc"
+        redoc3: "/redoc"
 
       # Export from the command line
       mix openapi.dump MyAppWeb.ApiSpec

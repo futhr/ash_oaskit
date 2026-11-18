@@ -38,6 +38,25 @@ defmodule AshOaskit.OaskitIntegrationTest do
     end
   end
 
+  defmodule Redoc3Router do
+    use Plug.Router
+
+    plug(:match)
+    plug(:dispatch)
+
+    use AshOaskit.Router,
+      spec: AshOaskit.OaskitIntegrationTest.ApiSpec,
+      open_api: "/openapi",
+      redoc3: "/docs",
+      redoc: "/redoc",
+      redoc_spec_url: "/api/openapi.json",
+      redoc_config: %{"layout" => "stacked"}
+
+    match _ do
+      send_resp(conn, 404, "Not Found")
+    end
+  end
+
   defmodule MultiVersionRouter do
     use Plug.Router
 
@@ -79,6 +98,15 @@ defmodule AshOaskit.OaskitIntegrationTest do
       spec: AshOaskit.OaskitIntegrationTest.ApiSpec,
       open_api: "/openapi",
       redoc: "/redoc"
+  end
+
+  defmodule PhoenixRedoc3Router do
+    use Phoenix.Router
+
+    use AshOaskit.Router,
+      spec: AshOaskit.OaskitIntegrationTest.ApiSpec,
+      open_api: "/openapi",
+      redoc3: "/redoc"
   end
 
   defmodule ProviderPipeline do
@@ -127,6 +155,32 @@ defmodule AshOaskit.OaskitIntegrationTest do
       assert conn.resp_body =~ "/openapi.json"
     end
 
+    test "serves the Redoc 3 UI with the configured spec URL and options" do
+      conn = Redoc3Router.call(conn(:get, "/docs"), [])
+
+      assert conn.status == 200
+      assert conn |> get_resp_header("content-type") |> hd() =~ "text/html"
+      assert conn.resp_body =~ ~r{import \{init\} from "https://cdn\.redoc\.ly/redoc/v3\.}
+      assert conn.resp_body =~ ~s("/api/openapi.json")
+      assert conn.resp_body =~ ~s("layout":"stacked")
+      assert conn.resp_body =~ ~s("disableTelemetry":true)
+      refute conn.resp_body =~ "Redoc.init"
+    end
+
+    test "serves Redoc 2 beside Redoc 3 on its own path" do
+      conn = Redoc3Router.call(conn(:get, "/redoc"), [])
+
+      assert conn.status == 200
+      assert conn.resp_body =~ "Redoc.init"
+      assert conn.resp_body =~ ~s("/api/openapi.json")
+      assert conn.resp_body =~ ~s("layout":"stacked")
+      refute conn.resp_body =~ "disableTelemetry"
+    end
+
+    test "serves no Redoc UI unless a Redoc path is configured" do
+      assert HeadersRouter.call(conn(:get, "/redoc"), []).status == 404
+    end
+
     test "the spec is cached after the first request" do
       SpecModeRouter.call(conn(:get, "/openapi.json"), [])
 
@@ -172,6 +226,15 @@ defmodule AshOaskit.OaskitIntegrationTest do
 
       assert conn.status == 200
       assert conn.resp_body =~ "Redoc.init"
+    end
+
+    test "serves the Redoc 3 UI pointing at the spec endpoint" do
+      conn = PhoenixRedoc3Router.call(conn(:get, "/redoc"), [])
+
+      assert conn.status == 200
+      assert conn.resp_body =~ ~r{import \{init\} from "https://cdn\.redoc\.ly/redoc/v3\.}
+      assert conn.resp_body =~ ~s("/openapi.json")
+      assert conn.resp_body =~ ~s("disableTelemetry":true)
     end
   end
 

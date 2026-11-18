@@ -25,11 +25,11 @@ defmodule MyAppWeb.ApiSpec do
   end
 end
 
-# Serve it (Phoenix or Plug.Router) with optional Redoc UI
+# Serve it (Phoenix or Plug.Router) with optional Redoc 3 UI
 use AshOaskit.Router,
   spec: MyAppWeb.ApiSpec,
   open_api: "/openapi",
-  redoc: "/redoc"
+  redoc3: "/redoc"
 
 # Dual version: two spec modules
 use AshOaskit.Router,
@@ -84,11 +84,11 @@ mix ash_oaskit.generate --domains MyApp.Blog --title "My API" --api-version 1.0.
 ## Router Macro
 
 ```elixir
-# Preferred: spec module mode (cached, supports redoc:)
+# Preferred: spec module mode (cached, supports redoc3: and Redoc 2 via redoc:)
 use AshOaskit.Router,
   spec: MyAppWeb.ApiSpec,
   open_api: "/openapi",
-  redoc: "/redoc"
+  redoc3: "/redoc"
 
 # Plug.Router — same options, place before catch-all `match _`
 

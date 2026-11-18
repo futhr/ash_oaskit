@@ -35,7 +35,7 @@ end
 use AshOaskit.Router,
   spec: MyAppWeb.ApiSpec,
   open_api: "/openapi",
-  redoc: "/redoc"
+  redoc3: "/redoc"
 ```
 
 ### Serve both OpenAPI versions

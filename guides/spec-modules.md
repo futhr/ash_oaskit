@@ -50,18 +50,26 @@ Through the router macro (Phoenix or Plug.Router):
 use AshOaskit.Router,
   spec: MyAppWeb.ApiSpec,
   open_api: "/openapi",
-  redoc: "/redoc"
+  redoc3: "/redoc"
 ```
 
 This serves `GET /openapi.json` (append `?pretty=1` for readable output)
-and a [Redoc](https://redocly.com/redoc) UI at `GET /redoc`.
+and a [Redoc 3](https://redocly.com/docs/redoc) UI at `GET /redoc`.
 
 Or wire `Oaskit.SpecController` directly:
 
 ```elixir
 get "/openapi.json", Oaskit.SpecController, spec: MyAppWeb.ApiSpec
-get "/redoc", Oaskit.SpecController, redoc: "/openapi.json"
+get "/redoc", Oaskit.SpecController, redoc3: "/openapi.json"
 ```
+
+The `redoc:` option serves Redoc 2 instead. The two versions take different
+`redoc_config` options; see the
+[Redoc 3 migration guide](https://redocly.com/docs/redoc/v3.x/config-migration).
+Oaskit loads the pinned Redoc 3 bundle from `https://cdn.redoc.ly` and starts it
+from an inline module script, so a Content Security Policy on the route must
+allow that origin and `'unsafe-inline'` in `script-src`. Oaskit disables Redoc 3
+telemetry unless `redoc_config` sets `"disableTelemetry"`.
 
 > #### Scoped routers {: .info}
 >
