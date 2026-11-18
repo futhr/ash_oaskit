@@ -10,9 +10,7 @@ defmodule AshOaskit.MixProject do
       version: @version,
       elixir: "~> 1.17",
       elixirc_paths: elixirc_paths(Mix.env()),
-      elixirc_options: [
-        no_warn_undefined: [AshJsonApi.Domain.Info, AshJsonApi.Resource.Info]
-      ],
+      elixirc_options: elixirc_options(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
@@ -61,6 +59,23 @@ defmodule AshOaskit.MixProject do
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
+
+  # `--no-optional-deps` leaves the optional integrations unloaded. Name the
+  # loaded applications so the compiler does not try to infer signatures from
+  # the missing ones.
+  defp elixirc_options(:no_optional) do
+    required =
+      for dep <- deps(), opts = dep_opts(dep), !opts[:optional] and !opts[:only], do: elem(dep, 0)
+
+    Keyword.put(elixirc_options(:dev), :infer_signatures, [:logger | required])
+  end
+
+  defp elixirc_options(_) do
+    [no_warn_undefined: [AshJsonApi.Domain.Info, AshJsonApi.Resource.Info]]
+  end
+
+  defp dep_opts({_, _, opts}), do: opts
+  defp dep_opts({_, _}), do: []
 
   defp deps do
     [
