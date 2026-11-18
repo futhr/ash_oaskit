@@ -74,7 +74,7 @@ defmodule AshOaskit.MixProject do
       {:decimal, ">= 3.1.2 and < 4.0.0"},
 
       # OpenAPI spec normalization, validation, and rendering
-      {:oaskit, "~> 0.17.0"},
+      {:oaskit, "~> 0.18.0"},
       # Keep regex-budget failures explicit in the existing validator dependency.
       {:jsv, ">= 0.27.0 and < 1.0.0"},
 
@@ -85,7 +85,9 @@ defmodule AshOaskit.MixProject do
       {:igniter, ">= 0.6.29 and < 1.0.0", optional: true},
 
       # Phoenix integration (optional for consumers, available in test)
-      {:plug, ">= 1.20.3 and < 2.0.0"},
+      # Plug 1.20.4 charges multipart header framing to the length limit
+      # (CVE-2026-120287).
+      {:plug, ">= 1.20.4 and < 2.0.0"},
       {:phoenix, ">= 1.8.13 and < 2.0.0", optional: true},
 
       # JSON encoding
