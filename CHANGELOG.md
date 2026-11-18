@@ -47,10 +47,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JSON and YAML output formats
 - Configurable API metadata (title, version, description, servers, contact, license)
 
-[Unreleased]: https://github.com/futhr/ash_oaskit/compare/v0.4.6...HEAD
+[Unreleased]: https://github.com/futhr/ash_oaskit/compare/v0.5.0...HEAD
 [0.1.0]: https://github.com/futhr/ash_oaskit/releases/tag/v0.1.0
 
 <!-- changelog -->
+
+## [v0.5.0](https://github.com/futhr/ash_oaskit/compare/v0.4.6...v0.5.0) (2026-11-18)
+
+### Added
+
+- `AshOaskit.Router` serves Redoc 3 with `redoc3: "/path"`, following Oaskit
+  0.18. Existing `redoc: "/path"` routes keep serving Redoc 2, and both may be
+  configured on different paths. Redoc 3 takes different `redoc_config` options.
+
+### Changed
+
+- `:time` and `:time_usec` schemas declare `format: "time-local"` and
+  `:naive_datetime` schemas declare `format: "date-time-local"` in OpenAPI 3.0
+  and 3.1, alongside their local ISO 8601 patterns. Regenerate clients.
+  `Oaskit.Plugs.ValidateRequest` casts matching request values to `Time` and
+  `NaiveDateTime`. Validators must know both OpenAPI Format Registry formats;
+  with JSV, build with `Oaskit.default_jsv_opts()`.
+- Require Oaskit 0.18.0 or newer. Refresh Ash to 3.37.7 and Spark to 2.7.10.
+
+### Security
+
+- Require Plug 1.20.4 or newer, which charges multipart header framing to the
+  `Plug.Parsers.MULTIPART` length limit (CVE-2026-120287).
 
 ## [v0.4.6](https://github.com/futhr/ash_oaskit/compare/v0.4.5...v0.4.6) (2026-11-06)
 

@@ -93,7 +93,7 @@ Add `ash_oaskit` to your dependencies in `mix.exs`:
 ```elixir
 defp deps do
   [
-    {:ash_oaskit, "~> 0.4.6"},
+    {:ash_oaskit, "~> 0.5.0"},
     # Optional: For YAML output
     {:ymlr, "~> 5.0", optional: true}
   ]
