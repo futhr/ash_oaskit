@@ -9,9 +9,11 @@ defmodule AshOaskit.TypeMapper do
   reference embedded action inputs. `action_type: :update` also permits partial
   embedded updates where Ash can update an existing value.
 
-  Times and naive datetimes use patterns for their local ISO 8601 strings.
-  They have no timezone offset, so RFC 3339 `time` and `date-time` formats
-  would reject their serialized values. UTC datetimes retain `date-time`.
+  Times and naive datetimes have no timezone offset, so RFC 3339 `time` and
+  `date-time` formats would reject their serialized values. They use the
+  OpenAPI Format Registry formats `time-local` and `date-time-local`, which
+  Oaskit 0.18 validates, together with a pattern for the local ISO 8601
+  string. UTC datetimes retain `date-time`.
 
   Literal defaults on sensitive attributes and action arguments are omitted
   from generated documents. Their types and constraints remain documented.
@@ -39,12 +41,12 @@ defmodule AshOaskit.TypeMapper do
   | `:decimal` | `string` | exact decimal pattern |
   | `:boolean` | `boolean` | - |
   | `:date` | `string` | `date` |
-  | `:time` | `string` | local ISO 8601 pattern |
-  | `:time_usec` | `string` | local ISO 8601 pattern |
+  | `:time` | `string` | `time-local` with local ISO 8601 pattern |
+  | `:time_usec` | `string` | `time-local` with local ISO 8601 pattern |
   | `:datetime` | `string` | `date-time` |
   | `:utc_datetime` | `string` | `date-time` |
   | `:utc_datetime_usec` | `string` | `date-time` |
-  | `:naive_datetime` | `string` | local ISO 8601 pattern |
+  | `:naive_datetime` | `string` | `date-time-local` with local ISO 8601 pattern |
   | `:duration` | `string` | `duration` |
   | `:uuid` | `string` | `uuid` |
   | `:uuid_v7` | `string` | `uuid` |
@@ -273,13 +275,22 @@ defmodule AshOaskit.TypeMapper do
     },
     boolean: %{"type" => "boolean"},
     date: %{"type" => "string", "format" => "date"},
-    time: %{"type" => "string", "pattern" => "^#{@local_time_pattern}$"},
-    time_usec: %{"type" => "string", "pattern" => "^#{@local_time_pattern}$"},
+    time: %{
+      "type" => "string",
+      "format" => "time-local",
+      "pattern" => "^#{@local_time_pattern}$"
+    },
+    time_usec: %{
+      "type" => "string",
+      "format" => "time-local",
+      "pattern" => "^#{@local_time_pattern}$"
+    },
     datetime: %{"type" => "string", "format" => "date-time"},
     utc_datetime: %{"type" => "string", "format" => "date-time"},
     utc_datetime_usec: %{"type" => "string", "format" => "date-time"},
     naive_datetime: %{
       "type" => "string",
+      "format" => "date-time-local",
       "pattern" => "^#{@local_date_pattern}T#{@local_time_pattern}$"
     },
     duration: %{"type" => "string", "format" => "duration"},

@@ -169,9 +169,9 @@ default callbacks are never executed during generation.
 | `:decimal` | `string` | exact decimal pattern |
 | `:boolean` | `boolean` | - |
 | `:date` | `string` | `date` |
-| `:time`, `:time_usec` | `string` | local ISO 8601 pattern |
+| `:time`, `:time_usec` | `string` | `time-local` with local ISO 8601 pattern |
 | `:datetime`, `:utc_datetime`, `:utc_datetime_usec` | `string` | `date-time` |
-| `:naive_datetime` | `string` | local ISO 8601 pattern |
+| `:naive_datetime` | `string` | `date-time-local` with local ISO 8601 pattern |
 | `:duration` | `string` | `duration` |
 | `:uuid`, `:uuid_v7` | `string` | `uuid` |
 | `:binary` | `string` | `binary` |

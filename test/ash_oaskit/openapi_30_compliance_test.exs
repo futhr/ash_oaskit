@@ -283,12 +283,16 @@ defmodule AshOaskit.OpenAPI30ComplianceTest do
       assert schema["format"] == "date"
     end
 
-    test "local temporal types use string patterns" do
-      for type <- [:time, :time_usec, :naive_datetime] do
+    test "local temporal types use local formats with string patterns" do
+      for {type, format} <- [
+            time: "time-local",
+            time_usec: "time-local",
+            naive_datetime: "date-time-local"
+          ] do
         schema = TypeMapper.to_json_schema_30(%{type: type, allow_nil?: false})
         assert schema["type"] == "string"
         assert is_binary(schema["pattern"])
-        refute Map.has_key?(schema, "format")
+        assert schema["format"] == format
       end
     end
 

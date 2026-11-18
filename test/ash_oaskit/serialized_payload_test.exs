@@ -73,6 +73,7 @@ defmodule AshOaskit.SerializedPayloadTest do
 
     for {field, value} <- [
           {"published_at", "2026-10-23T14:30:45"},
+          {"local_time", "2026-10-23T14:30:45Z"},
           {"external_id", "not-a-uuid"}
         ] do
       corrupted = Map.update!(payload, "data", &put_attribute(&1, field, value))

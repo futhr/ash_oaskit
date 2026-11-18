@@ -9,11 +9,16 @@ do not patch exported JSON by hand. Use `SpecModifier` for application-specific 
   Configure `config :ash, default_string_length_count: :codepoints` in the consuming app.
 - Decimal output and defaults are exact strings. Decimal inputs may also be numbers.
   Decimal bounds are recorded in `x-ash-minimum`/`x-ash-maximum`; Ash enforces them.
-- Times and naive datetimes use local ISO 8601 string patterns. Their serialized
-  values have no timezone offset and do not satisfy RFC 3339 `time`/`date-time`.
-  UTC datetimes retain `format: "date-time"`. Regenerate clients that relied on
-  the previous format annotations. Patterns describe the local string shape;
-  Ash still validates calendar dates.
+- Times and naive datetimes use `format: "time-local"` and
+  `format: "date-time-local"` from the OpenAPI Format Registry, with a local
+  ISO 8601 string pattern. Their serialized values have no timezone offset and do
+  not satisfy RFC 3339 `time`/`date-time`. UTC datetimes retain
+  `format: "date-time"`. Regenerate clients after upgrading. Oaskit 0.18
+  validates both formats, and `Oaskit.Plugs.ValidateRequest` casts matching
+  request values to `Time` and `NaiveDateTime`. A plain
+  `JSV.build!(schema, formats: true)` raises on them; build with
+  `Oaskit.default_jsv_opts()`. Both formats require a four-digit year. Patterns
+  describe the local string shape; Ash still validates calendar dates.
 - `{Name}Resource` describes a resource object, `{Name}Response` a member document,
   and `{Name}CollectionResponse` a document whose `data` is an array.
 - Output attributes are not required: sparse fieldsets and authorization may omit them.

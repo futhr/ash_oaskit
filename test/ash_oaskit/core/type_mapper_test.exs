@@ -11,28 +11,54 @@ defmodule AshOaskit.TypeMapperTest do
 
   test "local temporal schemas accept actual JSON output with format validation enabled" do
     values = [
-      {:time, ~T[14:30:45]},
-      {:time_usec, ~T[14:30:45.123456]},
-      {Ash.Type.Time, ~T[14:30:45]},
-      {Ash.Type.TimeUsec, ~T[14:30:45.123456]},
-      {:naive_datetime, ~N[2026-10-23 14:30:45]},
-      {Ash.Type.NaiveDatetime, ~N[2026-10-23 14:30:45.123456]}
+      {:time, "time-local", ~T[14:30:45]},
+      {:time_usec, "time-local", ~T[14:30:45.123456]},
+      {Ash.Type.Time, "time-local", ~T[14:30:45]},
+      {Ash.Type.TimeUsec, "time-local", ~T[14:30:45.123456]},
+      {:naive_datetime, "date-time-local", ~N[2026-10-23 14:30:45]},
+      {Ash.Type.NaiveDatetime, "date-time-local", ~N[2026-10-23 14:30:45.123456]}
     ]
 
     for mapper <- [&TypeMapper.to_json_schema_30/1, &TypeMapper.to_json_schema_31/1],
-        {type, value} <- values do
+        {type, format, value} <- values do
       wire =
         value
         |> AshJsonApi.Serializer.serialize_value(Ash.Type.get_type(type), [], AshOaskit.Test.Blog)
         |> Jason.encode!()
         |> Jason.decode!()
 
-      validator = JSV.build!(mapper.(%{type: type, allow_nil?: false}), formats: true)
+      schema = mapper.(%{type: type, allow_nil?: false})
+      assert schema["format"] == format
+      validator = JSV.build!(schema, Oaskit.default_jsv_opts())
       assert {:ok, ^wire} = JSV.validate(wire, validator)
+      assert {:ok, ^value} = JSV.validate(wire, validator, cast: true, cast_formats: true)
       assert {:error, _} = JSV.validate("not a time", validator)
       assert {:error, _} = JSV.validate(wire <> "Z", validator)
       assert {:error, _} = JSV.validate(String.replace(wire, "14:30", "24:30"), validator)
       assert {:error, _} = JSV.validate(123, validator)
+    end
+  end
+
+  test "nullable, array, and input local temporal schemas keep their local formats" do
+    formats = [time: "time-local", time_usec: "time-local", naive_datetime: "date-time-local"]
+
+    for {type, format} <- formats do
+      assert %{"type" => "string", "nullable" => true, "format" => ^format, "pattern" => _} =
+               TypeMapper.to_json_schema_30(%{type: type, allow_nil?: true})
+
+      nullable = TypeMapper.to_json_schema_31(%{type: type, allow_nil?: true})
+      assert %{"type" => ["string", "null"], "format" => ^format, "pattern" => _} = nullable
+      validator = JSV.build!(nullable, Oaskit.default_jsv_opts())
+      assert {:ok, nil} = JSV.validate(nil, validator)
+      assert {:error, _} = JSV.validate("not a time", validator)
+
+      for mapper <- [&TypeMapper.to_json_schema_30/2, &TypeMapper.to_json_schema_31/2] do
+        assert %{"type" => "array", "items" => %{"format" => ^format, "pattern" => _}} =
+                 mapper.(%{type: {:array, type}, allow_nil?: false}, [])
+
+        assert %{"type" => "string", "format" => ^format, "pattern" => _} =
+                 mapper.(%{type: type, allow_nil?: false}, direction: :input)
+      end
     end
   end
 
@@ -246,14 +272,18 @@ defmodule AshOaskit.TypeMapperTest do
       assert TypeMapper.to_json_schema_31(attr) == %{"type" => "string"}
     end
 
-    test "maps time type with a local ISO 8601 pattern" do
+    test "maps time type to time-local with a local ISO 8601 pattern" do
       attr = %{type: :time, allow_nil?: false}
-      assert %{"type" => "string", "pattern" => _} = TypeMapper.to_json_schema_31(attr)
+
+      assert %{"type" => "string", "format" => "time-local", "pattern" => _} =
+               TypeMapper.to_json_schema_31(attr)
     end
 
-    test "maps naive_datetime type with a local ISO 8601 pattern" do
+    test "maps naive_datetime type to date-time-local with a local ISO 8601 pattern" do
       attr = %{type: :naive_datetime, allow_nil?: false}
-      assert %{"type" => "string", "pattern" => _} = TypeMapper.to_json_schema_31(attr)
+
+      assert %{"type" => "string", "format" => "date-time-local", "pattern" => _} =
+               TypeMapper.to_json_schema_31(attr)
     end
 
     test "maps binary type with format" do
@@ -458,9 +488,11 @@ defmodule AshOaskit.TypeMapperTest do
       assert TypeMapper.to_json_schema_30(attr) == %{"type" => "string"}
     end
 
-    test "maps time type with a local ISO 8601 pattern" do
+    test "maps time type to time-local with a local ISO 8601 pattern" do
       attr = %{type: :time, allow_nil?: false}
-      assert %{"type" => "string", "pattern" => _} = TypeMapper.to_json_schema_30(attr)
+
+      assert %{"type" => "string", "format" => "time-local", "pattern" => _} =
+               TypeMapper.to_json_schema_30(attr)
     end
 
     test "maps binary type with format" do
@@ -773,7 +805,8 @@ defmodule AshOaskit.TypeMapperTest do
     test "maps Ash.Type.TimeUsec to a local ISO 8601 string" do
       attr = %{type: Ash.Type.TimeUsec, allow_nil?: false}
 
-      assert %{"type" => "string", "pattern" => _} = TypeMapper.to_json_schema_31(attr)
+      assert %{"type" => "string", "format" => "time-local", "pattern" => _} =
+               TypeMapper.to_json_schema_31(attr)
     end
 
     test "maps Ash.Type.UrlEncodedBinary to string/byte" do

@@ -89,17 +89,17 @@ defmodule AshOaskit.FormatStringsTest do
       assert schema["format"] == "date"
     end
 
-    test "local times and naive datetimes use patterns without RFC 3339 formats" do
-      for {type, wire} <- [
-            {:time, "14:30:45"},
-            {:time_usec, "14:30:45.123456"},
-            {:naive_datetime, "2026-10-23T14:30:45"}
+    test "local times and naive datetimes use local formats instead of RFC 3339 formats" do
+      for {type, format, wire} <- [
+            {:time, "time-local", "14:30:45"},
+            {:time_usec, "time-local", "14:30:45.123456"},
+            {:naive_datetime, "date-time-local", "2026-10-23T14:30:45"}
           ] do
         schema = TypeMapper.to_json_schema_31(%{type: type, allow_nil?: false})
         assert schema["type"] == "string"
         assert is_binary(schema["pattern"])
-        refute Map.has_key?(schema, "format")
-        validator = JSV.build!(schema, formats: true)
+        assert schema["format"] == format
+        validator = JSV.build!(schema, Oaskit.default_jsv_opts())
         assert {:ok, ^wire} = JSV.validate(wire, validator)
         assert {:error, _} = JSV.validate(wire <> "Z", validator)
       end
