@@ -3,9 +3,9 @@
 Changes to generated contracts require regenerating snapshots and clients;
 do not patch exported JSON by hand. Use `SpecModifier` for application-specific changes.
 
-- Dependencies now require Ash 3.37.2+, Spark 2.7.6+, Plug 1.20.4+, Oaskit 0.18.0+,
+- Dependencies now require Ash 3.38.1+, Spark 2.7.6+, Plug 1.20.4+, Oaskit 0.18.0+,
   and Decimal 3.1.2+.
-  Optional integrations require AshJsonApi 1.7.1+, Phoenix 1.8.13+, and Igniter 0.6.29+.
+  Optional integrations require AshJsonApi 1.7.1+, Phoenix 1.8.17+, and Igniter 0.6.29+.
   Configure `config :ash, default_string_length_count: :codepoints` in the consuming app.
 - Decimal output and defaults are exact strings. Decimal inputs may also be numbers.
   Decimal bounds are recorded in `x-ash-minimum`/`x-ash-maximum`; Ash enforces them.

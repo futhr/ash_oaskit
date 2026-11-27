@@ -46,7 +46,7 @@ try do
     case mode do
       "minimum" ->
         [
-          ash: "3.37.2",
+          ash: "3.38.1",
           spark: "2.7.6",
           decimal: "3.1.2",
           oaskit: "0.18.0",
@@ -57,7 +57,7 @@ try do
         ]
 
       "integrations" ->
-        [ash_json_api: "1.7.1", phoenix: "1.8.13", igniter: "0.6.29"]
+        [ash_json_api: "1.7.1", phoenix: "1.8.17", igniter: "0.6.29"]
 
       "locked" ->
         {lock, _} = Code.eval_file("mix.lock")

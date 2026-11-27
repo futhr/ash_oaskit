@@ -75,8 +75,8 @@ AshOaskit provides:
 
 ## Installation
 
-Requires Elixir 1.17+, Ash 3.37.2+, Spark 2.7.6+, Plug 1.20.4+, and Oaskit 0.18.0+.
-Optional integrations require AshJsonApi 1.7.1+, Phoenix 1.8.13+, and Igniter 0.6.29+.
+Requires Elixir 1.17+, Ash 3.38.1+, Spark 2.7.6+, Plug 1.20.4+, and Oaskit 0.18.0+.
+Optional integrations require AshJsonApi 1.7.1+, Phoenix 1.8.17+, and Igniter 0.6.29+.
 These minimums include the security fixes used by this library.
 
 Ash 3.33 requires an explicit string-length policy in your application:

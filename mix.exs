@@ -81,7 +81,7 @@ defmodule AshOaskit.MixProject do
     [
       # Core Ash dependencies
       # Keep the published requirement at the current patched Ash floor.
-      {:ash, ">= 3.37.2 and < 4.0.0"},
+      {:ash, ">= 3.38.1 and < 4.0.0"},
       {:spark, "~> 2.7.6"},
 
       # Decimal 3.1.2 fixes scale-driven memory exhaustion in round/3
@@ -103,7 +103,7 @@ defmodule AshOaskit.MixProject do
       # Plug 1.20.4 charges multipart header framing to the length limit
       # (CVE-2026-120287).
       {:plug, ">= 1.20.4 and < 2.0.0"},
-      {:phoenix, ">= 1.8.13 and < 2.0.0", optional: true},
+      {:phoenix, ">= 1.8.17 and < 2.0.0", optional: true},
 
       # JSON encoding
       {:jason, "~> 1.4"},
